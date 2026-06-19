@@ -7,6 +7,12 @@ plugins {
 group = "kz.mybrain"
 version = "1.0"
 
+repositories {
+    mavenCentral()
+    google()
+}
+
+
 
 dependencies {
     implementation(libs.kotlinx.serialization.json)
