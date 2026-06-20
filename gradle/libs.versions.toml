@@ -30,7 +30,7 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 
 # Resilience4j
-resilience4j = { group = "io.github.resilience4j", name = "resilience4j-spring-boot3", version.ref = "resilience4j" }
+resilience4j = { group = "io.github.resilience4j", name = "resilience4j-spring-boot4", version.ref = "resilience4j" }
 
 # PDF Rendering
 
