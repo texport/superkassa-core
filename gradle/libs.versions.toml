@@ -51,7 +51,7 @@ swagger-annotations = { group = "io.swagger.core.v3", name = "swagger-annotation
 
 # Testing
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
-ofd-kt-proto = { group = "kz.mybrain", name = "ofd-kt-proto-v203", version.ref = "ofdKtProto" }
+ofd-kt-proto = { group = "io.github.texport", name = "ofd-kt-proto-v203", version.ref = "ofdKtProto" }
 ofd-proto-codec = { group = "kz.mybrain", name = "ofd-proto-codec", version.ref = "ofdProtoCodec" }
 ofd-network-client = { group = "kz.mybrain", name = "ofd-network-client", version.ref = "ofdNetworkClient" }
 superkassa-offline-queue = { group = "kz.mybrain", name = "superkassa-offline-queue", version.ref = "superkassaOfflineQueue" }
