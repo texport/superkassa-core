@@ -16,6 +16,7 @@ import kz.mybrain.superkassa.core.application.model.UserUpdateRequest
 import kz.mybrain.superkassa.core.domain.model.*
 import kz.mybrain.superkassa.core.domain.port.*
 import kz.mybrain.superkassa.core.application.model.CoreSettings
+import kz.mybrain.superkassa.core.application.model.receipt.*
 
 /**
  * Основной сервис ККМ: фасадно делегирует работу специализированным подсервисам
@@ -45,7 +46,7 @@ class KkmService(
     private val receiptRenderPort: ReceiptRenderPort,
     private val documentConvertPort: DocumentConvertPort,
     private val timeValidator: TimeValidatorPort
-) {
+) : SuperkassaApi {
 
     private val kkmCommonHelper = KkmCommonHelper(
         storage = storage,
@@ -95,27 +96,27 @@ class KkmService(
     )
 
     // Registration & Initialization delegates
-    fun initKkm(pin: String, request: KkmInitDirectRequest): KkmInfo =
+    override fun initKkm(pin: String, request: KkmInitDirectRequest): KkmInfo =
         kkmRegistrationService.initKkm(pin, request)
 
-    fun initKkmSimple(
+    override fun initKkmSimple(
         pin: String,
         request: kz.mybrain.superkassa.core.application.model.KkmInitSimpleRequest
     ): KkmInfo =
         kkmRegistrationService.initKkmSimple(pin, request)
 
-    fun generateFactoryInfo(): FactoryNumberResponse =
+    override fun generateFactoryInfo(): FactoryNumberResponse =
         kkmRegistrationService.generateFactoryInfo()
 
     // KKM Retrieval & Listing
-    fun getKkm(id: String): KkmInfo =
+    override fun getKkm(id: String): KkmInfo =
         storage.findKkm(id)
             ?: throw NotFoundException(
                 message = ErrorMessages.kkmNotFound(),
                 code = "KKM_NOT_FOUND"
             )
 
-    fun listKkms(params: KkmListParams): KkmListResult {
+    override fun listKkms(params: KkmListParams): KkmListResult {
         val items = storage.listKkms(
             limit = params.limit,
             offset = params.offset,
@@ -128,20 +129,20 @@ class KkmService(
         return KkmListResult(items = items, total = total)
     }
 
-    fun deleteKkm(id: String, pin: String): Boolean =
+    override fun deleteKkm(id: String, pin: String): Boolean =
         kkmLifecycleService.deleteKkm(id, pin)
 
-    fun listCounters(kkmId: String, pin: String): List<CounterSnapshot> {
+    override fun listCounters(kkmId: String, pin: String): List<CounterSnapshot> {
         authorization.requireKkm(kkmId)
         authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN))
         return storage.listCounters(kkmId)
     }
 
     // Settings
-    fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean): KkmInfo =
+    override fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean): KkmInfo =
         kkmLifecycleService.updateKkmSettings(kkmId, pin, autoCloseShift)
 
-    fun updateTaxSettings(
+    override fun updateTaxSettings(
         kkmId: String,
         pin: String,
         taxRegime: TaxRegime,
@@ -149,20 +150,20 @@ class KkmService(
     ): KkmInfo =
         kkmLifecycleService.updateTaxSettings(kkmId, pin, taxRegime, defaultVatGroup)
 
-    fun enterProgramming(kkmId: String, pin: String): KkmInfo =
+    override fun enterProgramming(kkmId: String, pin: String): KkmInfo =
         kkmLifecycleService.enterProgramming(kkmId, pin)
 
-    fun exitProgramming(kkmId: String, pin: String): KkmInfo =
+    override fun exitProgramming(kkmId: String, pin: String): KkmInfo =
         kkmLifecycleService.exitProgramming(kkmId, pin)
 
     // User delegates
-    fun listUsers(kkmId: String, pin: String): List<UserResponse> =
+    override fun listUsers(kkmId: String, pin: String): List<UserResponse> =
         kkmUserService.listUsers(kkmId, pin)
 
-    fun createUser(kkmId: String, pin: String, request: UserCreateRequest): UserResponse =
+    override fun createUser(kkmId: String, pin: String, request: UserCreateRequest): UserResponse =
         kkmUserService.createUser(kkmId, pin, request)
 
-    fun updateUser(
+    override fun updateUser(
         kkmId: String,
         userId: String,
         pin: String,
@@ -170,33 +171,33 @@ class KkmService(
     ): UserResponse =
         kkmUserService.updateUser(kkmId, userId, pin, request)
 
-    fun deleteUser(kkmId: String, userId: String, pin: String): Boolean =
+    override fun deleteUser(kkmId: String, userId: String, pin: String): Boolean =
         kkmUserService.deleteUser(kkmId, userId, pin)
 
     // OFD delegates
-    fun getOfdAuthInfo(kkmId: String, pin: String): OfdAuthInfoResponse =
+    override fun getOfdAuthInfo(kkmId: String, pin: String): OfdAuthInfoResponse =
         ofdSyncService.getOfdAuthInfo(kkmId, pin)
 
-    fun updateOfdToken(kkmId: String, pin: String, token: String): Boolean =
+    override fun updateOfdToken(kkmId: String, pin: String, token: String): Boolean =
         ofdSyncService.updateOfdToken(kkmId, pin, token)
 
-    fun checkOfdConnection(kkmId: String): OfdCommandResult =
+    override fun checkOfdConnection(kkmId: String): OfdCommandResult =
         ofdSyncService.checkOfdConnection(kkmId)
 
-    fun getOfdInfo(kkmId: String): OfdCommandResult =
+    override fun getOfdInfo(kkmId: String): OfdCommandResult =
         ofdSyncService.getOfdInfo(kkmId)
 
-    fun syncOfdServiceInfo(kkmId: String, pin: String): OfdCommandResult =
+    override fun syncOfdServiceInfo(kkmId: String, pin: String): OfdCommandResult =
         ofdSyncService.syncOfdServiceInfo(kkmId, pin)
 
-    fun syncOfdCounters(kkmId: String, pin: String): OfdCommandResult =
+    override fun syncOfdCounters(kkmId: String, pin: String): OfdCommandResult =
         ofdSyncService.syncOfdCounters(kkmId, pin)
 
     // Print & HTML & PDF delegates
-    fun getReceiptHtml(kkmId: String, documentId: String, pin: String): String =
+    override fun getReceiptHtml(kkmId: String, documentId: String, pin: String): String =
         kkmPrintService.getReceiptHtml(kkmId, documentId, pin)
 
-    fun getPrintHtml(
+    override fun getPrintHtml(
         kkmId: String,
         type: PrintDocumentType,
         documentId: String?,
@@ -205,7 +206,7 @@ class KkmService(
     ): String =
         kkmPrintService.getPrintHtml(kkmId, type, documentId, shiftId, pin)
 
-    fun getPrintPdf(
+    override fun getPrintPdf(
         kkmId: String,
         type: PrintDocumentType,
         documentId: String?,
@@ -215,26 +216,108 @@ class KkmService(
         kkmPrintService.getPrintPdf(kkmId, type, documentId, shiftId, pin)
 
     // Fiscal Operations / Receipt and Cash processing delegates
-    fun createReceipt(request: ReceiptRequest): ReceiptResult =
+    override fun createReceipt(request: ReceiptRequest): ReceiptResult =
         kkmDocumentProcessor.createReceipt(request)
 
-    fun cashIn(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult =
+    override fun createSellReceipt(kkmId: String, pin: String, request: ReceiptSellRequest): ReceiptResult {
+        val receiptRequest = ReceiptMapper.toReceiptRequest(
+            kkmId = kkmId,
+            pin = pin,
+            operation = ReceiptOperationType.SELL,
+            idempotencyKey = request.idempotencyKey,
+            items = request.items,
+            discountPercent = request.discountPercent,
+            discountSum = request.discountSum,
+            markupPercent = request.markupPercent,
+            markupSum = request.markupSum,
+            payments = request.payments,
+            taken = request.taken,
+            change = request.change,
+            defaultVatGroup = request.defaultVatGroup,
+            customerBin = request.customerBin
+        )
+        return createReceipt(receiptRequest)
+    }
+
+    override fun createSellReturnReceipt(kkmId: String, pin: String, request: ReceiptSellReturnRequest): ReceiptResult {
+        val receiptRequest = ReceiptMapper.toReceiptRequest(
+            kkmId = kkmId,
+            pin = pin,
+            operation = ReceiptOperationType.SELL_RETURN,
+            idempotencyKey = request.idempotencyKey,
+            items = request.items,
+            discountPercent = request.discountPercent,
+            discountSum = request.discountSum,
+            markupPercent = request.markupPercent,
+            markupSum = request.markupSum,
+            payments = request.payments,
+            taken = request.taken,
+            change = request.change,
+            parentTicket = request.parentTicket,
+            defaultVatGroup = request.defaultVatGroup,
+            customerBin = request.customerBin
+        )
+        return createReceipt(receiptRequest)
+    }
+
+    override fun createBuyReceipt(kkmId: String, pin: String, request: ReceiptBuyRequest): ReceiptResult {
+        val receiptRequest = ReceiptMapper.toReceiptRequest(
+            kkmId = kkmId,
+            pin = pin,
+            operation = ReceiptOperationType.BUY,
+            idempotencyKey = request.idempotencyKey,
+            items = request.items,
+            discountPercent = request.discountPercent,
+            discountSum = request.discountSum,
+            markupPercent = request.markupPercent,
+            markupSum = request.markupSum,
+            payments = request.payments,
+            taken = request.taken,
+            change = request.change,
+            defaultVatGroup = request.defaultVatGroup,
+            customerBin = request.customerBin
+        )
+        return createReceipt(receiptRequest)
+    }
+
+    override fun createBuyReturnReceipt(kkmId: String, pin: String, request: ReceiptBuyReturnRequest): ReceiptResult {
+        val receiptRequest = ReceiptMapper.toReceiptRequest(
+            kkmId = kkmId,
+            pin = pin,
+            operation = ReceiptOperationType.BUY_RETURN,
+            idempotencyKey = request.idempotencyKey,
+            items = request.items,
+            discountPercent = request.discountPercent,
+            discountSum = request.discountSum,
+            markupPercent = request.markupPercent,
+            markupSum = request.markupSum,
+            payments = request.payments,
+            taken = request.taken,
+            change = request.change,
+            parentTicket = request.parentTicket,
+            defaultVatGroup = request.defaultVatGroup,
+            customerBin = request.customerBin
+        )
+        return createReceipt(receiptRequest)
+    }
+
+    override fun cashIn(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult =
         kkmDocumentProcessor.cashIn(kkmId, pin, request)
 
-    fun cashOut(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult =
+    override fun cashOut(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult =
         kkmDocumentProcessor.cashOut(kkmId, pin, request)
 
-    fun retryReceiptDelivery(kkmId: String, documentId: String, pin: String): List<Pair<String, Boolean>> =
+    override fun retryReceiptDelivery(kkmId: String, documentId: String, pin: String): List<Pair<String, Boolean>> =
         kkmDocumentProcessor.retryReceiptDelivery(kkmId, documentId, pin)
 
     // Shift Info delegates
-    fun openShift(kkmId: String, pin: String): ShiftInfo =
+    override fun openShift(kkmId: String, pin: String): ShiftInfo =
         shiftService.openShift(kkmId, pin)
 
-    fun closeShift(kkmId: String, pin: String): ReportResult =
+    override fun closeShift(kkmId: String, pin: String): ReportResult =
         shiftService.closeShift(kkmId, pin)
 
-    fun getOpenShift(kkmId: String, pin: String): ShiftInfo {
+    override fun getOpenShift(kkmId: String, pin: String): ShiftInfo {
         kkmCommonHelper.ensureSystemTimeValid()
         val kkm = authorization.requireKkm(kkmId)
         requireOperational(kkm, allowExpiredShift = true)
@@ -243,7 +326,7 @@ class KkmService(
             ?: throw ConflictException(ErrorMessages.shiftNotOpen(), "SHIFT_NOT_OPEN")
     }
 
-    fun listShifts(
+    override fun listShifts(
         kkmId: String,
         limit: Int,
         offset: Int,
@@ -254,7 +337,7 @@ class KkmService(
         return storage.listShifts(kkmId, limit.coerceIn(1, 500), offset)
     }
 
-    fun listShiftDocuments(
+    override fun listShiftDocuments(
         kkmId: String,
         shiftId: String,
         limit: Int,
@@ -267,7 +350,7 @@ class KkmService(
         return storage.listFiscalDocumentsByShift(kkmId, shiftId, limit.coerceIn(1, 500), offset)
     }
 
-    fun listFiscalDocumentsByPeriod(
+    override fun listFiscalDocumentsByPeriod(
         kkmId: String,
         fromInclusive: Long,
         toExclusive: Long,
@@ -286,7 +369,7 @@ class KkmService(
         )
     }
 
-    fun createReport(kkmId: String, pin: String): ReportResult {
+    override fun createReport(kkmId: String, pin: String): ReportResult {
         return storage.inTransaction {
             val kkm = authorization.requireKkm(kkmId)
             requireOperational(kkm, allowExpiredShift = true)
