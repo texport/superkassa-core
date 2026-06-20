@@ -20,6 +20,8 @@ dependencies {
     implementation(libs.slf4j.api)
     implementation(libs.ofd.proto.codec)
     implementation(libs.ofd.network.client)
+    implementation(libs.superkassa.offline.queue)
+    implementation(libs.superkassa.delivery)
     
     implementation(libs.resilience4j)
     implementation(libs.jakarta.validation)

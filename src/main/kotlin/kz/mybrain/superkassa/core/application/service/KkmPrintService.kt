@@ -6,7 +6,6 @@ import kz.mybrain.superkassa.core.application.error.NotFoundException
 import kz.mybrain.superkassa.core.application.error.ValidationException
 import kz.mybrain.superkassa.core.application.model.PrintDocumentType
 import kz.mybrain.superkassa.core.application.policy.CounterScopes
-import kz.mybrain.superkassa.core.data.receipt.ReportPrintRenderer
 import kz.mybrain.superkassa.core.domain.model.ShiftInfo
 import kz.mybrain.superkassa.core.domain.model.UserRole
 import kz.mybrain.superkassa.core.domain.port.ClockPort
@@ -54,11 +53,11 @@ class KkmPrintService(
             PrintDocumentType.X_REPORT -> {
                 val shift = getOpenShift(kkmId, pin)
                 val counters = storage.loadCounters(kkmId, CounterScopes.SHIFT, shift.id)
-                ReportPrintRenderer.renderXReportHtml(shift, counters)
+                receiptRenderPort.renderXReportHtml(shift, counters)
             }
             PrintDocumentType.OPEN_SHIFT -> {
                 val shift = getOpenShift(kkmId, pin)
-                ReportPrintRenderer.renderOpenShiftHtml(shift)
+                receiptRenderPort.renderOpenShiftHtml(shift)
             }
             PrintDocumentType.CLOSE_SHIFT -> {
                 val sid = shiftId ?: throw ValidationException(ErrorMessages.badRequest(), "SHIFT_ID_REQUIRED")
@@ -66,7 +65,7 @@ class KkmPrintService(
                     ?: throw NotFoundException(ErrorMessages.documentNotFound(), "SHIFT_NOT_FOUND")
                 if (shift.kkmId != kkmId) throw NotFoundException(ErrorMessages.documentNotFound(), "SHIFT_NOT_FOUND")
                 val counters = storage.loadCounters(kkmId, CounterScopes.SHIFT, sid)
-                ReportPrintRenderer.renderCloseShiftHtml(shift, counters)
+                receiptRenderPort.renderCloseShiftHtml(shift, counters)
             }
         }
     }
@@ -88,7 +87,7 @@ class KkmPrintService(
         if (doc.cashboxId != kkmId) throw NotFoundException(ErrorMessages.documentNotFound(), "DOCUMENT_NOT_FOUND")
         return when (doc.docType) {
             "CHECK" -> getReceiptHtml(kkmId, documentId, pin)
-            "CASH_IN", "CASH_OUT" -> ReportPrintRenderer.renderCashOperationHtml(doc)
+            "CASH_IN", "CASH_OUT" -> receiptRenderPort.renderCashOperationHtml(doc)
             else -> throw NotFoundException(ErrorMessages.documentNotFound(), "DOCUMENT_NOT_FOUND")
         }
     }

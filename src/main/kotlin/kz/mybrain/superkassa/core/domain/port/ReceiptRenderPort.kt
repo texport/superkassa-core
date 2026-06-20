@@ -2,9 +2,10 @@ package kz.mybrain.superkassa.core.domain.port
 
 import kz.mybrain.superkassa.core.domain.model.FiscalDocumentSnapshot
 import kz.mybrain.superkassa.core.domain.model.ReceiptRequest
+import kz.mybrain.superkassa.core.domain.model.ShiftInfo
 
 /**
- * Порт рендеринга чека в HTML (для печати, PDF, доставки).
+ * Порт рендеринга чека и отчетов в HTML (для печати, PDF, доставки).
  */
 interface ReceiptRenderPort {
     /**
@@ -14,4 +15,12 @@ interface ReceiptRenderPort {
      * @return HTML-строка чека.
      */
     fun renderHtml(receipt: ReceiptRequest, doc: FiscalDocumentSnapshot): String
+
+    fun renderXReportHtml(shift: ShiftInfo, counters: Map<String, Long>): String
+
+    fun renderOpenShiftHtml(shift: ShiftInfo): String
+
+    fun renderCloseShiftHtml(shift: ShiftInfo, counters: Map<String, Long>): String
+
+    fun renderCashOperationHtml(doc: FiscalDocumentSnapshot): String
 }
