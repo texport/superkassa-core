@@ -25,8 +25,30 @@ import java.time.ZonedDateTime
  */
 class ZxReportBuilderIntegrationTest {
 
-    private val externalZxReportBuilder =
-        kz.mybrain.ofdcodec.ofd.kazakhtelecom.v203.codec.report.ZXReportBuilder()
+    private val ofdCodec = kz.mybrain.ofdcodec.application.OfdCodec(
+        kz.mybrain.ofdcodec.application.DefaultRegistry.create()
+    )
+
+    private fun buildServicePayload(now: Long): kotlinx.serialization.json.JsonObject {
+        val serviceInfo = kz.mybrain.superkassa.core.domain.model.OfdServiceInfo(
+            orgTitle = "Test Org",
+            orgAddress = "Test Address",
+            orgAddressKz = "Test Address KZ",
+            orgInn = "123456789012",
+            orgOkved = "47301",
+            geoLatitude = 1,
+            geoLongitude = 1,
+            geoSource = "TEST"
+        )
+        return OfdRequestFactory.buildServicePayload(
+            serviceInfo = serviceInfo,
+            registrationNumber = "RN-1",
+            factoryNumber = "FN-1",
+            systemId = "SYS-1",
+            offlineBeginMillis = now - 1_000,
+            offlineEndMillis = now
+        )
+    }
 
     @Test
     fun `zxReport for simple SELL shift is accepted by external ZXReportBuilder`() {
@@ -177,9 +199,19 @@ class ZxReportBuilderIntegrationTest {
             assertTrue(taxObj["operations"]!!.jsonArray.size == 4)
         }
 
-        // Если JSON невалиден по схеме v203, build бросит исключение.
-        val proto = externalZxReportBuilder.build(zxJson)
-        assertNotNull(proto)
+        val serviceBlock = buildServicePayload(now)
+        val reportRequestJson = OfdRequestFactory.buildReportRequest(
+            ofdId = "kazakhtelecom",
+            protocolVersion = "203",
+            deviceId = 201873L,
+            token = 208627316L,
+            reqNum = 1,
+            reportType = "REPORT_Z",
+            zxReport = zxInput,
+            serviceBlock = serviceBlock
+        )
+        val encodeResult = ofdCodec.encode(reportRequestJson)
+        assertTrue(encodeResult.isSuccess)
     }
 
     @Test
@@ -216,8 +248,19 @@ class ZxReportBuilderIntegrationTest {
 
         val zxJson = OfdRequestFactory.buildZxReportInternal(zxInput)
 
-        val proto = externalZxReportBuilder.build(zxJson)
-        assertNotNull(proto)
+        val serviceBlock = buildServicePayload(now)
+        val reportRequestJson = OfdRequestFactory.buildReportRequest(
+            ofdId = "kazakhtelecom",
+            protocolVersion = "203",
+            deviceId = 201873L,
+            token = 208627316L,
+            reqNum = 1,
+            reportType = "REPORT_Z",
+            zxReport = zxInput,
+            serviceBlock = serviceBlock
+        )
+        val encodeResult = ofdCodec.encode(reportRequestJson)
+        assertTrue(encodeResult.isSuccess)
 
         // Проверяем, что блок taxes содержит полный набор групп и операций,
         // а значения для VAT_16/SELL взяты из счётчиков.
@@ -298,9 +341,19 @@ class ZxReportBuilderIntegrationTest {
 
         val zxJson = OfdRequestFactory.buildZxReportInternal(zxInput)
 
-        // Если JSON невалиден по схеме v203, build бросит исключение.
-        val proto = externalZxReportBuilder.build(zxJson)
-        assertNotNull(proto)
+        val serviceBlock = buildServicePayload(now)
+        val reportRequestJson = OfdRequestFactory.buildReportRequest(
+            ofdId = "kazakhtelecom",
+            protocolVersion = "203",
+            deviceId = 201873L,
+            token = 208627316L,
+            reqNum = 1,
+            reportType = "REPORT_Z",
+            zxReport = zxInput,
+            serviceBlock = serviceBlock
+        )
+        val encodeResult = ofdCodec.encode(reportRequestJson)
+        assertTrue(encodeResult.isSuccess)
     }
 
     @Test
