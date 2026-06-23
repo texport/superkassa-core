@@ -57,13 +57,5 @@ object OfdCommonRequestHelper {
         return Money(bills, coins)
     }
 
-    fun taxTypeForGroup(group: VatGroup): String {
-        return when (group) {
-            VatGroup.NO_VAT -> "TAX_TYPE_NO_VAT"
-            VatGroup.VAT_0 -> "TAX_TYPE_VAT_0"
-            VatGroup.VAT_5 -> "TAX_TYPE_VAT_5"
-            VatGroup.VAT_10 -> "TAX_TYPE_VAT_10"
-            VatGroup.VAT_16 -> "TAX_TYPE_VAT_16"
-        }
-    }
+    fun taxTypeForGroup(group: VatGroup): String = group.taxTypeCode
 }

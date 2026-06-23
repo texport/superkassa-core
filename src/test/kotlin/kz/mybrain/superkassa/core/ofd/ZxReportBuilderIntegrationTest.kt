@@ -11,7 +11,6 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.long
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import java.time.Instant
 import java.time.ZoneId

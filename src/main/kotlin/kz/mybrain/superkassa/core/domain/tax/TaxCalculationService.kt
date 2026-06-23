@@ -60,13 +60,7 @@ class TaxCalculationService {
         val taxLines = mutableListOf<TaxLine>()
 
         itemsByGroup.forEach { (vatGroup, groupItems) ->
-            val percent = when (vatGroup) {
-                VatGroup.NO_VAT -> 0
-                VatGroup.VAT_0 -> 0
-                VatGroup.VAT_5 -> 5
-                VatGroup.VAT_10 -> 10
-                VatGroup.VAT_16 -> 16
-            }
+            val percent = vatGroup.percent
 
             if (percent > 0) {
                 val groupTotal = groupItems.sumOf { it.sum.bills.toDouble() + it.sum.coins / 100.0 }

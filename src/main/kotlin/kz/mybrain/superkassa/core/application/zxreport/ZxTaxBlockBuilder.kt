@@ -66,28 +66,12 @@ object ZxTaxBlockBuilder {
         return result
     }
 
-    private fun taxTypeCodeForGroup(group: VatGroup): String =
-        when (group) {
-            VatGroup.NO_VAT -> "TAX_TYPE_NO_VAT"
-            VatGroup.VAT_0 -> "TAX_TYPE_VAT_0"
-            VatGroup.VAT_5 -> "TAX_TYPE_VAT_5"
-            VatGroup.VAT_10 -> "TAX_TYPE_VAT_10"
-            VatGroup.VAT_16 -> "TAX_TYPE_VAT_16"
-        }
+    private fun taxTypeCodeForGroup(group: VatGroup): String = group.taxTypeCode
 
     private fun taxTypeEnumCodeForGroup(@Suppress("UNUSED_PARAMETER") group: VatGroup): Int =
         // По протоколу ZXReport::Tax.type (TaxTypeEnum) для НДС используем
         // единый тип 100.
         100
 
-    private fun percentForGroup(group: VatGroup): Int =
-        when (group) {
-            // Значения в тысячных долях: 12000 == 12.0%
-            VatGroup.NO_VAT -> 0          // не используется, но оставляем для полноты
-            VatGroup.VAT_0 -> 0
-            VatGroup.VAT_5 -> 5_000
-            VatGroup.VAT_10 -> 10_000
-            VatGroup.VAT_16 -> 16_000
-        }
+    private fun percentForGroup(group: VatGroup): Int = group.percentThousandths
 }
-

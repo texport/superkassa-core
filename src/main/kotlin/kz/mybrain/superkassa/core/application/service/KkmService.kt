@@ -15,6 +15,7 @@ import kz.mybrain.superkassa.core.application.model.UserResponse
 import kz.mybrain.superkassa.core.application.model.UserUpdateRequest
 import kz.mybrain.superkassa.core.domain.model.*
 import kz.mybrain.superkassa.core.domain.port.*
+import kz.mybrain.superkassa.core.application.model.VatRateResponse
 import kz.mybrain.superkassa.core.application.model.CoreSettings
 import kz.mybrain.superkassa.core.application.model.receipt.*
 
@@ -94,6 +95,9 @@ class KkmService(
         shiftService = shiftService,
         receiptDeliveryHelper = receiptDeliveryHelper
     )
+
+    override fun listVatRates(): List<VatRateResponse> =
+        VatGroup.entries.map { VatRateResponse.from(it) }
 
     // Registration & Initialization delegates
     override fun initKkm(pin: String, request: KkmInitDirectRequest): KkmInfo =

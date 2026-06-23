@@ -10,11 +10,13 @@ import kz.mybrain.superkassa.core.application.model.PrintDocumentType
 import kz.mybrain.superkassa.core.application.model.UserCreateRequest
 import kz.mybrain.superkassa.core.application.model.UserResponse
 import kz.mybrain.superkassa.core.application.model.UserUpdateRequest
+import kz.mybrain.superkassa.core.application.model.VatRateResponse
 import kz.mybrain.superkassa.core.application.model.receipt.*
 import kz.mybrain.superkassa.core.domain.model.*
 import kz.mybrain.superkassa.core.domain.model.OfdCommandResult
 
 interface SuperkassaApi {
+    fun listVatRates(): List<VatRateResponse>
     fun initKkm(pin: String, request: KkmInitDirectRequest): KkmInfo
     fun initKkmSimple(pin: String, request: KkmInitSimpleRequest): KkmInfo
     fun generateFactoryInfo(): FactoryNumberResponse

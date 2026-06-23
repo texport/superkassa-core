@@ -14,18 +14,9 @@ swagger = "2.2.51"
 superkassaOfflineQueue = "1.0"
 superkassaDelivery = "1.0"
 
-
-
-
 [libraries]
 # Logging
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
-
-# Database
-
-# Spring Boot
-
-# OpenAPI
 
 # Kotlin
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
@@ -34,20 +25,9 @@ kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 # Resilience4j
 resilience4j = { group = "io.github.resilience4j", name = "resilience4j-spring-boot4", version.ref = "resilience4j" }
 
-# PDF Rendering
-
-# QR Codes
-
-# Mail
-
-# Android Room
-
-# Android WorkManager
-
 # Validation & Swagger (lightweight APIs for core)
 jakarta-validation = { group = "jakarta.validation", name = "jakarta.validation-api", version.ref = "validation" }
 swagger-annotations = { group = "io.swagger.core.v3", name = "swagger-annotations-jakarta", version.ref = "swagger" }
-
 
 # Testing
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
@@ -56,9 +36,6 @@ ofd-proto-codec = { group = "io.github.texport", name = "ofd-proto-codec", versi
 ofd-network-client = { group = "io.github.texport", name = "ofd-network-client", version.ref = "ofdNetworkClient" }
 superkassa-offline-queue = { group = "kz.mybrain", name = "superkassa-offline-queue", version.ref = "superkassaOfflineQueue" }
 superkassa-delivery = { group = "kz.mybrain", name = "superkassa-delivery", version.ref = "superkassaDelivery" }
-
-
-
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

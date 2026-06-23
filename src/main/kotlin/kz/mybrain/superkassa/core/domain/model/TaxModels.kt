@@ -16,21 +16,17 @@ enum class TaxRegime {
     MIXED
 }
 
-/**
- * Налоговые группы НДС, поддерживаемые ККМ.
- *
- * NO_VAT - «Без НДС» (освобожденный оборот, операции вне системы НДС).
- * VAT_0  - «НДС 0%» (облагаемый оборот по нулевой ставке).
- * VAT_5  - «НДС 5%» (льготные операции, например, ряд медуслуг и лекарств с 2026 года).
- * VAT_10 - «НДС 10%» (льготные операции, включая часть печатных изданий и медуслуг).
- * VAT_16 - «НДС 16%» (базовая ставка согласно НК РК с 2026 года).
- */
 @Serializable
-enum class VatGroup {
-    NO_VAT,
-    VAT_0,
-    VAT_5,
-    VAT_10,
-    VAT_16
+enum class VatGroup(
+    val percent: Int,
+    val percentThousandths: Int,
+    val description: String,
+    val taxTypeCode: String
+) {
+    NO_VAT(0, 0, "Без НДС", "TAX_TYPE_NO_VAT"),
+    VAT_0(0, 0, "НДС 0%", "TAX_TYPE_VAT_0"),
+    VAT_5(5, 5_000, "НДС 5%", "TAX_TYPE_VAT_5"),
+    VAT_10(10, 10_000, "НДС 10%", "TAX_TYPE_VAT_10"),
+    VAT_16(16, 16_000, "НДС 16%", "TAX_TYPE_VAT_16")
 }
 
