@@ -27,7 +27,7 @@ data class KkmListParams(
     val sortOrder: String = "DESC"
 ) {
     init {
-        require(limit in 1..100) { "limit должен быть от 1 до 100" }
+        require(limit in 1..1000) { "limit должен быть от 1 до 1000" }
         require(offset >= 0) { "offset должен быть >= 0" }
         require(sortOrder in listOf("ASC", "DESC")) { "sortOrder должен быть ASC или DESC" }
         require(sortBy in listOf("createdAt", "updatedAt", "state", "registrationNumber")) {
