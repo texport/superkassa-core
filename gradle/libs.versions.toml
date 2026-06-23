@@ -13,6 +13,7 @@ validation = "3.1.1"
 swagger = "2.2.51"
 superkassaOfflineQueue = "1.0"
 superkassaDelivery = "1.0"
+superkassaTimeJava = "1.0.1"
 
 [libraries]
 # Logging
@@ -36,6 +37,7 @@ ofd-proto-codec = { group = "io.github.texport", name = "ofd-proto-codec", versi
 ofd-network-client = { group = "io.github.texport", name = "ofd-network-client", version.ref = "ofdNetworkClient" }
 superkassa-offline-queue = { group = "kz.mybrain", name = "superkassa-offline-queue", version.ref = "superkassaOfflineQueue" }
 superkassa-delivery = { group = "kz.mybrain", name = "superkassa-delivery", version.ref = "superkassaDelivery" }
+superkassa-time-java = { group = "io.github.texport", name = "superkassa-time-java", version.ref = "superkassaTimeJava" } # Resolved locally via composite build until published to Maven Central
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

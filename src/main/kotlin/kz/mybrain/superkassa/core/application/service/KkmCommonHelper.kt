@@ -27,7 +27,8 @@ class KkmCommonHelper(
     fun ensureSystemTimeValid() {
         val result = timeValidator.validate(clock)
         if (!result.ok) {
-            throw ValidationException(ErrorMessages.systemTimeInvalid(), "SYSTEM_TIME_INVALID")
+            val msg = result.trilingualMessage() ?: ErrorMessages.systemTimeInvalid()
+            throw ValidationException(msg, "SYSTEM_TIME_INVALID")
         }
     }
 

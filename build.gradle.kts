@@ -1,4 +1,5 @@
 plugins {
+    `java-library`
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
@@ -23,6 +24,7 @@ dependencies {
     implementation(libs.ofd.network.client)
     implementation(libs.superkassa.offline.queue)
     implementation(libs.superkassa.delivery)
+    api(libs.superkassa.time.java)
     
     implementation(libs.resilience4j)
     implementation(libs.jakarta.validation)
