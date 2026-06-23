@@ -35,7 +35,7 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 ofd-kt-proto = { group = "io.github.texport", name = "ofd-kt-proto", version.ref = "ofdKtProto" }
 ofd-proto-codec = { group = "io.github.texport", name = "ofd-proto-codec", version.ref = "ofdProtoCodec" }
 ofd-network-client = { group = "io.github.texport", name = "ofd-network-client", version.ref = "ofdNetworkClient" }
-superkassa-offline-queue = { group = "kz.mybrain", name = "superkassa-offline-queue", version.ref = "superkassaOfflineQueue" }
+superkassa-offline-queue = { group = "io.github.texport", name = "superkassa-offline-queue", version.ref = "superkassaOfflineQueue" }
 superkassa-delivery = { group = "kz.mybrain", name = "superkassa-delivery", version.ref = "superkassaDelivery" }
 superkassa-time-java = { group = "io.github.texport", name = "superkassa-time-java", version.ref = "superkassaTimeJava" } # Resolved from Maven Central
 
