@@ -60,6 +60,7 @@ class KkmService(
     )
 
     private val receiptDeliveryHelper = ReceiptDeliveryHelper(
+        storage = storage,
         delivery = delivery,
         coreSettings = coreSettings,
         documentConvertPort = documentConvertPort,
@@ -153,6 +154,13 @@ class KkmService(
         defaultVatGroup: VatGroup
     ): KkmInfo =
         kkmLifecycleService.updateTaxSettings(kkmId, pin, taxRegime, defaultVatGroup)
+
+    override fun updateBrandingSettings(
+        kkmId: String,
+        pin: String,
+        branding: ReceiptBranding
+    ): KkmInfo =
+        kkmLifecycleService.updateBrandingSettings(kkmId, pin, branding)
 
     override fun enterProgramming(kkmId: String, pin: String): KkmInfo =
         kkmLifecycleService.enterProgramming(kkmId, pin)

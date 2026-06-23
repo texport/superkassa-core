@@ -10,6 +10,7 @@ import kz.mybrain.superkassa.core.domain.model.KkmState
 import kz.mybrain.superkassa.core.domain.model.TaxRegime
 import kz.mybrain.superkassa.core.domain.model.UserRole
 import kz.mybrain.superkassa.core.domain.model.VatGroup
+import kz.mybrain.superkassa.core.domain.model.ReceiptBranding
 import kz.mybrain.superkassa.core.domain.port.ClockPort
 import kz.mybrain.superkassa.core.domain.port.OfflineQueuePort
 import kz.mybrain.superkassa.core.domain.port.StoragePort
@@ -105,6 +106,21 @@ class KkmLifecycleService(
             taxRegime = taxRegime,
             defaultVatGroup = defaultVatGroup
         )
+        storage.updateKkm(updated)
+        return updated
+    }
+
+    fun updateBrandingSettings(kkmId: String, pin: String, branding: ReceiptBranding): KkmInfo {
+        kkmCommonHelper.ensureSystemTimeValid()
+        authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN))
+        val kkm = authorization.requireKkm(kkmId)
+        if (kkm.state != KkmState.PROGRAMMING.name) {
+            throw ValidationException(
+                ErrorMessages.kkmSettingsRequiresProgramming(),
+                "KKM_BRANDING_SETTINGS_REQUIRES_PROGRAMMING"
+            )
+        }
+        val updated = kkm.copy(updatedAt = clock.now(), branding = branding)
         storage.updateKkm(updated)
         return updated
     }

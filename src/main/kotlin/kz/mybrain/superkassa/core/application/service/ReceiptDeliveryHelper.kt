@@ -9,11 +9,15 @@ import kz.mybrain.superkassa.core.domain.port.DocumentConvertPort
 import kz.mybrain.superkassa.core.domain.port.ReceiptRenderPort
 import kotlinx.serialization.json.JsonObject
 
+import kz.mybrain.superkassa.core.domain.port.StoragePort
+import kz.mybrain.superkassa.core.domain.model.ReceiptBranding
+
 /**
  * Вспомогательный класс для доставки и повторной отправки фискальных чеков
  * по различным каналам (печать, электронная почта, мессенджеры).
  */
 class ReceiptDeliveryHelper(
+    private val storage: StoragePort,
     private val delivery: DeliveryPort,
     private val coreSettings: CoreSettings,
     private val documentConvertPort: DocumentConvertPort,
@@ -27,7 +31,9 @@ class ReceiptDeliveryHelper(
         responseJson: JsonObject?,
         responseBin: ByteArray?
     ) {
-        val html = receiptRenderPort.renderHtml(receipt, docSnapshot)
+        val kkm = storage.findKkm(kkmId)
+        val branding = kkm?.branding ?: ReceiptBranding()
+        val html = receiptRenderPort.renderHtml(receipt, docSnapshot, branding)
         val receiptUrl = OfdResponseUtils.extractReceiptUrl(responseJson)
         val del = coreSettings.delivery
 
@@ -154,7 +160,9 @@ class ReceiptDeliveryHelper(
         receipt: ReceiptRequest,
         docSnapshot: FiscalDocumentSnapshot
     ): List<Pair<String, Boolean>> {
-        val html = receiptRenderPort.renderHtml(receipt, docSnapshot)
+        val kkm = storage.findKkm(kkmId)
+        val branding = kkm?.branding ?: ReceiptBranding()
+        val html = receiptRenderPort.renderHtml(receipt, docSnapshot, branding)
         val del = coreSettings.delivery ?: return emptyList()
         val results = mutableListOf<Pair<String, Boolean>>()
 

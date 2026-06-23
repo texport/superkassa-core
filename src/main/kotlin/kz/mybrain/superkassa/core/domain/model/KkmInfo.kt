@@ -34,5 +34,9 @@ data class KkmInfo(
     /**
      * Базовая группа НДС, применяемая по умолчанию к позициям без явной группы.
      */
-    val defaultVatGroup: VatGroup = VatGroup.NO_VAT
+    val defaultVatGroup: VatGroup = VatGroup.NO_VAT,
+    /**
+     * Настройки брендирования и локализации чеков.
+     */
+    val branding: ReceiptBranding = ReceiptBranding()
 )

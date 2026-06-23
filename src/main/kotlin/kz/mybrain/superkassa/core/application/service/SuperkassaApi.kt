@@ -26,6 +26,7 @@ interface SuperkassaApi {
     fun listCounters(kkmId: String, pin: String): List<CounterSnapshot>
     fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean): KkmInfo
     fun updateTaxSettings(kkmId: String, pin: String, taxRegime: TaxRegime, defaultVatGroup: VatGroup): KkmInfo
+    fun updateBrandingSettings(kkmId: String, pin: String, branding: ReceiptBranding): KkmInfo
     fun enterProgramming(kkmId: String, pin: String): KkmInfo
     fun exitProgramming(kkmId: String, pin: String): KkmInfo
 
