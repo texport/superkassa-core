@@ -68,7 +68,9 @@ data class ReceiptItemDto(
         allowableValues = ["NO_VAT", "VAT_0", "VAT_5", "VAT_10", "VAT_16"],
         example = "VAT_16"
     )
-    val vatGroup: String? = null
+    val vatGroup: String? = null,
+    @Schema(description = "Признак сторно (аннулирования) этой товарной позиции", example = "false")
+    val isStorno: Boolean? = false
 ) {
     init {
         require(discountPercent == null || discountSum == null) {

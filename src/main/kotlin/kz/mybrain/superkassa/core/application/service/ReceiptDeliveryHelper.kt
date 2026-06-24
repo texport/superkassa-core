@@ -31,9 +31,14 @@ class ReceiptDeliveryHelper(
         responseJson: JsonObject?,
         responseBin: ByteArray?
     ) {
-        val kkm = storage.findKkm(kkmId)
-        val branding = kkm?.branding ?: ReceiptBranding()
-        val html = receiptRenderPort.renderHtml(receipt, docSnapshot, branding)
+        val kkm = storage.findKkm(kkmId) ?: kz.mybrain.superkassa.core.domain.model.KkmInfo(
+            id = kkmId,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis(),
+            mode = "ACTIVE",
+            state = "ACTIVE"
+        )
+        val html = receiptRenderPort.renderHtml(receipt, docSnapshot, kkm)
         val receiptUrl = OfdResponseUtils.extractReceiptUrl(responseJson)
         val del = coreSettings.delivery
 
@@ -160,9 +165,14 @@ class ReceiptDeliveryHelper(
         receipt: ReceiptRequest,
         docSnapshot: FiscalDocumentSnapshot
     ): List<Pair<String, Boolean>> {
-        val kkm = storage.findKkm(kkmId)
-        val branding = kkm?.branding ?: ReceiptBranding()
-        val html = receiptRenderPort.renderHtml(receipt, docSnapshot, branding)
+        val kkm = storage.findKkm(kkmId) ?: kz.mybrain.superkassa.core.domain.model.KkmInfo(
+            id = kkmId,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis(),
+            mode = "ACTIVE",
+            state = "ACTIVE"
+        )
+        val html = receiptRenderPort.renderHtml(receipt, docSnapshot, kkm)
         val del = coreSettings.delivery ?: return emptyList()
         val results = mutableListOf<Pair<String, Boolean>>()
 

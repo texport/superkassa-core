@@ -231,20 +231,25 @@ object OfdReportRequestBuilder {
                                 put("ticketsTotalCount", JsonPrimitive(t.ticketsTotalCount.toInt()))
                                 put("ticketsCount", JsonPrimitive(t.ticketsCount.toInt()))
                                 put("ticketsSum", OfdCommonRequestHelper.moneyObject(t.ticketsSumBills, 0))
-                                put(
-                                    "payments",
-                                    buildJsonArray {
-                                        t.payments.forEach { p ->
-                                            add(
-                                                buildJsonObject {
-                                                    put("payment", JsonPrimitive(p.payment))
-                                                    put("sum", OfdCommonRequestHelper.moneyObject(p.sumBills, 0))
-                                                    put("count", JsonPrimitive(p.count.toInt()))
-                                                }
-                                            )
-                                        }
-                                    }
-                                )
+                                 put(
+                                     "payments",
+                                     buildJsonArray {
+                                         val grouped = t.payments.groupBy {
+                                             if (it.payment == "PAYMENT_ELECTRONIC") "PAYMENT_CARD" else it.payment
+                                         }
+                                         grouped.forEach { (pay, list) ->
+                                             val totalSum = list.sumOf { it.sumBills }
+                                             val totalCount = list.sumOf { it.count }
+                                             add(
+                                                 buildJsonObject {
+                                                     put("payment", JsonPrimitive(pay))
+                                                     put("sum", OfdCommonRequestHelper.moneyObject(totalSum, 0))
+                                                     put("count", JsonPrimitive(totalCount.toInt()))
+                                                 }
+                                             )
+                                         }
+                                     }
+                                 )
                                 put("offlineCount", JsonPrimitive(t.offlineCount.toInt()))
                                 put("discountSum", OfdCommonRequestHelper.moneyObject(t.discountSumBills, 0))
                                 put("markupSum", OfdCommonRequestHelper.moneyObject(t.markupSumBills, 0))

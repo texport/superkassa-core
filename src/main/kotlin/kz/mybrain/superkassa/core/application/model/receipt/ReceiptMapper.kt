@@ -66,7 +66,8 @@ object ReceiptMapper {
             markup = itemMarkup,
             measureUnitCode = measureUnitCode,
             listExciseStamp = dto.listExciseStamp?.takeIf { it.isNotEmpty() },
-            ntin = dto.ntin?.takeIf { it.isNotBlank() }
+            ntin = dto.ntin?.takeIf { it.isNotBlank() },
+            isStorno = dto.isStorno ?: false
         )
     }
 
@@ -113,6 +114,12 @@ object ReceiptMapper {
         defaultVatGroup: String? = null,
         customerBin: String? = null
     ): ReceiptRequest {
+        if ((operation == ReceiptOperationType.SELL_RETURN || operation == ReceiptOperationType.BUY_RETURN) && parentTicket == null) {
+            throw ValidationException(
+                "Чек-основание (parentTicket) обязателен при возврате",
+                "PARENT_TICKET_REQUIRED"
+            )
+        }
         val receiptItems = items.map { toReceiptItem(it) }
         val hasItemDiscounts = receiptItems.any { it.discount != null }
         val hasReceiptDiscount = discountPercent != null || discountSum != null

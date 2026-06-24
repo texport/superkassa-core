@@ -57,5 +57,6 @@ object OfdCommonRequestHelper {
         return Money(bills, coins)
     }
 
-    fun taxTypeForGroup(group: VatGroup): String = group.taxTypeCode
+    fun taxTypeForGroup(group: VatGroup): Int = 100
 }
+

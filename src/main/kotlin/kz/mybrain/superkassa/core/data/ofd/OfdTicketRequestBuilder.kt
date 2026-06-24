@@ -62,16 +62,14 @@ object OfdTicketRequestBuilder {
                             put(
                                 "items",
                                 buildJsonArray {
-                                    val (itemType, itemField) = when (request.operation) {
-                                        ReceiptOperationType.SELL,
-                                        ReceiptOperationType.BUY -> "ITEM_TYPE_COMMODITY" to "commodity"
-                                        ReceiptOperationType.SELL_RETURN,
-                                        ReceiptOperationType.BUY_RETURN -> "ITEM_TYPE_STORNO_COMMODITY" to "stornoCommodity"
-                                    }
-
                                     val taxService = TaxCalculationService()
 
                                     request.items.forEach { item ->
+                                        val (itemType, itemField) = if (item.isStorno) {
+                                            "ITEM_TYPE_STORNO_COMMODITY" to "stornoCommodity"
+                                        } else {
+                                            "ITEM_TYPE_COMMODITY" to "commodity"
+                                        }
                                         add(
                                             buildJsonObject {
                                                 put("type", JsonPrimitive(itemType))
@@ -139,10 +137,6 @@ object OfdTicketRequestBuilder {
                                                                                             line.vatGroup
                                                                                         )
                                                                                     )
-                                                                                )
-                                                                                put(
-                                                                                    "taxationType",
-                                                                                    JsonPrimitive("TAXATION_TYPE_COMMON")
                                                                                 )
                                                                                 put(
                                                                                     "percent",
@@ -241,22 +235,24 @@ object OfdTicketRequestBuilder {
                             put(
                                 "payments",
                                 buildJsonArray {
-                                    request.payments.forEach { payment ->
-                                        val paymentType = when (payment.type) {
+                                    val groupedPayments = request.payments.groupBy {
+                                        when (it.type) {
                                             PaymentType.CASH -> "PAYMENT_CASH"
                                             PaymentType.CARD -> "PAYMENT_CARD"
-                                            PaymentType.ELECTRONIC -> "PAYMENT_ELECTRONIC"
+                                            PaymentType.ELECTRONIC -> "PAYMENT_CARD" // Map ELECTRONIC to CARD for OFD
+                                        }
+                                    }
+                                    groupedPayments.forEach { (payType, paymentList) ->
+                                        var totalBills = paymentList.sumOf { it.sum.bills }
+                                        var totalCoins = paymentList.sumOf { it.sum.coins }
+                                        if (totalCoins >= 100) {
+                                            totalBills += totalCoins / 100
+                                            totalCoins %= 100
                                         }
                                         add(
                                             buildJsonObject {
-                                                put("type", JsonPrimitive(paymentType))
-                                                put(
-                                                    "sum",
-                                                    OfdCommonRequestHelper.moneyObject(
-                                                        payment.sum.bills,
-                                                        payment.sum.coins
-                                                    )
-                                                )
+                                                put("type", JsonPrimitive(payType))
+                                                put("sum", OfdCommonRequestHelper.moneyObject(totalBills, totalCoins.toInt()))
                                             }
                                         )
                                     }
@@ -280,7 +276,14 @@ object OfdTicketRequestBuilder {
                                             taken.coins
                                         )
                                     )
-                                    // Сдачу в чеке в ОФД не передаём; при необходимости считается на кассе
+                                    val change = request.change ?: Money(0, 0)
+                                    put(
+                                        "change",
+                                        OfdCommonRequestHelper.moneyObject(
+                                            change.bills,
+                                            change.coins
+                                        )
+                                    )
 
                                     discountMoney?.let { m ->
                                         put(

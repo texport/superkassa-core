@@ -22,5 +22,7 @@ data class ReceiptItem(
         /** Список акцизных марок (протокол ОФД list_excise_stamp). */
         val listExciseStamp: List<String>? = null,
         /** НТИН (протокол ОФД ntin). */
-        val ntin: String? = null
+        val ntin: String? = null,
+        /** Признак сторнированной позиции. */
+        val isStorno: Boolean = false
 )

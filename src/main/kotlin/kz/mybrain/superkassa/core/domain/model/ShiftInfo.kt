@@ -12,5 +12,7 @@ data class ShiftInfo(
     val shiftNo: Long,
     val status: ShiftStatus,
     val openedAt: Long,
-    val closedAt: Long? = null
+    val closedAt: Long? = null,
+    val openDocumentId: String? = null,
+    val closeDocumentId: String? = null
 )

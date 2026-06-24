@@ -45,6 +45,6 @@ object ZxTicketOperationsBlockBuilder {
         listOf("OPERATION_SELL", "OPERATION_SELL_RETURN", "OPERATION_BUY", "OPERATION_BUY_RETURN")
 
     private fun paymentTypes(): List<String> =
-        listOf("PAYMENT_CASH", "PAYMENT_CARD", "PAYMENT_CREDIT", "PAYMENT_TARE", "PAYMENT_MOBILE")
+        listOf("PAYMENT_CASH", "PAYMENT_CARD", "PAYMENT_CREDIT", "PAYMENT_TARE", "PAYMENT_MOBILE", "PAYMENT_ELECTRONIC")
 }
 

@@ -1,6 +1,7 @@
 package kz.mybrain.superkassa.core.application.model
 
 import kotlinx.serialization.Serializable
+import kz.mybrain.superkassa.core.domain.model.OfdProviderConfig
 
 /**
  * Конфигурация ядра, фиксируется при инициализации.
@@ -18,7 +19,8 @@ data class CoreSettings(
     /** Интервал задержки между попытками восстановления связи (протокол ОФД п. 5), не менее 60 сек. */
     val ofdReconnectIntervalSeconds: Long = 60L,
     /** Настройки доставки чеков (печать, каналы, форматы). */
-    val delivery: DeliverySettings? = null
+    val delivery: DeliverySettings? = null,
+    val ofdProviders: Map<String, OfdProviderConfig>? = null
 )
 
 @Serializable

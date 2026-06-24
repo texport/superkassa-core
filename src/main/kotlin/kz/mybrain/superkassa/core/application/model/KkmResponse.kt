@@ -59,5 +59,7 @@ data class KkmResponse(
                 description = "Базовая группа НДС по умолчанию (NO_VAT, VAT_0, VAT_16)",
                 example = "NO_VAT"
         )
-        val defaultVatGroup: String? = null
+        val defaultVatGroup: String? = null,
+        @Schema(description = "Настройки брендирования чеков")
+        val branding: kz.mybrain.superkassa.core.domain.model.ReceiptBranding? = null
 )

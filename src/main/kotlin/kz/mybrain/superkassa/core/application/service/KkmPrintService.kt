@@ -34,7 +34,7 @@ class KkmPrintService(
         if (snapshot.cashboxId != kkmId) {
             throw NotFoundException(ErrorMessages.documentNotFound(), "DOCUMENT_NOT_FOUND")
         }
-        return receiptRenderPort.renderHtml(receipt, snapshot, kkm.branding)
+        return receiptRenderPort.renderHtml(receipt, snapshot, kkm)
     }
 
     fun getPrintHtml(
@@ -54,11 +54,20 @@ class KkmPrintService(
             PrintDocumentType.X_REPORT -> {
                 val shift = getOpenShift(kkmId, pin)
                 val counters = storage.loadCounters(kkmId, CounterScopes.SHIFT, shift.id)
-                receiptRenderPort.renderXReportHtml(shift, counters, kkm.branding)
+                receiptRenderPort.renderXReportHtml(shift, counters, kkm, null)
             }
             PrintDocumentType.OPEN_SHIFT -> {
                 val shift = getOpenShift(kkmId, pin)
-                receiptRenderPort.renderOpenShiftHtml(shift, kkm.branding)
+                val ofdStatus = shift.openDocumentId?.let { docId ->
+                    val queueTasks = storage.listQueueTasksByCashbox(kkmId, "OFFLINE", 100)
+                    val task = queueTasks.firstOrNull { it.payloadRef == docId }
+                    if (task != null) {
+                        if (task.status == "SENT") "DELIVERED" else "OFFLINE"
+                    } else {
+                        "DELIVERED"
+                    }
+                } ?: "DELIVERED"
+                receiptRenderPort.renderOpenShiftHtml(shift, kkm, ofdStatus)
             }
             PrintDocumentType.CLOSE_SHIFT -> {
                 val sid = shiftId ?: throw ValidationException(ErrorMessages.badRequest(), "SHIFT_ID_REQUIRED")
@@ -66,7 +75,16 @@ class KkmPrintService(
                     ?: throw NotFoundException(ErrorMessages.documentNotFound(), "SHIFT_NOT_FOUND")
                 if (shift.kkmId != kkmId) throw NotFoundException(ErrorMessages.documentNotFound(), "SHIFT_NOT_FOUND")
                 val counters = storage.loadCounters(kkmId, CounterScopes.SHIFT, sid)
-                receiptRenderPort.renderCloseShiftHtml(shift, counters, kkm.branding)
+                val ofdStatus = shift.closeDocumentId?.let { docId ->
+                    val queueTasks = storage.listQueueTasksByCashbox(kkmId, "OFFLINE", 100)
+                    val task = queueTasks.firstOrNull { it.payloadRef == docId }
+                    if (task != null) {
+                        if (task.status == "SENT") "DELIVERED" else "OFFLINE"
+                    } else {
+                        "DELIVERED"
+                    }
+                } ?: "DELIVERED"
+                receiptRenderPort.renderCloseShiftHtml(shift, counters, kkm, ofdStatus)
             }
         }
     }
@@ -88,7 +106,7 @@ class KkmPrintService(
         if (doc.cashboxId != kkm.id) throw NotFoundException(ErrorMessages.documentNotFound(), "DOCUMENT_NOT_FOUND")
         return when (doc.docType) {
             "CHECK" -> getReceiptHtml(kkm.id, documentId, pin)
-            "CASH_IN", "CASH_OUT" -> receiptRenderPort.renderCashOperationHtml(doc, kkm.branding)
+            "CASH_IN", "CASH_OUT" -> receiptRenderPort.renderCashOperationHtml(doc, kkm)
             else -> throw NotFoundException(ErrorMessages.documentNotFound(), "DOCUMENT_NOT_FOUND")
         }
     }

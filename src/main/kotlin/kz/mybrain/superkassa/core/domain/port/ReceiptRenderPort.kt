@@ -4,6 +4,7 @@ import kz.mybrain.superkassa.core.domain.model.FiscalDocumentSnapshot
 import kz.mybrain.superkassa.core.domain.model.ReceiptRequest
 import kz.mybrain.superkassa.core.domain.model.ShiftInfo
 import kz.mybrain.superkassa.core.domain.model.ReceiptBranding
+import kz.mybrain.superkassa.core.domain.model.KkmInfo
 
 /**
  * Порт рендеринга чека и отчетов в HTML (для печати, PDF, доставки).
@@ -18,28 +19,35 @@ interface ReceiptRenderPort {
     fun renderHtml(
         receipt: ReceiptRequest,
         doc: FiscalDocumentSnapshot,
-        config: ReceiptBranding = ReceiptBranding()
+        kkm: KkmInfo
     ): String
 
     fun renderXReportHtml(
         shift: ShiftInfo,
         counters: Map<String, Long>,
-        config: ReceiptBranding = ReceiptBranding()
+        kkm: KkmInfo,
+        ofdStatus: String?
     ): String
 
     fun renderOpenShiftHtml(
         shift: ShiftInfo,
-        config: ReceiptBranding = ReceiptBranding()
+        kkm: KkmInfo,
+        ofdStatus: String?
     ): String
 
     fun renderCloseShiftHtml(
         shift: ShiftInfo,
         counters: Map<String, Long>,
-        config: ReceiptBranding = ReceiptBranding()
+        kkm: KkmInfo,
+        ofdStatus: String?
     ): String
 
     fun renderCashOperationHtml(
         doc: FiscalDocumentSnapshot,
-        config: ReceiptBranding = ReceiptBranding()
+        kkm: KkmInfo
+    ): String
+
+    fun renderPreviewHtml(
+        branding: ReceiptBranding
     ): String
 }
