@@ -9,5 +9,6 @@ import kotlinx.serialization.Serializable
 enum class PaymentType {
     CASH,
     CARD,
-    ELECTRONIC
+    ELECTRONIC,
+    MOBILE
 }

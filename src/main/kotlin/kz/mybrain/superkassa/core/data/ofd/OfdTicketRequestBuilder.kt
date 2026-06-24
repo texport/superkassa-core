@@ -240,6 +240,7 @@ object OfdTicketRequestBuilder {
                                             PaymentType.CASH -> "PAYMENT_CASH"
                                             PaymentType.CARD -> "PAYMENT_CARD"
                                             PaymentType.ELECTRONIC -> "PAYMENT_CARD" // Map ELECTRONIC to CARD for OFD
+                                            PaymentType.MOBILE -> "PAYMENT_MOBILE"
                                         }
                                     }
                                     groupedPayments.forEach { (payType, paymentList) ->

@@ -150,6 +150,7 @@ class ShiftCountersRecalculator(
                 PaymentType.CASH -> "PAYMENT_CASH"
                 PaymentType.CARD -> "PAYMENT_CARD"
                 PaymentType.ELECTRONIC -> "PAYMENT_ELECTRONIC"
+                PaymentType.MOBILE -> "PAYMENT_MOBILE"
             }
             increment(
                 counters,
