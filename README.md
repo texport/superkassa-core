@@ -1,5 +1,10 @@
 # Модуль :superkassa-core
 
+[![CI Build](https://github.com/texport/superkassa-server/actions/workflows/ci.yml/badge.svg)](https://github.com/texport/superkassa-server/actions)
+[![Coverage](https://img.shields.io/badge/coverage-44%25-orange.svg)]()
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
+
 ## Назначение
 Этот модуль является ядром (Domain + Application) системы ККМ Superkassa. Он содержит ключевые бизнес-правила и логику работы кассового аппарата, полностью изолированные от внешних зависимостей (Spring, Android SDK, базы данных и т.д.).
 

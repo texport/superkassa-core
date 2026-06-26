@@ -2,9 +2,9 @@ package kz.mybrain.superkassa.core.data.adapter
 
 import kz.mybrain.superkassa.core.domain.model.DeliveryRequest as CoreDeliveryRequest
 import kz.mybrain.superkassa.core.domain.port.DeliveryPort
-import kz.mybrain.superkassa.delivery.application.service.DeliveryService
-import kz.mybrain.superkassa.delivery.domain.model.DeliveryChannel
-import kz.mybrain.superkassa.delivery.domain.model.DeliveryRequest
+import io.github.texport.superkassa.delivery.application.service.DeliveryService
+import io.github.texport.superkassa.delivery.domain.model.DeliveryChannel
+import io.github.texport.superkassa.delivery.domain.model.DeliveryRequest
 import org.slf4j.LoggerFactory
 
 /**
