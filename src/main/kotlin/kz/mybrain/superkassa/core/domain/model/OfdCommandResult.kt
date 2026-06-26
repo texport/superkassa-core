@@ -19,4 +19,3 @@ data class OfdCommandResult(
     val autonomousSign: String? = null,
     val errorMessage: String? = null
 )
-

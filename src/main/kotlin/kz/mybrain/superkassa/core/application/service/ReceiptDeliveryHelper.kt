@@ -10,7 +10,6 @@ import kz.mybrain.superkassa.core.domain.port.ReceiptRenderPort
 import kotlinx.serialization.json.JsonObject
 
 import kz.mybrain.superkassa.core.domain.port.StoragePort
-import kz.mybrain.superkassa.core.domain.model.ReceiptBranding
 
 /**
  * Вспомогательный класс для доставки и повторной отправки фискальных чеков

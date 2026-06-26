@@ -32,6 +32,7 @@ swagger-annotations = { group = "io.swagger.core.v3", name = "swagger-annotation
 
 # Testing
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
 ofd-kt-proto = { group = "io.github.texport", name = "ofd-kt-proto", version.ref = "ofdKtProto" }
 ofd-proto-codec = { group = "io.github.texport", name = "ofd-proto-codec", version.ref = "ofdProtoCodec" }
 ofd-network-client = { group = "io.github.texport", name = "ofd-network-client", version.ref = "ofdNetworkClient" }

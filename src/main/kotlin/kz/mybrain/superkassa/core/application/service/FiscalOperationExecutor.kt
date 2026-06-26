@@ -47,7 +47,15 @@ class FiscalOperationExecutor(
         checkShift: () -> String, // Возвращает shiftId
         saveOperation: (String, Long, String) -> Unit, // documentId, now, shiftId
         sendOfdCommand: (KkmInfo, String) -> OfdCommandResult, // kkm, documentId -> result
-        processResult: (KkmInfo, String, String, OfdCommandResult, OfdCommandType, Long, Pair<ReceiptRequest, String>?) -> Unit,
+        processResult: (
+            KkmInfo,
+            String,
+            String,
+            OfdCommandResult,
+            OfdCommandType,
+            Long,
+            Pair<ReceiptRequest, String>?
+        ) -> Unit,
         buildResult: (String, OfdCommandResult, DeliveryStatus) -> T,
         receiptContextProvider: ((String) -> Pair<ReceiptRequest, String>?)? = null
     ): T {

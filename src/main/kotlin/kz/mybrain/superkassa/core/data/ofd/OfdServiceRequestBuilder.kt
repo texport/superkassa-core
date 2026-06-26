@@ -81,8 +81,12 @@ object OfdServiceRequestBuilder {
         serviceInfo: OfdServiceInfo
     ): JsonObject {
         val servicePayload = buildServicePayload(
-            serviceInfo, registrationNumber, factoryNumber, systemId,
-            offlineBeginMillis, offlineEndMillis
+            serviceInfo,
+            registrationNumber,
+            factoryNumber,
+            systemId,
+            offlineBeginMillis,
+            offlineEndMillis
         )
         return buildJsonObject {
             put("ofdId", JsonPrimitive(ofdId))

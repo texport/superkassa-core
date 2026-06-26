@@ -41,7 +41,7 @@ data class ReceiptSellRequest(
     val change: Double? = null,
     @Schema(
         description = "Группа НДС на весь чек. Если не указана — используется настройка ККМ (defaultVatGroup). " +
-                "Допустимые значения: NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16. Отдельная позиция может переопределить через vatGroup.",
+            "Допустимые значения: NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16. Отдельная позиция может переопределить через vatGroup.",
         example = "NO_VAT"
     )
     val defaultVatGroup: String? = null,

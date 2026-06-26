@@ -34,7 +34,10 @@ data class ReceiptSellReturnRequest(
     val discountSum: Double? = null,
     @Schema(description = "Сдача (в тенге, опционально)", example = "499.25")
     val change: Double? = null,
-    @Schema(description = "Группа НДС на весь чек. Если не указана — используется настройка ККМ. NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16.", example = "NO_VAT")
+    @Schema(
+        description = "Группа НДС на весь чек. Если не указана — используется настройка ККМ. NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16.",
+        example = "NO_VAT"
+    )
     val defaultVatGroup: String? = null,
     @Schema(description = "Способы оплаты. Допустимые типы: CASH, CARD, ELECTRONIC.")
     @field:NotEmpty(message = "Укажите хотя бы один способ оплаты")

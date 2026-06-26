@@ -8,4 +8,3 @@ enum class OfdCommandStatus {
     FAILED,
     TIMEOUT
 }
-

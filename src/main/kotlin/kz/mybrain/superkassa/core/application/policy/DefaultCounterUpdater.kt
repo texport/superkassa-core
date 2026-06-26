@@ -28,7 +28,13 @@ class DefaultCounterUpdater(
 
         increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.OPERATION_COUNT.format(operationKey), 1)
         increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.OPERATION_SUM.format(operationKey), sumValue)
-        increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.DISCOUNT_SUM.format(operationKey), discountBills)
+        increment(
+            kkmId,
+            CounterScopes.SHIFT,
+            shiftId,
+            CounterKeyFormats.DISCOUNT_SUM.format(operationKey),
+            discountBills
+        )
         increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.MARKUP_SUM.format(operationKey), markupBills)
 
         // Секционные счётчики по позициям чека.
@@ -53,12 +59,36 @@ class DefaultCounterUpdater(
         increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.TICKET_TOTAL_COUNT.format(operationKey), 1)
         increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.TICKET_COUNT.format(operationKey), 1)
         increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.TICKET_SUM.format(operationKey), sumValue)
-        increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey), discountBills)
-        increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey), markupBills)
-        increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.TICKET_CHANGE_SUM.format(operationKey), changeBills)
+        increment(
+            kkmId,
+            CounterScopes.SHIFT,
+            shiftId,
+            CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey),
+            discountBills
+        )
+        increment(
+            kkmId,
+            CounterScopes.SHIFT,
+            shiftId,
+            CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey),
+            markupBills
+        )
+        increment(
+            kkmId,
+            CounterScopes.SHIFT,
+            shiftId,
+            CounterKeyFormats.TICKET_CHANGE_SUM.format(operationKey),
+            changeBills
+        )
 
         if (isOffline) {
-            increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.TICKET_OFFLINE_COUNT.format(operationKey), 1)
+            increment(
+                kkmId,
+                CounterScopes.SHIFT,
+                shiftId,
+                CounterKeyFormats.TICKET_OFFLINE_COUNT.format(operationKey),
+                1
+            )
         }
 
         // Необнуляемые суммы: глобальные и по смене.
@@ -73,8 +103,20 @@ class DefaultCounterUpdater(
         // Платежи по типам.
         request.payments.forEach { payment ->
             val payKey = paymentKey(payment.type)
-            increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.PAYMENT_SUM.format(operationKey, payKey), payment.sum.bills)
-            increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.PAYMENT_COUNT.format(operationKey, payKey), 1)
+            increment(
+                kkmId,
+                CounterScopes.SHIFT,
+                shiftId,
+                CounterKeyFormats.PAYMENT_SUM.format(operationKey, payKey),
+                payment.sum.bills
+            )
+            increment(
+                kkmId,
+                CounterScopes.SHIFT,
+                shiftId,
+                CounterKeyFormats.PAYMENT_COUNT.format(operationKey, payKey),
+                1
+            )
         }
 
         // Кассовая сумма (наличные) и выручка по смене.
@@ -90,7 +132,13 @@ class DefaultCounterUpdater(
             val currentRevenue = storage.loadCounters(kkmId, CounterScopes.SHIFT, shiftId)[CounterKeyFormats.REVENUE_SUM] ?: 0L
             val newRevenue = currentRevenue + revenueDelta
             storage.upsertCounter(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.REVENUE_SUM, newRevenue)
-            storage.upsertCounter(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.REVENUE_IS_NEGATIVE, if (newRevenue < 0) 1 else 0)
+            storage.upsertCounter(
+                kkmId,
+                CounterScopes.SHIFT,
+                shiftId,
+                CounterKeyFormats.REVENUE_IS_NEGATIVE,
+                if (newRevenue < 0) 1 else 0
+            )
         }
 
         // Налоговые счетчики (по данным чека).
@@ -103,10 +151,28 @@ class DefaultCounterUpdater(
         taxResult.ticketTaxes.forEach { line ->
             val taxKey = line.vatGroup.name
             val opKey = operationKey
-            increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.TAX_TURNOVER.format(taxKey, opKey), line.taxBase.bills)
-            increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.TAX_SUM.format(taxKey, opKey), line.taxSum.bills)
+            increment(
+                kkmId,
+                CounterScopes.SHIFT,
+                shiftId,
+                CounterKeyFormats.TAX_TURNOVER.format(taxKey, opKey),
+                line.taxBase.bills
+            )
+            increment(
+                kkmId,
+                CounterScopes.SHIFT,
+                shiftId,
+                CounterKeyFormats.TAX_SUM.format(taxKey, opKey),
+                line.taxSum.bills
+            )
             val turnoverWithoutTax = line.taxBase.bills - line.taxSum.bills
-            increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.TAX_TURNOVER_NO_TAX.format(taxKey, opKey), turnoverWithoutTax)
+            increment(
+                kkmId,
+                CounterScopes.SHIFT,
+                shiftId,
+                CounterKeyFormats.TAX_TURNOVER_NO_TAX.format(taxKey, opKey),
+                turnoverWithoutTax
+            )
         }
 
         // Глобальные счетчики (агрегаты по кассе).
@@ -137,17 +203,47 @@ class DefaultCounterUpdater(
         increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.TICKET_TOTAL_COUNT.format(operationKey), 1)
         increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.TICKET_COUNT.format(operationKey), 1)
         increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.TICKET_SUM.format(operationKey), sumValue)
-        increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey), discountBills)
-        increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey), markupBills)
-        increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.TICKET_CHANGE_SUM.format(operationKey), changeBills)
+        increment(
+            kkmId,
+            CounterScopes.GLOBAL,
+            null,
+            CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey),
+            discountBills
+        )
+        increment(
+            kkmId,
+            CounterScopes.GLOBAL,
+            null,
+            CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey),
+            markupBills
+        )
+        increment(
+            kkmId,
+            CounterScopes.GLOBAL,
+            null,
+            CounterKeyFormats.TICKET_CHANGE_SUM.format(operationKey),
+            changeBills
+        )
         if (isOffline) {
             increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.TICKET_OFFLINE_COUNT.format(operationKey), 1)
         }
 
         request.payments.forEach { payment ->
             val payKey = paymentKey(payment.type)
-            increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.PAYMENT_SUM.format(operationKey, payKey), payment.sum.bills)
-            increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.PAYMENT_COUNT.format(operationKey, payKey), 1)
+            increment(
+                kkmId,
+                CounterScopes.GLOBAL,
+                null,
+                CounterKeyFormats.PAYMENT_SUM.format(operationKey, payKey),
+                payment.sum.bills
+            )
+            increment(
+                kkmId,
+                CounterScopes.GLOBAL,
+                null,
+                CounterKeyFormats.PAYMENT_COUNT.format(operationKey, payKey),
+                1
+            )
         }
 
         if (cashBills != 0L) {
@@ -157,7 +253,13 @@ class DefaultCounterUpdater(
             val currentRevenue = storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[CounterKeyFormats.REVENUE_SUM] ?: 0L
             val newRevenue = currentRevenue + revenueDelta
             storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.REVENUE_SUM, newRevenue)
-            storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.REVENUE_IS_NEGATIVE, if (newRevenue < 0) 1 else 0)
+            storage.upsertCounter(
+                kkmId,
+                CounterScopes.GLOBAL,
+                null,
+                CounterKeyFormats.REVENUE_IS_NEGATIVE,
+                if (newRevenue < 0) 1 else 0
+            )
         }
     }
 

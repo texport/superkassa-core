@@ -124,7 +124,7 @@ object ErrorMessages {
 
     fun measureUnitCodeInvalid(code: String): String =
         "Invalid measure unit code: $code. Use OKEI codes (e.g. 796, 116). " +
-        "See GET /units-of-measurement / неверный код единицы измерения: $code"
+            "See GET /units-of-measurement / неверный код единицы измерения: $code"
 
     fun measureUnitNotFound(code: String): String =
         "Unit of measurement not found: $code / единица измерения не найдена: $code"

@@ -23,7 +23,7 @@ import kz.mybrain.superkassa.core.domain.tax.TaxCalculationService
  */
 class ShiftCountersRecalculator(
     private val storage: StoragePort
- ) {
+) {
 
     /**
      * Полностью пересобирает счётчики смены из документов и сохраняет их в storage.
@@ -255,4 +255,3 @@ class ShiftCountersRecalculator(
         counters[key] = current + delta
     }
 }
-

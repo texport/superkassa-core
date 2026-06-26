@@ -75,7 +75,9 @@ object ReceiptMapper {
         val paymentType = try {
             PaymentType.valueOf(dto.type)
         } catch (e: IllegalArgumentException) {
-            throw IllegalArgumentException("Invalid payment type: ${dto.type}. Valid: ${PaymentType.values().joinToString { it.name }}")
+            throw IllegalArgumentException(
+                "Invalid payment type: ${dto.type}. Valid: ${PaymentType.values().joinToString { it.name }}"
+            )
         }
         return ReceiptPayment(type = paymentType, sum = Money.fromTenge(dto.sum))
     }

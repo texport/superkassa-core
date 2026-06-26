@@ -47,4 +47,3 @@ object ZxTicketOperationsBlockBuilder {
     private fun paymentTypes(): List<String> =
         listOf("PAYMENT_CASH", "PAYMENT_CARD", "PAYMENT_CREDIT", "PAYMENT_TARE", "PAYMENT_MOBILE", "PAYMENT_ELECTRONIC")
 }
-

@@ -13,4 +13,3 @@ data class ParentTicket(
     val parentTicketTotal: Money,
     val parentTicketIsOffline: Boolean
 )
-

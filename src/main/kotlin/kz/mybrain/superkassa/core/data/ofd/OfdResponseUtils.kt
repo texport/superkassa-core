@@ -19,7 +19,7 @@ object OfdResponseUtils {
         if (responseJson == null) return null
         val payload = responseJson["payload"]?.jsonObject ?: return null
         val ticket = payload["ticket"]?.jsonObject ?: return null
-        
+
         val qrCodeBase64 = ticket["qrCodeBase64"]?.jsonPrimitive?.content
         if (qrCodeBase64 != null) {
             return try {
@@ -28,7 +28,7 @@ object OfdResponseUtils {
                 null
             }
         }
-        
+
         return ticket["qr_code"]?.jsonPrimitive?.content
     }
 
@@ -39,23 +39,23 @@ object OfdResponseUtils {
     fun extractFiscalSign(responseJson: JsonObject?): String? {
         if (responseJson == null) return null
         val payload = responseJson["payload"]?.jsonObject ?: return null
-        
+
         val ticket = payload["ticket"]?.jsonObject
         if (ticket != null) {
             val fiscalSign = ticket["fiscalSign"]?.jsonPrimitive?.content
             if (fiscalSign != null) return fiscalSign
-            
+
             val ticketNumber = ticket["ticket_number"]?.jsonPrimitive?.content
             if (ticketNumber != null) return ticketNumber
         }
-        
+
         val report = payload["report"]?.jsonObject
         val zxReport = report?.get("zxReport")?.jsonObject
         if (zxReport != null) {
             val fiscalSignature = zxReport["fiscalSignature"]?.jsonPrimitive?.content
             if (fiscalSignature != null) return fiscalSignature
         }
-        
+
         return null
     }
 }

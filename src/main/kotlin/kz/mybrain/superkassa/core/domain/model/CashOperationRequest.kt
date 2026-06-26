@@ -5,9 +5,9 @@ import kotlinx.serialization.Serializable
 /** Запрос на операцию с наличными (внесение/изъятие). */
 @Serializable
 data class CashOperationRequest(
-        val pin: String = "", // Будет заполнен из заголовка Authorization
-        val amount: Double,
-        val idempotencyKey: String
+    val pin: String = "", // Будет заполнен из заголовка Authorization
+    val amount: Double,
+    val idempotencyKey: String
 ) {
     fun copy(pin: String): CashOperationRequest {
         return CashOperationRequest(

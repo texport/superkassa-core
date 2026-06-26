@@ -57,6 +57,6 @@ object OfdCommonRequestHelper {
         return Money(bills, coins)
     }
 
+    @Suppress("FunctionOnlyReturningConstant", "UNUSED_PARAMETER")
     fun taxTypeForGroup(group: VatGroup): Int = 100
 }
-

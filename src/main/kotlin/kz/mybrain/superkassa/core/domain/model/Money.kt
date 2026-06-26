@@ -14,7 +14,7 @@ data class Money(
         /**
          * Преобразует сумму в виде Double (тенге) в формат Money (bills/coins).
          * bills - целая часть (тенге), coins - дробная часть (тиыны, умноженные на 100).
-         * 
+         *
          * @param amount Сумма в тенге (например, 1234.56)
          * @return Money с bills=1234 и coins=56
          */

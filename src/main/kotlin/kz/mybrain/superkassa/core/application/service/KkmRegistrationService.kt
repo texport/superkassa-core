@@ -155,7 +155,7 @@ class KkmRegistrationService(
         }
         val now = clock.now()
         val ofdTag = validateOfd(request.ofdId, request.ofdEnvironment)
-        
+
         val existingBySystem = storage.findKkmBySystemId(request.ofdSystemId)
         if (existingBySystem != null) {
             throw ConflictException(
@@ -166,7 +166,7 @@ class KkmRegistrationService(
 
         val kkmId = idGenerator.nextId()
         val initialToken = tokenCodec.parseToken(request.ofdToken)
-        
+
         val tempKkm = KkmInfo(
             id = kkmId,
             createdAt = now,
@@ -181,7 +181,7 @@ class KkmRegistrationService(
         val tempRegistrationNumber = "TEMP_REG_${kkmId.take(8)}"
         val tempFactoryNumber = "TEMP_FACTORY_${kkmId.take(8)}"
         val tempServiceInfo = kkmCommonHelper.defaultServiceInfo()
-        
+
         val systemResult = kkmCommonHelper.sendOfdCommand(
             kkm = tempKkm,
             commandType = OfdCommandType.SYSTEM,
@@ -192,14 +192,14 @@ class KkmRegistrationService(
             factoryNumberOverride = tempFactoryNumber,
             ofdProviderOverride = ofdTag
         )
-        
+
         if (systemResult.status != OfdCommandStatus.OK) {
             throw ValidationException(
                 ErrorMessages.ofdRequestFailed(systemResult.errorMessage),
                 "OFD_COMMAND_FAILED"
             )
         }
-        
+
         val infoToken = systemResult.responseToken ?: initialToken
         val infoResult = kkmCommonHelper.sendOfdCommand(
             kkm = tempKkm,
@@ -211,7 +211,7 @@ class KkmRegistrationService(
             factoryNumberOverride = tempFactoryNumber,
             ofdProviderOverride = ofdTag
         )
-        
+
         if (infoResult.status != OfdCommandStatus.OK) {
             throw ValidationException(
                 ErrorMessages.ofdRequestFailed(infoResult.errorMessage),
@@ -219,7 +219,10 @@ class KkmRegistrationService(
             )
         }
 
-        val rawServiceInfo = OfdResponseParser.extractServiceInfo(infoResult.responseJson, kkmCommonHelper.defaultServiceInfo())
+        val rawServiceInfo = OfdResponseParser.extractServiceInfo(
+            infoResult.responseJson,
+            kkmCommonHelper.defaultServiceInfo()
+        )
         val resolvedServiceInfo = if (request.okved != null) {
             rawServiceInfo.copy(orgOkved = request.okved)
         } else {
@@ -229,10 +232,10 @@ class KkmRegistrationService(
         if (resolvedServiceInfo.orgOkved.isBlank() || resolvedServiceInfo.orgOkved == "00000") {
             throw ValidationException("OKVED is required", "OKVED_REQUIRED")
         }
-        
+
         val registrationNumber = OfdResponseParser.extractRegistrationNumber(infoResult.responseJson) ?: tempRegistrationNumber
         val factoryNumber = OfdResponseParser.extractFactoryNumber(infoResult.responseJson) ?: tempFactoryNumber
-        
+
         val existingByReg = storage.findKkmByRegistrationNumber(registrationNumber)
         if (existingByReg != null && existingByReg.id != kkmId) {
             throw ConflictException(ErrorMessages.kkmExists(), "KKM_EXISTS")
@@ -248,7 +251,7 @@ class KkmRegistrationService(
             else ->
                 kz.mybrain.superkassa.core.domain.model.TaxRegime.VAT_PAYER
         }
-        
+
         val finalKkm = KkmInfo(
             id = kkmId,
             createdAt = now,
@@ -276,7 +279,7 @@ class KkmRegistrationService(
             initializer.updateCountersFromOfdInfo(finalKkm.id, infoResult.responseJson)
             initializer.ensureDefaultUsers(finalKkm.id, clock.now())
         }
-        
+
         return finalKkm
     }
 

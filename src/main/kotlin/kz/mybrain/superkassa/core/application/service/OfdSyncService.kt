@@ -38,7 +38,6 @@ class OfdSyncService(
     private val timeValidator: TimeValidatorPort
 ) {
 
-
     /**
      * Отправляет фискальную команду (REPORT, CLOSE_SHIFT и т.п.) в ОФД.
      * Используется когда offline-очередь пуста.
@@ -83,11 +82,11 @@ class OfdSyncService(
                 kkm.ofdServiceInfo ?: defaultServiceInfo()
             )
             val shiftNo = OfdResponseParser.extractShiftNumber(responseJson) ?: kkm.lastShiftNo
-            
+
             // Извлекаем регистрационный номер и заводской номер из ответа ОФД
             val registrationNumber = OfdResponseParser.extractRegistrationNumber(responseJson) ?: kkm.registrationNumber
             val factoryNumber = OfdResponseParser.extractFactoryNumber(responseJson) ?: kkm.factoryNumber
-            
+
             storage.updateKkm(
                 kkm.copy(
                     updatedAt = clock.now(),
@@ -281,7 +280,6 @@ class OfdSyncService(
         }
     }
 
-
     private fun defaultServiceInfo(): OfdServiceInfo {
         return OfdServiceInfo(
             orgTitle = "UNKNOWN",
@@ -294,6 +292,4 @@ class OfdSyncService(
             geoSource = "UNKNOWN"
         )
     }
-
-
 }

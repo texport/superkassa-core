@@ -15,6 +15,8 @@ import kz.mybrain.superkassa.core.application.model.receipt.*
 import kz.mybrain.superkassa.core.domain.model.*
 import kz.mybrain.superkassa.core.domain.model.OfdCommandResult
 
+import kz.mybrain.superkassa.core.domain.model.ReceiptLayoutType
+
 interface SuperkassaApi {
     fun listVatRates(): List<VatRateResponse>
     fun initKkm(pin: String, request: KkmInitDirectRequest): KkmInfo
@@ -42,9 +44,30 @@ interface SuperkassaApi {
     fun syncOfdServiceInfo(kkmId: String, pin: String): OfdCommandResult
     fun syncOfdCounters(kkmId: String, pin: String): OfdCommandResult
 
-    fun getReceiptHtml(kkmId: String, documentId: String, pin: String): String
-    fun getPrintHtml(kkmId: String, type: PrintDocumentType, documentId: String?, shiftId: String?, pin: String): String
-    fun getPrintPdf(kkmId: String, type: PrintDocumentType, documentId: String?, shiftId: String?, pin: String): ByteArray
+    fun getReceiptHtml(
+        kkmId: String,
+        documentId: String,
+        pin: String,
+        layout: ReceiptLayoutType? = null
+    ): String
+
+    fun getPrintHtml(
+        kkmId: String,
+        type: PrintDocumentType,
+        documentId: String?,
+        shiftId: String?,
+        pin: String,
+        layout: ReceiptLayoutType? = null
+    ): String
+
+    fun getPrintPdf(
+        kkmId: String,
+        type: PrintDocumentType,
+        documentId: String?,
+        shiftId: String?,
+        pin: String,
+        layout: ReceiptLayoutType? = null
+    ): ByteArray
 
     fun createReceipt(request: ReceiptRequest): ReceiptResult
     fun createSellReceipt(kkmId: String, pin: String, request: ReceiptSellRequest): ReceiptResult
@@ -60,7 +83,20 @@ interface SuperkassaApi {
     fun closeShift(kkmId: String, pin: String): ReportResult
     fun getOpenShift(kkmId: String, pin: String): ShiftInfo
     fun listShifts(kkmId: String, limit: Int, offset: Int, pin: String): List<ShiftInfo>
-    fun listShiftDocuments(kkmId: String, shiftId: String, limit: Int, offset: Int, pin: String): List<FiscalDocumentSnapshot>
-    fun listFiscalDocumentsByPeriod(kkmId: String, fromInclusive: Long, toExclusive: Long, limit: Int, offset: Int, pin: String): List<FiscalDocumentSnapshot>
+    fun listShiftDocuments(
+        kkmId: String,
+        shiftId: String,
+        limit: Int,
+        offset: Int,
+        pin: String
+    ): List<FiscalDocumentSnapshot>
+    fun listFiscalDocumentsByPeriod(
+        kkmId: String,
+        fromInclusive: Long,
+        toExclusive: Long,
+        limit: Int,
+        offset: Int,
+        pin: String
+    ): List<FiscalDocumentSnapshot>
     fun createReport(kkmId: String, pin: String): ReportResult
 }

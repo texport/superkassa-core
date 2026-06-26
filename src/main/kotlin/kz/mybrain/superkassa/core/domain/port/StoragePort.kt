@@ -25,22 +25,27 @@ interface StoragePort {
      * Регистрирует ККМ в хранилище.
      */
     fun createKkm(info: KkmInfo): Boolean
+
     /**
      * Обновляет состояние ККМ.
      */
     fun updateKkm(info: KkmInfo): Boolean
+
     /**
      * Возвращает ККМ по идентификатору.
      */
     fun findKkm(id: String): KkmInfo?
+
     /**
      * Ищет ККМ по регистрационному номеру.
      */
     fun findKkmByRegistrationNumber(registrationNumber: String): KkmInfo?
+
     /**
      * Ищет ККМ по systemId.
      */
     fun findKkmBySystemId(systemId: String): KkmInfo?
+
     /**
      * Возвращает список ККМ постранично с фильтрацией и сортировкой.
      */
@@ -52,6 +57,7 @@ interface StoragePort {
         sortBy: String = "createdAt",
         sortOrder: String = "DESC"
     ): List<KkmInfo>
+
     /**
      * Возвращает общее количество ККМ с учётом фильтров.
      */
@@ -59,15 +65,18 @@ interface StoragePort {
         state: String? = null,
         search: String? = null
     ): Int
+
     /**
      * Удаляет ККМ по id.
      */
     fun deleteKkm(id: String): Boolean
+
     /**
      * Проверяет наличие автономной очереди по кассе (queue_task, lane=OFFLINE).
      * @deprecated Используйте OfflineQueuePort.canSendDirectly — offline queue единственный источник истины.
      */
     fun hasOfflineQueue(kkmId: String): Boolean
+
     /**
      * Очередь команд (queue_task) — доступ только через storage.
      */
@@ -86,10 +95,12 @@ interface StoragePort {
     fun tryAcquireQueueLock(cashboxId: String, ownerId: String, leaseUntil: Long, acquiredAt: Long): Boolean
     fun renewQueueLock(cashboxId: String, ownerId: String, leaseUntil: Long, now: Long): Boolean
     fun releaseQueueLock(cashboxId: String, ownerId: String): Boolean
+
     /**
      * Полностью удаляет кассу и все связанные данные.
      */
     fun deleteKkmCompletely(kkmId: String): Boolean
+
     /**
      * Обновляет токен ККМ (зашифрованный).
      */
@@ -99,6 +110,7 @@ interface StoragePort {
      * Возвращает пользователей ККМ.
      */
     fun listUsers(kkmId: String): List<KkmUser>
+
     /**
      * Создает пользователя ККМ.
      */
@@ -111,6 +123,7 @@ interface StoragePort {
         pinHash: String,
         createdAt: Long
     ): Boolean
+
     /**
      * Обновляет пользователя ККМ.
      */
@@ -122,14 +135,17 @@ interface StoragePort {
         pin: String?,
         pinHash: String?
     ): Boolean
+
     /**
      * Удаляет пользователя ККМ.
      */
     fun deleteUser(kkmId: String, userId: String): Boolean
+
     /**
      * Находит пользователя по id.
      */
     fun findUserById(kkmId: String, userId: String): KkmUser?
+
     /**
      * Находит пользователя по PIN.
      */
@@ -139,18 +155,22 @@ interface StoragePort {
      * Возвращает открытую смену по ККМ.
      */
     fun findOpenShift(kkmId: String): ShiftInfo?
+
     /**
      * Возвращает смену по идентификатору.
      */
     fun findShiftById(shiftId: String): ShiftInfo?
+
     /**
      * Список смен по ККМ (постранично, по убыванию времени открытия).
      */
     fun listShifts(kkmId: String, limit: Int, offset: Int = 0): List<ShiftInfo>
+
     /**
      * Создает смену.
      */
     fun createShift(shift: ShiftInfo): Boolean
+
     /**
      * Закрывает смену.
      */
@@ -160,6 +180,7 @@ interface StoragePort {
      * Сохраняет чек.
      */
     fun saveReceipt(request: ReceiptRequest, documentId: String, shiftId: String, createdAt: Long): Boolean
+
     /**
      * Сохраняет операцию с наличными (внесение/изъятие).
      */
@@ -171,6 +192,7 @@ interface StoragePort {
         shiftId: String,
         createdAt: Long
     ): Boolean
+
     /**
      * Обновляет статус чека.
      * @param isAutonomous true для чека, пробитого в автономном режиме (нет ответа ОФД).
@@ -235,10 +257,12 @@ interface StoragePort {
      * Загружает счетчики.
      */
     fun loadCounters(kkmId: String, scope: String, shiftId: String? = null): Map<String, Long>
+
     /**
      * Возвращает все счетчики ККМ.
      */
     fun listCounters(kkmId: String): List<CounterSnapshot>
+
     /**
      * Обновляет счетчик.
      */
@@ -248,10 +272,12 @@ interface StoragePort {
      * Создает запись идемпотентности.
      */
     fun insertIdempotency(kkmId: String, idempotencyKey: String, operation: String): Boolean
+
     /**
      * Возвращает сохраненный результат для идемпотентного запроса.
      */
     fun findIdempotencyResponse(kkmId: String, idempotencyKey: String): String?
+
     /**
      * Обновляет результат для идемпотентного запроса.
      */

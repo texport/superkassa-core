@@ -29,4 +29,3 @@ data class ParentTicketDto(
     )
     val parentTicketIsOffline: Boolean
 )
-

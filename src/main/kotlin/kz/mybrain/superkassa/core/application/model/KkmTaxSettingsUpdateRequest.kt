@@ -24,4 +24,3 @@ data class KkmTaxSettingsUpdateRequest(
     )
     val defaultVatGroup: VatGroup
 )
-

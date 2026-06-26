@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 /** Запрос отчета (X/Z). */
 @Serializable
 data class ReportRequest(
-        val kkmId: String,
-        val pin: String,
-        val type: ReportType
+    val kkmId: String,
+    val pin: String,
+    val type: ReportType
 )

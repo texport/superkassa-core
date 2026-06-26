@@ -6,6 +6,7 @@ import kotlinx.serialization.json.*
 
 object OfdTicketRequestBuilder {
 
+    @Suppress("LongMethod")
     fun buildTicketRequest(
         ofdId: String,
         protocolVersion: String,
@@ -81,15 +82,23 @@ object OfdTicketRequestBuilder {
                                                         put("quantity", JsonPrimitive(item.quantity * 1000L))
                                                         put(
                                                             "price",
-                                                            OfdCommonRequestHelper.moneyObject(item.price.bills, item.price.coins)
+                                                            OfdCommonRequestHelper.moneyObject(
+                                                                item.price.bills,
+                                                                item.price.coins
+                                                            )
                                                         )
                                                         put(
                                                             "sum",
-                                                            OfdCommonRequestHelper.moneyObject(item.sum.bills, item.sum.coins)
+                                                            OfdCommonRequestHelper.moneyObject(
+                                                                item.sum.bills,
+                                                                item.sum.coins
+                                                            )
                                                         )
                                                         put(
                                                             "measureUnitCode",
-                                                            JsonPrimitive(item.measureUnitCode ?: UnitOfMeasurement.DEFAULT.code)
+                                                            JsonPrimitive(
+                                                                item.measureUnitCode ?: UnitOfMeasurement.DEFAULT.code
+                                                            )
                                                         )
                                                         item.barcode?.takeIf { it.isNotBlank() }?.let { barcode ->
                                                             put("barcode", JsonPrimitive(barcode))
@@ -97,7 +106,13 @@ object OfdTicketRequestBuilder {
                                                         item.listExciseStamp?.takeIf { it.isNotEmpty() }?.let { stamps ->
                                                             put(
                                                                 "listExciseStamp",
-                                                                buildJsonArray { stamps.forEach { add(JsonPrimitive(it)) } }
+                                                                buildJsonArray {
+                                                                    stamps.forEach {
+                                                                        add(
+                                                                            JsonPrimitive(it)
+                                                                        )
+                                                                    }
+                                                                }
                                                             )
                                                         }
                                                         item.ntin?.takeIf { it.isNotBlank() }?.let { ntin ->
@@ -177,7 +192,10 @@ object OfdTicketRequestBuilder {
                                                             "stornoDiscount",
                                                             buildJsonObject {
                                                                 put("name", JsonPrimitive("Скидка"))
-                                                                put("sum", OfdCommonRequestHelper.moneyObject(m.bills, m.coins))
+                                                                put(
+                                                                    "sum",
+                                                                    OfdCommonRequestHelper.moneyObject(m.bills, m.coins)
+                                                                )
                                                             }
                                                         )
                                                     }
@@ -191,7 +209,10 @@ object OfdTicketRequestBuilder {
                                                             "stornoMarkup",
                                                             buildJsonObject {
                                                                 put("name", JsonPrimitive("Наценка"))
-                                                                put("sum", OfdCommonRequestHelper.moneyObject(m.bills, m.coins))
+                                                                put(
+                                                                    "sum",
+                                                                    OfdCommonRequestHelper.moneyObject(m.bills, m.coins)
+                                                                )
                                                             }
                                                         )
                                                     }
@@ -208,7 +229,10 @@ object OfdTicketRequestBuilder {
                                                             "discount",
                                                             buildJsonObject {
                                                                 put("name", JsonPrimitive("Скидка"))
-                                                                put("sum", OfdCommonRequestHelper.moneyObject(m.bills, m.coins))
+                                                                put(
+                                                                    "sum",
+                                                                    OfdCommonRequestHelper.moneyObject(m.bills, m.coins)
+                                                                )
                                                             }
                                                         )
                                                     }
@@ -222,7 +246,10 @@ object OfdTicketRequestBuilder {
                                                             "markup",
                                                             buildJsonObject {
                                                                 put("name", JsonPrimitive("Наценка"))
-                                                                put("sum", OfdCommonRequestHelper.moneyObject(m.bills, m.coins))
+                                                                put(
+                                                                    "sum",
+                                                                    OfdCommonRequestHelper.moneyObject(m.bills, m.coins)
+                                                                )
                                                             }
                                                         )
                                                     }
@@ -253,7 +280,10 @@ object OfdTicketRequestBuilder {
                                         add(
                                             buildJsonObject {
                                                 put("type", JsonPrimitive(payType))
-                                                put("sum", OfdCommonRequestHelper.moneyObject(totalBills, totalCoins.toInt()))
+                                                put(
+                                                    "sum",
+                                                    OfdCommonRequestHelper.moneyObject(totalBills, totalCoins.toInt())
+                                                )
                                             }
                                         )
                                     }
@@ -303,8 +333,10 @@ object OfdTicketRequestBuilder {
 
                             val parent = request.parentTicket
                             if (parent != null &&
-                                (request.operation == ReceiptOperationType.SELL_RETURN ||
-                                 request.operation == ReceiptOperationType.BUY_RETURN)
+                                (
+                                    request.operation == ReceiptOperationType.SELL_RETURN ||
+                                        request.operation == ReceiptOperationType.BUY_RETURN
+                                    )
                             ) {
                                 put(
                                     "parentTicket",

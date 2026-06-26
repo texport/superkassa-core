@@ -29,4 +29,3 @@ enum class VatGroup(
     VAT_10(10, 10_000, "НДС 10%", "TAX_TYPE_VAT_10"),
     VAT_16(16, 16_000, "НДС 16%", "TAX_TYPE_VAT_16")
 }
-

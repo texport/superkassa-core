@@ -30,4 +30,3 @@ enum class DeliveryStatus {
      */
     NOT_SENT
 }
-

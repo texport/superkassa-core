@@ -23,7 +23,7 @@ object OfdResponseParser {
         val regInfo = service.getNestedObject(listOf("regInfo")) ?: return fallback
         val org = regInfo.getNestedObject(listOf("org"))
         val pos = regInfo.getNestedObject(listOf("pos"))
-        
+
         return OfdServiceInfo(
             orgTitle = org?.getNestedString(listOf("title")) ?: fallback.orgTitle,
             orgAddress = org?.getNestedString(listOf("address"))
@@ -42,13 +42,13 @@ object OfdResponseParser {
 
     fun extractRegistrationNumber(responseJson: JsonObject?): String? {
         val regInfo = responseJson?.getNestedObject(listOf("payload", "service", "regInfo")) ?: return null
-        
+
         val kkm = regInfo.getNestedObject(listOf("kkm"))
         val fnsKkmId = kkm?.getNestedString(listOf("fnsKkmId"))
         if (!fnsKkmId.isNullOrBlank()) {
             return fnsKkmId
         }
-        
+
         val pos = regInfo.getNestedObject(listOf("pos"))
         return pos?.getNestedString(listOf("registrationNumber"))
             ?: pos?.getNestedString(listOf("regNumber"))
@@ -56,13 +56,13 @@ object OfdResponseParser {
 
     fun extractFactoryNumber(responseJson: JsonObject?): String? {
         val regInfo = responseJson?.getNestedObject(listOf("payload", "service", "regInfo")) ?: return null
-        
+
         val kkm = regInfo.getNestedObject(listOf("kkm"))
         val serialNumber = kkm?.getNestedString(listOf("serialNumber"))
         if (!serialNumber.isNullOrBlank()) {
             return serialNumber
         }
-        
+
         val pos = regInfo.getNestedObject(listOf("pos"))
         return pos?.getNestedString(listOf("factoryNumber"))
             ?: pos?.getNestedString(listOf("factoryNum"))

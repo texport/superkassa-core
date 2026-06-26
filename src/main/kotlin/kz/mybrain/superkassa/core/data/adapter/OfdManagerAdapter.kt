@@ -67,7 +67,9 @@ class OfdManagerAdapter(
             logger.debug("OFD throttle: kkmId={}, retry after {}s", command.kkmId, reconnectIntervalSeconds)
             return OfdCommandResult(
                 status = OfdCommandStatus.TIMEOUT,
-                errorMessage = ErrorMessages.ofdRequestFailed("No connection; retry not earlier than ${reconnectIntervalSeconds}s"),
+                errorMessage = ErrorMessages.ofdRequestFailed(
+                    "No connection; retry not earlier than ${reconnectIntervalSeconds}s"
+                ),
                 resultCode = null
             )
         }

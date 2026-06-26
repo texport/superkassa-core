@@ -30,7 +30,7 @@ class TicketRequestBuilderStrategy(
             idempotencyKey = "tmp",
             parentTicket = null
         )
-        
+
         val ofdId = command.ofdProviderId.lowercase()
         val serviceBlock = buildServiceBlock(command)
 

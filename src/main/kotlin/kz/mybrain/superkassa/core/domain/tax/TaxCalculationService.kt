@@ -82,4 +82,3 @@ class TaxCalculationService {
         return TicketTaxResult(taxLines)
     }
 }
-

@@ -34,6 +34,7 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(libs.mockk)
     testImplementation(libs.ofd.kt.proto)
+    detektPlugins(libs.detekt.formatting)
 }
 
 kotlin {
@@ -45,6 +46,7 @@ detekt {
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
     allRules = true
+    autoCorrect = true
 }
 
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {

@@ -110,5 +110,4 @@ class KkmUserService(
             throw ValidationException(ErrorMessages.userRoleRequired(role), "USER_ROLE_REQUIRED")
         }
     }
-
 }

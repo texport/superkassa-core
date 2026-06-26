@@ -127,4 +127,3 @@ object ZxOperationsBlockBuilder {
     private fun operationsList(): List<String> =
         listOf("OPERATION_SELL", "OPERATION_SELL_RETURN", "OPERATION_BUY", "OPERATION_BUY_RETURN")
 }
-

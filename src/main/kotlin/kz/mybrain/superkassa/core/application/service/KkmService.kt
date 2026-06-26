@@ -206,26 +206,28 @@ class KkmService(
         ofdSyncService.syncOfdCounters(kkmId, pin)
 
     // Print & HTML & PDF delegates
-    override fun getReceiptHtml(kkmId: String, documentId: String, pin: String): String =
-        kkmPrintService.getReceiptHtml(kkmId, documentId, pin)
+    override fun getReceiptHtml(kkmId: String, documentId: String, pin: String, layout: ReceiptLayoutType?): String =
+        kkmPrintService.getReceiptHtml(kkmId, documentId, pin, layout)
 
     override fun getPrintHtml(
         kkmId: String,
         type: PrintDocumentType,
         documentId: String?,
         shiftId: String?,
-        pin: String
+        pin: String,
+        layout: ReceiptLayoutType?
     ): String =
-        kkmPrintService.getPrintHtml(kkmId, type, documentId, shiftId, pin)
+        kkmPrintService.getPrintHtml(kkmId, type, documentId, shiftId, pin, layout)
 
     override fun getPrintPdf(
         kkmId: String,
         type: PrintDocumentType,
         documentId: String?,
         shiftId: String?,
-        pin: String
+        pin: String,
+        layout: ReceiptLayoutType?
     ): ByteArray =
-        kkmPrintService.getPrintPdf(kkmId, type, documentId, shiftId, pin)
+        kkmPrintService.getPrintPdf(kkmId, type, documentId, shiftId, pin, layout)
 
     // Fiscal Operations / Receipt and Cash processing delegates
     override fun createReceipt(request: ReceiptRequest): ReceiptResult =

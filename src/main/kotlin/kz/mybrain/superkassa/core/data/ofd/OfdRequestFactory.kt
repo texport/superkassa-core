@@ -19,8 +19,12 @@ object OfdRequestFactory {
         offlineBeginMillis: Long,
         offlineEndMillis: Long
     ): JsonObject = OfdServiceRequestBuilder.buildServicePayload(
-        serviceInfo, registrationNumber, factoryNumber, systemId,
-        offlineBeginMillis, offlineEndMillis
+        serviceInfo,
+        registrationNumber,
+        factoryNumber,
+        systemId,
+        offlineBeginMillis,
+        offlineEndMillis
     )
 
     fun buildServiceRequest(
@@ -50,7 +54,13 @@ object OfdRequestFactory {
         request: ReceiptRequest,
         serviceBlock: JsonObject? = null
     ): JsonObject = OfdTicketRequestBuilder.buildTicketRequest(
-        ofdId, protocolVersion, deviceId, token, reqNum, request, serviceBlock
+        ofdId,
+        protocolVersion,
+        deviceId,
+        token,
+        reqNum,
+        request,
+        serviceBlock
     )
 
     fun buildMoneyPlacementRequest(
@@ -77,7 +87,14 @@ object OfdRequestFactory {
         zxReport: ZxReportBuilder.ZxReportInput,
         serviceBlock: JsonObject
     ): JsonObject = OfdReportRequestBuilder.buildReportRequest(
-        ofdId, protocolVersion, deviceId, token, reqNum, reportType, zxReport, serviceBlock
+        ofdId,
+        protocolVersion,
+        deviceId,
+        token,
+        reqNum,
+        reportType,
+        zxReport,
+        serviceBlock
     )
 
     fun buildCloseShiftRequest(

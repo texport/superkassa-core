@@ -16,6 +16,7 @@ interface OfflineQueuePort {
 
     fun enqueueOffline(command: OfflineQueueCommandRequest): Boolean
     fun deleteQueuedCommands(kkmId: String): Boolean
+
     /**
      * Обрабатывает пакет команд из OFFLINE-очереди (вызывает воркер).
      * @return количество обработанных команд

@@ -7,15 +7,15 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Schema(description = "Ответ с ошибкой")
 data class ApiErrorResponse(
-        @Schema(description = "Код ошибки", example = "VALIDATION_ERROR") val code: String,
-        @Schema(
-                description = "Сообщение об ошибке",
-                example = "Validation failed for argument [0]..."
-        )
-        val message: String,
-        @Schema(
-                description = "Детали ошибки (опционально)",
-                example = "Field 'pin' must not be blank"
-        )
-        val details: String? = null
+    @Schema(description = "Код ошибки", example = "VALIDATION_ERROR") val code: String,
+    @Schema(
+        description = "Сообщение об ошибке",
+        example = "Validation failed for argument [0]..."
+    )
+    val message: String,
+    @Schema(
+        description = "Детали ошибки (опционально)",
+        example = "Field 'pin' must not be blank"
+    )
+    val details: String? = null
 )

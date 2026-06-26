@@ -19,4 +19,3 @@ data class OfdCommandRequest(
     val offlineBeginMillis: Long? = null,
     val offlineEndMillis: Long? = null
 )
-

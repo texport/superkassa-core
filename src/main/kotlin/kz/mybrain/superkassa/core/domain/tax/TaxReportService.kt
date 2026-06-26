@@ -47,4 +47,3 @@ interface TaxReportService {
         documents: List<DocumentTaxInput>
     ): List<TaxGroupAggregate>
 }
-

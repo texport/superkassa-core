@@ -16,4 +16,3 @@ data class FactoryNumberResponse(
     @Schema(description = "Год выпуска ККМ", example = "2026")
     val manufactureYear: Int
 )
-

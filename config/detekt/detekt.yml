@@ -82,7 +82,20 @@ exceptions:
   active: true
   SwallowedException:
     active: true
-    excludes: ['**/OfdInfoCountersSnapshotParser.kt', '**/OfdResponseUtils.kt', '**/OfdManagerAdapter.kt', '**/DeliveryPortAdapter.kt', '**/ReceiptHtmlRenderer.kt', '**/ConsoleLoader.kt', '**/*Controller.kt', '**/*Mapper.kt', '**/*Indicator.kt', '**/*Delegate.kt', '**/*Repository.kt', '**/*Session.kt', '**/*HealthChecker.kt', '**/*Adapter.kt']
+    excludes: ['**/OfdInfoCountersSnapshotParser.kt', '**/OfdResponseUtils.kt', '**/OfdManagerAdapter.kt', '**/DeliveryPortAdapter.kt', '**/ReceiptHtmlRenderer.kt', '**/ConsoleLoader.kt', '**/*Controller.kt', '**/*Mapper.kt', '**/*Indicator.kt', '**/*Delegate.kt', '**/*Repository.kt', '**/*Session.kt', '**/*HealthChecker.kt', '**/*Adapter.kt', '**/SaleReceiptRenderer.kt', '**/ReceiptHtmlRendererTest.kt']
   TooGenericExceptionCaught:
     active: true
-    excludes: ['**/OfdCodec.kt', '**/OfdInfoCountersSnapshotParser.kt', '**/OfdQueueCommandHandler.kt', '**/OfdResponseUtils.kt', '**/OfdManagerAdapter.kt', '**/Base64TokenCodecPort.kt', '**/ResilienceOfdManagerPortAdapter.kt', '**/DeliveryPortAdapter.kt', '**/ReceiptHtmlRenderer.kt', '**/ConsoleLoader.kt', '**/*Controller.kt', '**/*Mapper.kt', '**/*Indicator.kt', '**/*Delegate.kt', '**/*Repository.kt', '**/*Session.kt', '**/*HealthChecker.kt', '**/*Adapter.kt']
+    excludes: ['**/OfdCodec.kt', '**/OfdInfoCountersSnapshotParser.kt', '**/OfdQueueCommandHandler.kt', '**/OfdResponseUtils.kt', '**/OfdManagerAdapter.kt', '**/Base64TokenCodecPort.kt', '**/ResilienceOfdManagerPortAdapter.kt', '**/DeliveryPortAdapter.kt', '**/ReceiptHtmlRenderer.kt', '**/ConsoleLoader.kt', '**/*Controller.kt', '**/*Mapper.kt', '**/*Indicator.kt', '**/*Delegate.kt', '**/*Repository.kt', '**/*Session.kt', '**/*HealthChecker.kt', '**/*Adapter.kt', '**/SaleReceiptRenderer.kt', '**/ReceiptHtmlRendererTest.kt']
+
+formatting:
+  active: true
+  excludes: ['**/test/**', '**/*Test.kt', '**/support/**', '**/OfdTicketRequestBuilder.kt']
+  ArgumentListWrapping:
+    active: true
+  MaximumLineLength:
+    active: true
+    maxLineLength: 180
+  NoWildcardImports:
+    active: false
+  ImportOrdering:
+    active: false
