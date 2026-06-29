@@ -9,14 +9,19 @@ package kz.mybrain.superkassa.core.domain.model.ofd
 enum class OfdCommandType(val value: String) {
     /** Оформление чека продажи/возврата/покупки/возврата покупки. */
     TICKET("COMMAND_TICKET"),
+
     /** Системная команда (например, инициализация/регистрация). */
     SYSTEM("COMMAND_SYSTEM"),
+
     /** Запрос справочной информации с сервера ОФД. */
     INFO("COMMAND_INFO"),
+
     /** Операция внесения или изъятия наличных денег. */
     MONEY_PLACEMENT("COMMAND_MONEY_PLACEMENT"),
+
     /** Снятие сменного отчета без гашения (X-отчет). */
     REPORT("COMMAND_REPORT"),
+
     /** Закрытие смены с гашением (Z-отчет). */
     CLOSE_SHIFT("COMMAND_CLOSE_SHIFT");
 

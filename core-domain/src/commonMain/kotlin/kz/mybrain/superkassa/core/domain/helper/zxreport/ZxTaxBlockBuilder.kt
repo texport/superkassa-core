@@ -92,4 +92,3 @@ object ZxTaxBlockBuilder {
      */
     private fun percentForGroup(group: VatGroup): Int = group.percentThousandths
 }
-

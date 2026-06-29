@@ -38,7 +38,8 @@ class ProcessReceiptUseCase(
     private val fiscalOperationExecutor: IdempotentOperationExecutor,
     private val kkmCommonHelper: KkmCommonHelper,
     private val receiptDeliveryHelper: ReceiptDeliveryHelper,
-    private val processOfdDocumentResult: (KkmInfo, String, String, OfdCommandResult, OfdCommandType, Long, Pair<ReceiptRequest, String>?) -> Unit,
+    private val processOfdDocumentResult:
+    (KkmInfo, String, String, OfdCommandResult, OfdCommandType, Long, Pair<ReceiptRequest, String>?) -> Unit,
     private val ofdResultQueuedOffline: () -> OfdCommandResult
 ) {
     /**
@@ -60,7 +61,7 @@ class ProcessReceiptUseCase(
             taxRegime = kkm.taxRegime,
             defaultVatGroup = request.defaultVatGroup ?: kkm.defaultVatGroup
         )
-        
+
         // Расчет сумм налогов (НДС) по каждой позиции чека
         val taxResult = taxCalculator.calculateTicketTaxes(
             items = requestWithTaxSettings.items,
@@ -70,7 +71,7 @@ class ProcessReceiptUseCase(
         val requestWithTaxes = requestWithTaxSettings.copy(
             ticketTaxes = taxResult.ticketTaxes
         )
-        
+
         // Запуск фискальной операции с гарантией идемпотентности
         return fiscalOperationExecutor.executeIdempotentFiscalOperation(
             kkmId = requestWithTaxes.kkmId,

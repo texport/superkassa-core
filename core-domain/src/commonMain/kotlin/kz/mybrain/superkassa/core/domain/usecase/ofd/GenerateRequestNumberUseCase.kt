@@ -34,10 +34,10 @@ class GenerateRequestNumberUseCase(
     fun execute(kkmId: String, persist: Boolean = true): Int {
         // Загружаем текущее значение счетчика из глобальной области видимости ККМ
         val current = storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[reqNumCounterKey] ?: 0L
-        
+
         // Вычисляем следующий номер с учетом лимита циклического счетчика
         val next = if (current >= maxReqNum) 0L else current + 1L
-        
+
         if (persist) {
             // Сохраняем новое значение счетчика в базу данных
             storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, reqNumCounterKey, next)

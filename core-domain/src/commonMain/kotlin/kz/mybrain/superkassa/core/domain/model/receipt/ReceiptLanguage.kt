@@ -10,8 +10,10 @@ import kotlinx.serialization.Serializable
 enum class ReceiptLanguage {
     /** Русский язык. */
     RU,
+
     /** Казахский язык. */
     KK,
+
     /** Смешанный (двуязычный) формат. */
     MIXED
 }

@@ -2,11 +2,11 @@ package kz.mybrain.superkassa.core.domain.model.settings
 
 import kotlinx.serialization.Serializable
 
-@Serializable
-data /**
+/**
  * Глобальные настройки ядра системы Superkassa.
  */
-class CoreSettings(
+@Serializable
+data class CoreSettings(
     val mode: CoreMode,
     val storage: StorageSettings,
     val allowChanges: Boolean = false,

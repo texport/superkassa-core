@@ -17,8 +17,10 @@ data class TimeValidationResult(
 ) {
     /** Сообщение на русском языке. */
     val messageRu: String? get() = trilingualMessage?.ru
+
     /** Сообщение на казахском языке. */
     val messageKk: String? get() = trilingualMessage?.kk
+
     /** Сообщение на английском языке. */
     val messageEn: String? get() = trilingualMessage?.en
 

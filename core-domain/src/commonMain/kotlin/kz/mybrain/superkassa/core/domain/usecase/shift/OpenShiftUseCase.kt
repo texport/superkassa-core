@@ -51,16 +51,16 @@ class OpenShiftUseCase(
         return storage.inTransaction {
             // Ищем ККМ в базе данных с блокировкой
             val kkm = storage.findKkmForUpdate(kkmId) ?: throw ValidationException(ErrorMessages.kkmNotFound(), "KKM_NOT_FOUND")
-            
+
             // ККМ не должна находиться в режиме программирования
             requireNotProgramming(kkm)
-            
+
             // Только Администратор имеет право открывать смену
             authorizeUser.execute(kkm.id, pin, setOf(UserRole.ADMIN))
-            
+
             val now = clock.now()
             val shiftId = idGenerator.nextId()
-            
+
             // Проверяем, не открыта ли уже смена на этой ККМ
             val existingShift = storage.findOpenShift(kkmId)
             if (existingShift != null) {
@@ -69,7 +69,7 @@ class OpenShiftUseCase(
                     code = "SHIFT_ALREADY_OPEN"
                 )
             }
-            
+
             // Запрашиваем последнюю локально сохраненную смену для вычисления номера новой смены
             val lastLocalShiftNo = storage.listShifts(kkmId, limit = 1, offset = 0)
                 .firstOrNull()
@@ -85,7 +85,7 @@ class OpenShiftUseCase(
             } else {
                 lastLocalShiftNo + 1L
             }
-            
+
             val shift = ShiftInfo(
                 id = shiftId,
                 kkmId = kkmId,
@@ -93,13 +93,13 @@ class OpenShiftUseCase(
                 status = ShiftStatus.OPEN,
                 openedAt = now
             )
-            
+
             // Сохраняем открытую смену в базу данных
             storage.createShift(shift)
-            
+
             // Обновляем информацию о ККМ, устанавливая номер последней смены
             storage.updateKkm(kkm.copy(updatedAt = now, lastShiftNo = shiftNo.toInt()))
- 
+
             // Переносим накопительные итоги глобальных счетчиков в начало новой смены
             val globalCounters = storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)
             val operations = listOf(

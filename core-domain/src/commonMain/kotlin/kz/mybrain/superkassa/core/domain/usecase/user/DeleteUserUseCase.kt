@@ -33,7 +33,7 @@ class DeleteUserUseCase(
     fun execute(kkmId: String, userId: String, pin: String) {
         authorizeUserUseCase.requireKkm(kkmId)
         authorizeUserUseCase.requireRole(kkmId, pin, setOf(UserRole.ADMIN))
-        
+
         val users = storage.listUsers(kkmId)
         val target = users.firstOrNull { it.id == userId }
             ?: throw NotFoundException(ErrorMessages.userNotFound(), "USER_NOT_FOUND")

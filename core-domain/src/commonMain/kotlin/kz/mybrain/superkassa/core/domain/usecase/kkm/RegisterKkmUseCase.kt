@@ -85,13 +85,13 @@ class RegisterKkmUseCase(
         }
         val now = clock.now()
         val ofdTag = validateOfd(ofdId, ofdEnvironment)
-        
+
         // Проверяем уникальность регистрационного номера
         val existingByReg = storage.findKkmByRegistrationNumber(kkmKgdId)
         if (existingByReg != null) {
             throw ConflictException(ErrorMessages.kkmExists(), "KKM_EXISTS")
         }
-        
+
         // Проверяем уникальность ID кассы в ОФД
         val existingBySystem = storage.findKkmBySystemId(ofdSystemId)
         if (existingBySystem != null) {

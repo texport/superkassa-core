@@ -75,4 +75,3 @@ class TaxCalculator {
         return TicketTaxResult(taxLines)
     }
 }
-

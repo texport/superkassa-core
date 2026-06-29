@@ -177,4 +177,3 @@ object OfdInfoCountersSnapshotParser {
         return money["bills"]?.jsonPrimitive?.long ?: 0L
     }
 }
-

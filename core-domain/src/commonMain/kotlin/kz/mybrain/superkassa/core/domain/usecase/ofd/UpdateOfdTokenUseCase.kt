@@ -39,10 +39,10 @@ class UpdateOfdTokenUseCase(
     fun execute(kkmId: String, pin: String, token: String): Boolean {
         // Проверяем наличие роли Администратора
         authorizeUserUseCase.requireRole(kkmId, pin, setOf(kz.mybrain.superkassa.core.domain.model.auth.UserRole.ADMIN))
-        
+
         // Разбираем токен с помощью кодека
         val parsed = tokenCodec.parseToken(token)
-        
+
         // Кодируем токен в Base64 и сохраняем информацию в базу данных ККМ
         return storage.updateKkmToken(
             id = kkmId,

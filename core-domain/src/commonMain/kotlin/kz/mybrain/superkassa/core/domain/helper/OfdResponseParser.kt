@@ -162,4 +162,3 @@ object OfdResponseParser {
         return current
     }
 }
-

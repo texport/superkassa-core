@@ -47,6 +47,7 @@ class ProcessOfdDocumentResultUseCase(
      * @param now Текущее системное время в миллисекундах.
      * @param receiptContext Контекст чека (запрос чека и ID смены) для обновления счетчиков.
      */
+    @Suppress("NestedBlockDepth")
     fun execute(
         kkm: KkmInfo,
         documentId: String,
@@ -74,7 +75,7 @@ class ProcessOfdDocumentResultUseCase(
             if (success) {
                 // Если отправка успешна, проверяем возможность выхода из автономного режима
                 clearAutonomousIfReady(kkm, now)
-                
+
                 // Для чеков продаж/возвратов обновляем счетчики и доставляем чек
                 if (commandType == OfdCommandType.TICKET && receiptContext != null) {
                     updateCountersUseCase.execute(
@@ -110,7 +111,7 @@ class ProcessOfdDocumentResultUseCase(
             deliveredAt = null,
             isAutonomous = true
         )
-        
+
         // Постановка фискального документа в очередь для отложенной отправки при восстановлении связи
         queue.enqueueOffline(
             OfflineQueueCommandRequest(
@@ -119,10 +120,10 @@ class ProcessOfdDocumentResultUseCase(
                 payloadRef = documentId
             )
         )
-        
+
         // Переводим кассу в автономный (офлайн) режим
         markAutonomousStarted(kkm, now)
-        
+
         // Обновляем счетчики продаж с пометкой автономного (офлайн) режима
         if (commandType == OfdCommandType.TICKET && receiptContext != null) {
             updateCountersUseCase.execute(

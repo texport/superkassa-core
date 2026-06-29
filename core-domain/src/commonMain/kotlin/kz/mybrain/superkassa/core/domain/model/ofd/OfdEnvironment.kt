@@ -9,8 +9,10 @@ package kz.mybrain.superkassa.core.domain.model.ofd
 enum class OfdEnvironment(val id: String) {
     /** Стенд разработки. */
     DEV("DEV"),
+
     /** Тестовый стенд ОФД. */
     TEST("TEST"),
+
     /** Боевой (продуктовый) сервер ОФД. */
     PROD("PROD");
 

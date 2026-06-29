@@ -6,6 +6,7 @@ package kz.mybrain.superkassa.core.domain.model.kkm
 enum class CashOperationType {
     /** Внесение денег в кассу. */
     CASH_IN,
+
     /** Изъятие денег из кассы. */
     CASH_OUT
 }

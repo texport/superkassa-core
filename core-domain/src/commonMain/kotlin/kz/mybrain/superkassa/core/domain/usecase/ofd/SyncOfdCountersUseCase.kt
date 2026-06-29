@@ -55,7 +55,7 @@ class SyncOfdCountersUseCase(
             authorization = authorizeUserUseCase,
             queue = queue
         )
-        
+
         // Отправляем запрос информации в ОФД для получения текущего состояния и счетчиков
         val result = kkmCommonHelper.sendOfdCommand(
             kkm = kkm,

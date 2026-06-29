@@ -33,16 +33,16 @@ class GetOfdAuthInfoUseCase(
     fun execute(kkmId: String, pin: String): OfdAuthInfo {
         // Проверяем, что у пользователя есть права Администратора
         authorizeUserUseCase.requireRole(kkmId, pin, setOf(kz.mybrain.superkassa.core.domain.model.auth.UserRole.ADMIN))
-        
+
         // Получаем информацию о ККМ
         val kkm = authorizeUserUseCase.requireKkm(kkmId)
-        
+
         // Расшифровываем сохраненный зашифрованный токен ОФД
         val token = tokenCodec.decodeToken(kkm.tokenEncryptedBase64)?.toString()
-        
+
         // Получаем следующий номер запроса к ОФД без записи его в базу данных (для предпросмотра)
         val nextReq = generateRequestNumberUseCase.execute(kkmId, persist = false)
-        
+
         return OfdAuthInfo(
             token = token,
             nextReqNum = nextReq

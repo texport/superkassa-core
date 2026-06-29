@@ -7,7 +7,7 @@ package kz.mybrain.superkassa.core.data.exception
  * Используется для предоставления детализированной информации во внешних ответах и логах.
  */
 object DataErrorMessages {
-    
+
     /**
      * Форматирует сообщение об ошибке запроса к ОФД.
      *

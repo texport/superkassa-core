@@ -18,7 +18,6 @@ object ErrorMessages {
         en = "Bad request"
     )
 
-
     fun kkmNotFound(): TrilingualMessage = TrilingualMessage(
         ru = "ККМ не найдена",
         kk = "ККМ табылмады",
@@ -54,7 +53,6 @@ object ErrorMessages {
         kk = "Жүйелік уақыт қате",
         en = "System time invalid"
     )
-
 
     fun ofdProviderUnknown(id: String): TrilingualMessage = TrilingualMessage(
         ru = "Неизвестный ОФД: $id",
@@ -92,7 +90,6 @@ object ErrorMessages {
         en = "Invalid OFD token: $token"
     )
 
-
     fun kkmRegistrationRequired(): TrilingualMessage = TrilingualMessage(
         ru = "Регистрационный номер ККМ обязателен",
         kk = "ККМ тіркеу нөмірі міндетті",
@@ -122,7 +119,6 @@ object ErrorMessages {
         kk = "ККМ systemId бар: $systemId",
         en = "KKM systemId already exists: $systemId"
     )
-
 
     fun userPinRequired(): TrilingualMessage = TrilingualMessage(
         ru = "PIN пользователя обязателен",
@@ -175,7 +171,6 @@ object ErrorMessages {
         en = "User update requires at least one field"
     )
 
-
     fun kkmDeleteRequiresProgramming(): TrilingualMessage = TrilingualMessage(
         ru = "ККМ должна быть в режиме PROGRAMMING",
         kk = "ККМ PROGRAMMING режимінде болуы керек",
@@ -217,7 +212,6 @@ object ErrorMessages {
         kk = "ККМ ОФД талабы бойынша бұғатталған",
         en = "KKM is blocked by OFD instruction"
     )
-
 
     fun kkmSettingsRequiresProgramming(): TrilingualMessage = TrilingualMessage(
         ru = "ККМ должна быть в режиме PROGRAMMING",

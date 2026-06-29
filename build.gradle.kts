@@ -3,17 +3,27 @@ import java.security.MessageDigest
 import java.io.FileInputStream
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipEntry
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
+import org.gradle.plugins.signing.SigningExtension
 
 plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.nmcp)
+    `maven-publish`
     jacoco
 }
 
-group = "kz.mybrain"
-version = "1.0"
+group = "io.github.texport"
+version = "1.0.0"
 
-subprojects {
+dependencies {
+    add("detektPlugins", libs.detekt.formatting)
+}
+
+allprojects {
     group = rootProject.group
     version = rootProject.version
     repositories {
@@ -24,6 +34,66 @@ subprojects {
         plugins.withId("io.gitlab.arturbosch.detekt") {
             add("detektPlugins", rootProject.libs.detekt.formatting)
         }
+    }
+
+    plugins.withType<MavenPublishPlugin> {
+        configure<PublishingExtension> {
+            publications.withType<MavenPublication>().configureEach {
+                val javadocJarTask = tasks.register<Jar>("${name}JavadocJar") {
+                    description = "Generates Javadoc jar for publication ${this@configureEach.name}"
+                    archiveClassifier.set("javadoc")
+                    archiveAppendix.set(this@configureEach.name)
+                }
+                artifact(javadocJarTask)
+                pom {
+                    name.set(project.name)
+                    description.set("Kotlin Multiplatform core module for Superkassa: ${project.name}")
+                    url.set("https://github.com/texport/superkassa-core")
+                    
+                    licenses {
+                        license {
+                            name.set("The Apache License, Version 2.0")
+                            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                        }
+                    }
+                    
+                    developers {
+                        developer {
+                            id.set("sergeyivanov")
+                            name.set("Sergey Ivanov")
+                            email.set("ivanov.sergey.ekb@gmail.com")
+                        }
+                    }
+                    
+                    scm {
+                        connection.set("scm:git:git://github.com/texport/superkassa-core.git")
+                        developerConnection.set("scm:git:ssh://github.com/texport/superkassa-core.git")
+                        url.set("https://github.com/texport/superkassa-core")
+                    }
+                }
+            }
+        }
+        
+        apply(plugin = "signing")
+        configure<SigningExtension> {
+            val signingKey = System.getenv("SIGNING_KEY")
+            val signingPassword = System.getenv("SIGNING_PASSWORD")
+            if (!signingKey.isNullOrEmpty() && !signingPassword.isNullOrEmpty()) {
+                useInMemoryPgpKeys(signingKey, signingPassword)
+            }
+            isRequired = false
+            sign(extensions.getByType<PublishingExtension>().publications)
+        }
+    }
+
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
+        if (name.contains("Test")) {
+            enabled = false
+        }
+    }
+
+    tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
+        enabled = false
     }
 }
 
@@ -184,5 +254,13 @@ tasks.register("generateSpmManifest") {
             """.trimIndent() + "\n"
         )
         println("SPM manifest generation complete for version $versionStr!")
+    }
+}
+
+nmcp {
+    publishAllPublicationsToCentralPortal {
+        username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
+        password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
+        publishingType.set("AUTOMATIC")
     }
 }

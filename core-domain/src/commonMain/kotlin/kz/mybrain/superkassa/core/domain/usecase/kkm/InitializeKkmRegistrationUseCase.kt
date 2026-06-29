@@ -86,7 +86,7 @@ class InitializeKkmRegistrationUseCase(
         val serviceInfo = params.baseInfo.ofdServiceInfo ?: kkmCommonHelper.defaultServiceInfo()
         val factoryNum = params.factoryNumber ?: params.baseInfo.factoryNumber
             ?: throw ValidationException(ErrorMessages.kkmFactoryRequired(), "KKM_FACTORY_REQUIRED")
-        
+
         // 1. Проверяем связь и получаем актуальную информацию из ОФД
         val infoResult = performOfdSystemAndInfo(
             baseInfo = params.baseInfo,
@@ -99,7 +99,7 @@ class InitializeKkmRegistrationUseCase(
 
         val now = clock.now()
         val rawResolvedServiceInfo = OfdResponseParser.extractServiceInfo(infoResult.responseJson, serviceInfo)
-        
+
         // Корректируем и валидируем ОКВЭД
         val resolvedServiceInfo = if (params.okvedOverride != null) {
             rawResolvedServiceInfo.copy(orgOkved = params.okvedOverride)
@@ -155,7 +155,7 @@ class InitializeKkmRegistrationUseCase(
             ofdProviderOverride = ofdTag
         )
         if (systemResult.status != OfdCommandStatus.OK) return null
-        
+
         val infoResult = kkmCommonHelper.sendOfdCommand(
             kkm = baseInfo,
             commandType = OfdCommandType.INFO,

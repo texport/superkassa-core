@@ -60,20 +60,20 @@ class CloseShiftUseCase(
         return storage.inTransaction {
             // Ищем ККМ в базе данных с блокировкой, если не найдена — выбрасываем исключение
             val kkm = storage.findKkmForUpdate(kkmId) ?: throw ValidationException(ErrorMessages.kkmNotFound(), "KKM_NOT_FOUND")
-            
+
             // ККМ не должна находиться в режиме программирования/настройки
             requireNotProgramming(kkm)
-            
+
             // Проверяем права пользователя: закрывать смену могут только Администратор или Кассир
             authorizeUser.execute(kkm.id, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
-            
+
             // Проверяем, есть ли на данной ККМ открытая смена
             val shift = storage.findOpenShift(kkmId)
                 ?: throw ConflictException(
                     ErrorMessages.shiftNotOpen(),
                     "SHIFT_NOT_OPEN"
                 )
-            
+
             // Генерируем ID для фискального документа закрытия смены
             val documentId = idGenerator.nextId()
             val now = clock.now()
@@ -102,7 +102,7 @@ class CloseShiftUseCase(
 
             // Фиксируем закрытие смены в локальной базе данных
             storage.closeShift(shift.id, ShiftStatus.CLOSED, now, documentId)
-            
+
             // Возвращаем результат генерации Z-отчета и его отправки
             ReportResult(
                 documentId = documentId,

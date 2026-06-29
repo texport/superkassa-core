@@ -6,6 +6,7 @@ package kz.mybrain.superkassa.core.domain.model.kkm
 enum class KkmMode {
     /** Режим регистрации (первоначальная настройка и фискализация). */
     REGISTRATION,
+
     /** Режим программирования (настройка параметров работы). */
     PROGRAMMING
 }

@@ -9,10 +9,13 @@ import kotlinx.serialization.Serializable
 enum class PaymentType {
     /** Наличные средства. */
     CASH,
+
     /** Платежная карта. */
     CARD,
+
     /** Электронные деньги. */
     ELECTRONIC,
+
     /** Мобильный платеж (например, по QR-коду). */
     MOBILE
 }
