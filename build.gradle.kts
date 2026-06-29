@@ -17,7 +17,7 @@ plugins {
 }
 
 group = "io.github.texport"
-version = "1.0.0"
+version = "1.0.1"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
