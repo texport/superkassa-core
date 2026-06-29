@@ -17,3 +17,6 @@ local.properties
 # Text files
 *.txt
 
+# Kotlin
+.kotlin/
+
