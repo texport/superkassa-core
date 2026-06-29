@@ -365,7 +365,7 @@ object OfdTicketRequestBuilder {
                                     buildJsonObject {
                                         put(
                                             "parentTicketNumber",
-                                            JsonPrimitive(parent.parentTicketNumber)
+                                            JsonPrimitive(parent.parentTicketNumber.toString())
                                         )
                                         put(
                                             "parentTicketDateTime",

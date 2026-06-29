@@ -68,7 +68,8 @@ class OfdManagerAdapter(
 
     override fun send(command: OfdCommandRequest): OfdCommandResult {
         val now = System.currentTimeMillis()
-        val lastFail = lastNoConnectionMillis[command.kkmId]
+        val throttleKey = "${command.kkmId}:${command.ofdProviderId}:${command.ofdEnvironmentId}"
+        val lastFail = lastNoConnectionMillis[throttleKey]
         if (lastFail != null && (now - lastFail) < reconnectIntervalMs) {
             logger.debug("OFD throttle: kkmId={}, retry after {}s", command.kkmId, reconnectIntervalSeconds)
             return OfdCommandResult(
@@ -90,6 +91,7 @@ class OfdManagerAdapter(
                     status = OfdCommandStatus.FAILED,
                     errorMessage = DataErrorMessages.ofdRequestFailed("Missing required request parameters")
                 )
+            logger.info("OFD SEND: commandType={}, kkmId={}, reqNum={}, token={}", command.commandType, command.kkmId, command.reqNum, command.token)
             val bytes = codec.encode(json)
             val response = runBlocking {
                 try {
@@ -106,7 +108,8 @@ class OfdManagerAdapter(
             if (response.isFailure) {
                 val error = response.exceptionOrNull()?.message ?: "unknown"
                 val isTimeout = error.contains("timeout", ignoreCase = true)
-                lastNoConnectionMillis[command.kkmId] = now
+                lastNoConnectionMillis[throttleKey] = now
+                logger.warn("OFD SEND FAILED: commandType={}, kkmId={}, error={}", command.commandType, command.kkmId, error)
                 return OfdCommandResult(
                     status = if (isTimeout) OfdCommandStatus.TIMEOUT else OfdCommandStatus.FAILED,
                     errorMessage = DataErrorMessages.ofdRequestFailed(error)
@@ -115,19 +118,37 @@ class OfdManagerAdapter(
 
             val responseBytes = response.getOrThrow()
             val responseJson = codec.decode(responseBytes)
+            logger.debug("DEBUG_OFD_RESPONSE_JSON: {}", responseJson)
             val resultCode = extractResultCode(responseJson)
             val resultText = extractResultText(responseJson)
-            if (resultCode != null) lastNoConnectionMillis.remove(command.kkmId)
+            val responseToken = extractHeaderToken(responseJson)
+            val responseReqNum = extractHeaderReqNum(responseJson)
+            val fiscalSign = OfdResponseUtils.extractFiscalSign(responseJson)
+
+            if (resultCode != null) lastNoConnectionMillis.remove(throttleKey)
             val status = if (resultCode == 0) OfdCommandStatus.OK else OfdCommandStatus.FAILED
+            
+            if (status == OfdCommandStatus.OK) {
+                logger.info(
+                    "OFD RECV SUCCESS: commandType={}, resultCode=0, responseToken={}, responseReqNum={}, fiscalSign={}",
+                    command.commandType, responseToken, responseReqNum, fiscalSign
+                )
+            } else {
+                logger.warn(
+                    "OFD RECV ERROR: commandType={}, resultCode={}, text={}",
+                    command.commandType, resultCode, resultText
+                )
+            }
+
             OfdCommandResult(
                 status = status,
                 responseBin = responseBytes,
                 responseJson = responseJson,
-                responseToken = extractHeaderToken(responseJson),
-                responseReqNum = extractHeaderReqNum(responseJson),
+                responseToken = responseToken,
+                responseReqNum = responseReqNum,
                 resultCode = resultCode,
                 resultText = resultText,
-                fiscalSign = OfdResponseUtils.extractFiscalSign(responseJson),
+                fiscalSign = fiscalSign,
                 receiptUrl = OfdResponseUtils.extractReceiptUrl(responseJson),
                 errorMessage = if (status == OfdCommandStatus.OK) null else resultText
             )
@@ -145,8 +166,13 @@ class OfdManagerAdapter(
                 errorMessage = ex.message
             )
         } catch (ex: Exception) {
-            logger.error("OFD request failed", ex)
-            lastNoConnectionMillis[command.kkmId] = now
+            val isNetworkError = ex is java.io.IOException || ex.cause is java.io.IOException || ex is java.util.concurrent.TimeoutException
+            if (isNetworkError) {
+                logger.warn("OFD connection failed for kkmId={}: {}", command.kkmId, ex.message ?: "unknown")
+            } else {
+                logger.error("OFD request failed with unexpected error", ex)
+            }
+            lastNoConnectionMillis[throttleKey] = now
             OfdCommandResult(
                 status = OfdCommandStatus.FAILED,
                 errorMessage = DataErrorMessages.ofdRequestFailed(ex.message)

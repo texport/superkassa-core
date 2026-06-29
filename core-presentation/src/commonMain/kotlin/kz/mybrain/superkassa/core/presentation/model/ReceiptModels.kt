@@ -36,8 +36,7 @@ data class ReceiptSellRequest(
     val idempotencyKey: String,
     @Schema(description = "Позиции чека")
     @field:NotEmpty(message = "Список позиций не может быть пустым")
-    @field:Valid
-    val items: List<ReceiptItemDto>,
+    val items: List<@Valid ReceiptItemDto>,
     @Schema(description = "Наценка на весь чек: процент (0–100). Взаимоисключающе с markupSum.", example = "0")
     @field:DecimalMin("0")
     @field:DecimalMax("100")
@@ -62,8 +61,7 @@ data class ReceiptSellRequest(
     val defaultVatGroup: String? = null,
     @Schema(description = "Способы оплаты. Допустимые типы: CASH, CARD, ELECTRONIC.")
     @field:NotEmpty(message = "Укажите хотя бы один способ оплаты")
-    @field:Valid
-    val payments: List<ReceiptPaymentDto>,
+    val payments: List<@Valid ReceiptPaymentDto>,
     @Schema(description = "Получено от покупателя (в тенге, опционально)", example = "2000.00")
     val taken: Double? = null,
     @Schema(description = "БИН/ИИН покупателя (по требованию)", example = "123456789012")
@@ -103,8 +101,7 @@ data class ReceiptSellReturnRequest(
     val idempotencyKey: String,
     @Schema(description = "Позиции чека")
     @field:NotEmpty(message = "Список позиций не может быть пустым")
-    @field:Valid
-    val items: List<ReceiptItemDto>,
+    val items: List<@Valid ReceiptItemDto>,
     @Schema(description = "Наценка на весь чек: процент (0–100). Взаимоисключающе с markupSum.", example = "0")
     @field:DecimalMin("0")
     @field:DecimalMax("100")
@@ -128,8 +125,7 @@ data class ReceiptSellReturnRequest(
     val defaultVatGroup: String? = null,
     @Schema(description = "Способы оплаты. Допустимые типы: CASH, CARD, ELECTRONIC.")
     @field:NotEmpty(message = "Укажите хотя бы один способ оплаты")
-    @field:Valid
-    val payments: List<ReceiptPaymentDto>,
+    val payments: List<@Valid ReceiptPaymentDto>,
     @Schema(description = "Получено от покупателя (в тенге, опционально)", example = "2000.00")
     val taken: Double? = null,
     @Schema(description = "Информация об исходном чеке для возврата (parentTicket)", required = false)
@@ -170,8 +166,7 @@ data class ReceiptBuyRequest(
     val idempotencyKey: String,
     @Schema(description = "Позиции чека")
     @field:NotEmpty(message = "Список позиций не может быть пустым")
-    @field:Valid
-    val items: List<ReceiptItemDto>,
+    val items: List<@Valid ReceiptItemDto>,
     @Schema(description = "Наценка на весь чек: процент (0–100). Взаимоисключающе с markupSum.", example = "0")
     @field:DecimalMin("0")
     @field:DecimalMax("100")
@@ -195,8 +190,7 @@ data class ReceiptBuyRequest(
     val defaultVatGroup: String? = null,
     @Schema(description = "Способы оплаты. Допустимые типы: CASH, CARD, ELECTRONIC.")
     @field:NotEmpty(message = "Укажите хотя бы один способ оплаты")
-    @field:Valid
-    val payments: List<ReceiptPaymentDto>,
+    val payments: List<@Valid ReceiptPaymentDto>,
     @Schema(description = "Получено от покупателя (в тенге, опционально)", example = "2000.00")
     val taken: Double? = null,
     @Schema(description = "БИН/ИИН покупателя (по требованию)", example = "123456789012")
@@ -236,8 +230,7 @@ data class ReceiptBuyReturnRequest(
     val idempotencyKey: String,
     @Schema(description = "Позиции чека")
     @field:NotEmpty(message = "Список позиций не может быть пустым")
-    @field:Valid
-    val items: List<ReceiptItemDto>,
+    val items: List<@Valid ReceiptItemDto>,
     @Schema(description = "Наценка на весь чек: процент (0–100). Взаимоисключающе с markupSum.", example = "0")
     @field:DecimalMin("0")
     @field:DecimalMax("100")
@@ -261,8 +254,7 @@ data class ReceiptBuyReturnRequest(
     val defaultVatGroup: String? = null,
     @Schema(description = "Способы оплаты. Допустимые типы: CASH, CARD, ELECTRONIC.")
     @field:NotEmpty(message = "Укажите хотя бы один способ оплаты")
-    @field:Valid
-    val payments: List<ReceiptPaymentDto>,
+    val payments: List<@Valid ReceiptPaymentDto>,
     @Schema(description = "Получено от покупателя (в тенге, опционально)", example = "2000.00")
     val taken: Double? = null,
     @Schema(description = "Информация об исходном чеке для возврата (parentTicket)", required = false)

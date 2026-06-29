@@ -60,6 +60,7 @@ kotlin {
 }
 
 val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
+    description = "Generates Jacoco coverage report for core-presentation."
     dependsOn(tasks.named("jvmTest"))
     classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
     sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))

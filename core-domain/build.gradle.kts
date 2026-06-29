@@ -18,6 +18,7 @@ dependencies {
 }
 
 val cleanOfflineQueueJar = tasks.register<Jar>("cleanOfflineQueueJar") {
+    description = "Packs offline queue jar without domain classes."
     archiveClassifier.set("clean")
     val inputJar = conflictingOfflineQueue.elements.map { it.first().asFile }
     from(inputJar.map { zipTree(it) }) {
@@ -80,6 +81,7 @@ tasks.named<Test>("jvmTest") {
 }
 
 val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
+    description = "Generates Jacoco coverage report for core-domain."
     dependsOn(tasks.named("jvmTest"))
     classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
     sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))

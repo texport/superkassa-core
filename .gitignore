@@ -20,3 +20,7 @@ local.properties
 # Kotlin
 .kotlin/
 
+# Agents
+.agents/
+
+

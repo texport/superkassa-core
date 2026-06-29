@@ -41,7 +41,9 @@ class CloseShiftRequestBuilderStrategy(
      */
     override fun build(command: OfdCommandRequest, config: OfdConfig): JsonObject? {
         val serviceBlock = buildServiceBlock(command) ?: return null
-        val shift = storage.findOpenShift(command.kkmId) ?: return null
+        val shift = storage.findOpenShift(command.kkmId)
+            ?: storage.listShifts(command.kkmId, limit = 1).firstOrNull()
+            ?: return null
         // Для Z-отчета обязательно пересобираем счётчики смены из документов.
         val counters = recalculateShiftCountersUseCase
             .execute(command.kkmId, shift)

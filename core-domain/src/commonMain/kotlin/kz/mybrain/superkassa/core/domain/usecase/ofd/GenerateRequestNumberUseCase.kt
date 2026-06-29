@@ -32,8 +32,13 @@ class GenerateRequestNumberUseCase(
      * @return [Int] Новый сгенерированный номер запроса к ОФД.
      */
     fun execute(kkmId: String, persist: Boolean = true): Int {
-        // Загружаем текущее значение счетчика из глобальной области видимости ККМ
-        val current = storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[reqNumCounterKey] ?: 0L
+        val dbVal = storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[reqNumCounterKey]
+        val current = if (dbVal == null) {
+            val envStart = startReqNumOverride
+            if (envStart != null) envStart - 1L else 0L
+        } else {
+            dbVal
+        }
 
         // Вычисляем следующий номер с учетом лимита циклического счетчика
         val next = if (current >= maxReqNum) 0L else current + 1L
@@ -43,5 +48,9 @@ class GenerateRequestNumberUseCase(
             storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, reqNumCounterKey, next)
         }
         return next.toInt()
+    }
+
+    companion object {
+        var startReqNumOverride: Long? = null
     }
 }

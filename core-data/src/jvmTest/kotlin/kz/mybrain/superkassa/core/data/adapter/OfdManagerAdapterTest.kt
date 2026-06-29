@@ -199,6 +199,94 @@ class OfdManagerAdapterTest {
     }
 
     @Test
+    fun testSendNetworkFailureIOException() {
+        val request = OfdCommandRequest(
+            kkmId = "kkm-1",
+            ofdProviderId = "KAZAKHTELECOM",
+            ofdEnvironmentId = "PROD",
+            commandType = OfdCommandType.TICKET,
+            payloadRef = "doc-1",
+            token = 123L,
+            reqNum = 10,
+            deviceId = 1L
+        )
+
+        every { builder.canHandle(OfdCommandType.TICKET) } returns true
+        every { builder.build(request, config) } returns JsonObject(emptyMap())
+        every { codec.encode(any()) } throws java.io.IOException()
+
+        val result = adapter.send(request)
+        assertEquals(OfdCommandStatus.FAILED, result.status)
+        assertNotNull(result.errorMessage)
+    }
+
+    @Test
+    fun testSendNetworkFailureWrappedIOException() {
+        val request = OfdCommandRequest(
+            kkmId = "kkm-1",
+            ofdProviderId = "KAZAKHTELECOM",
+            ofdEnvironmentId = "PROD",
+            commandType = OfdCommandType.TICKET,
+            payloadRef = "doc-1",
+            token = 123L,
+            reqNum = 10,
+            deviceId = 1L
+        )
+
+        every { builder.canHandle(OfdCommandType.TICKET) } returns true
+        every { builder.build(request, config) } returns JsonObject(emptyMap())
+        every { codec.encode(any()) } throws RuntimeException(java.io.IOException("Wrapped error"))
+
+        val result = adapter.send(request)
+        assertEquals(OfdCommandStatus.FAILED, result.status)
+        assertNotNull(result.errorMessage)
+    }
+
+    @Test
+    fun testSendNetworkFailureTimeoutException() {
+        val request = OfdCommandRequest(
+            kkmId = "kkm-1",
+            ofdProviderId = "KAZAKHTELECOM",
+            ofdEnvironmentId = "PROD",
+            commandType = OfdCommandType.TICKET,
+            payloadRef = "doc-1",
+            token = 123L,
+            reqNum = 10,
+            deviceId = 1L
+        )
+
+        every { builder.canHandle(OfdCommandType.TICKET) } returns true
+        every { builder.build(request, config) } returns JsonObject(emptyMap())
+        every { codec.encode(any()) } throws java.util.concurrent.TimeoutException("Timeout")
+
+        val result = adapter.send(request)
+        assertEquals(OfdCommandStatus.FAILED, result.status)
+        assertNotNull(result.errorMessage)
+    }
+
+    @Test
+    fun testSendNetworkFailureNestedRuntimeException() {
+        val request = OfdCommandRequest(
+            kkmId = "kkm-1",
+            ofdProviderId = "KAZAKHTELECOM",
+            ofdEnvironmentId = "PROD",
+            commandType = OfdCommandType.TICKET,
+            payloadRef = "doc-1",
+            token = 123L,
+            reqNum = 10,
+            deviceId = 1L
+        )
+
+        every { builder.canHandle(OfdCommandType.TICKET) } returns true
+        every { builder.build(request, config) } returns JsonObject(emptyMap())
+        every { codec.encode(any()) } throws RuntimeException(RuntimeException("not io exception"))
+
+        val result = adapter.send(request)
+        assertEquals(OfdCommandStatus.FAILED, result.status)
+        assertNotNull(result.errorMessage)
+    }
+
+    @Test
     fun testSendEmptyResponse() {
         val request = OfdCommandRequest(
             kkmId = "kkm-1",
@@ -761,7 +849,8 @@ class OfdManagerAdapterTest {
         val field = OfdManagerAdapter::class.java.getDeclaredField("lastNoConnectionMillis")
         field.isAccessible = true
         val map = field.get(adapter) as java.util.concurrent.ConcurrentHashMap<String, Long>
-        map[request.kkmId] = System.currentTimeMillis() - 70000L
+        val throttleKey = "${request.kkmId}:${request.ofdProviderId}:${request.ofdEnvironmentId}"
+        map[throttleKey] = System.currentTimeMillis() - 70000L
 
         // The request should bypass throttle and try sending again
         coEvery { networkClient.sendAndReceive(any(), requestBytes) } returns Result.success(responseBytes)

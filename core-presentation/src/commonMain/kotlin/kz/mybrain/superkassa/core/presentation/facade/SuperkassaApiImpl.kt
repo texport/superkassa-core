@@ -483,6 +483,7 @@ class SuperkassaApiImpl(
     // Fiscal Operations / Receipt and Cash processing delegates
     override fun createReceipt(request: ReceiptRequest): ReceiptResult {
         val kkm = authorization.requireKkm(request.kkmId)
+        requireOperational(kkm)
         return processReceiptUseCase.execute(request, kkm)
     }
 
@@ -568,11 +569,17 @@ class SuperkassaApiImpl(
         return createReceipt(receiptRequest)
     }
 
-    override fun cashIn(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult =
-        createCashOperationUseCase.execute(kkmId, request, CashOperationType.CASH_IN)
+    override fun cashIn(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult {
+        val kkm = authorization.requireKkm(kkmId)
+        requireOperational(kkm)
+        return createCashOperationUseCase.execute(kkmId, request.copy(pin = pin), CashOperationType.CASH_IN)
+    }
 
-    override fun cashOut(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult =
-        createCashOperationUseCase.execute(kkmId, request, CashOperationType.CASH_OUT)
+    override fun cashOut(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult {
+        val kkm = authorization.requireKkm(kkmId)
+        requireOperational(kkm)
+        return createCashOperationUseCase.execute(kkmId, request.copy(pin = pin), CashOperationType.CASH_OUT)
+    }
 
     override fun retryReceiptDelivery(kkmId: String, documentId: String, pin: String): List<Pair<String, Boolean>> =
         retryReceiptDeliveryUseCase.execute(kkmId, documentId, pin)

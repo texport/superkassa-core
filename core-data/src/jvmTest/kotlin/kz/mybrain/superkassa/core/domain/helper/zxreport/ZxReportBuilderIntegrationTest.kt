@@ -384,12 +384,12 @@ class ZxReportBuilderIntegrationTest {
             timeJson["minute"]!!.jsonPrimitive.int,
             timeJson["second"]!!.jsonPrimitive.int,
             0,
-            ZoneId.systemDefault()
+            ZoneId.of("Asia/Almaty")
         )
 
         val expectedZdt = ZonedDateTime.ofInstant(
             Instant.ofEpochMilli(epochMillis),
-            ZoneId.systemDefault()
+            ZoneId.of("Asia/Almaty")
         )
 
         assertEquals(expectedZdt.year, actualZdt.year)

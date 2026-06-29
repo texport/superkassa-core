@@ -23,7 +23,7 @@ object OfdCommonRequestHelper {
      * @return [JsonObject], содержащий объекты "date" и "time".
      */
     fun toDateTime(epochMillis: Long): JsonObject {
-        val zdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault())
+        val zdt = ZonedDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.of("Asia/Almaty"))
         return buildJsonObject {
             put(
                 "date",

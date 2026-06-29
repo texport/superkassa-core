@@ -159,11 +159,11 @@ class ReportAndCloseShiftZxReportIntegrationTest {
         // Время отчёта и zxReport должны соответствовать now/openShift в локальной зоне.
         val expectedZdt = ZonedDateTime.ofInstant(
             Instant.ofEpochMilli(now),
-            ZoneId.systemDefault()
+            ZoneId.of("Asia/Almaty")
         )
         val expectedOpenZdt = ZonedDateTime.ofInstant(
             Instant.ofEpochMilli(openShift),
-            ZoneId.systemDefault()
+            ZoneId.of("Asia/Almaty")
         )
 
         fun extractZdt(obj: JsonObject, field: String): ZonedDateTime {
@@ -178,7 +178,7 @@ class ReportAndCloseShiftZxReportIntegrationTest {
                 time["minute"]!!.jsonPrimitive.int,
                 time["second"]!!.jsonPrimitive.int,
                 0,
-                ZoneId.systemDefault()
+                ZoneId.of("Asia/Almaty")
             )
         }
 
@@ -299,11 +299,11 @@ class ReportAndCloseShiftZxReportIntegrationTest {
         // Времена: closeShift.closeTime и поля zReport должны соответствовать now/openShift в локальной зоне.
         val expectedZdt = ZonedDateTime.ofInstant(
             Instant.ofEpochMilli(now),
-            ZoneId.systemDefault()
+            ZoneId.of("Asia/Almaty")
         )
         val expectedOpenZdt = ZonedDateTime.ofInstant(
             Instant.ofEpochMilli(openShift),
-            ZoneId.systemDefault()
+            ZoneId.of("Asia/Almaty")
         )
 
         fun extractZdt(obj: JsonObject, field: String): ZonedDateTime {
@@ -318,7 +318,7 @@ class ReportAndCloseShiftZxReportIntegrationTest {
                 time["minute"]!!.jsonPrimitive.int,
                 time["second"]!!.jsonPrimitive.int,
                 0,
-                ZoneId.systemDefault()
+                ZoneId.of("Asia/Almaty")
             )
         }
 

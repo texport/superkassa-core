@@ -193,4 +193,63 @@ class OfdRequestFactoryTicketQuantityTest {
         assertTrue(bytes.isNotEmpty())
     }
 
+    @Test
+    fun `buildTicketRequest can be encoded by OfdProtocolCodec when taxes are absent`() {
+        val now = System.currentTimeMillis()
+        val serviceInfo = kz.mybrain.superkassa.core.domain.model.ofd.OfdServiceInfo(
+            orgTitle = "Test Org",
+            orgAddress = "Test Address",
+            orgAddressKz = "Test Address KZ",
+            orgInn = "123456789012",
+            orgOkved = "47301",
+            geoLatitude = 1,
+            geoLongitude = 1,
+            geoSource = "TEST"
+        )
+        val serviceBlock = OfdRequestFactory.buildServicePayload(
+            serviceInfo = serviceInfo,
+            registrationNumber = "RN-1",
+            factoryNumber = "FN-1",
+            systemId = "SYS-1",
+            offlineBeginMillis = now - 1_000,
+            offlineEndMillis = now
+        )
+
+        val request = ReceiptRequest(
+            kkmId = "kkm-1",
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            taxRegime = TaxRegime.NO_VAT,
+            defaultVatGroup = VatGroup.NO_VAT,
+            items = listOf(
+                ReceiptItem(
+                    name = "Item with NO VAT",
+                    sectionCode = "001",
+                    quantity = 1,
+                    price = Money(1000, 0),
+                    sum = Money(1000, 0),
+                    vatGroup = VatGroup.NO_VAT
+                )
+            ),
+            payments = listOf(ReceiptPayment(PaymentType.CASH, Money(1000, 0))),
+            total = Money(1000, 0),
+            idempotencyKey = "idem-5"
+        )
+
+        val json = OfdRequestFactory.buildTicketRequest(
+            ofdId = "kazakhtelecom",
+            protocolVersion = "203",
+            deviceId = 1L,
+            token = 123L,
+            reqNum = 1,
+            request = request,
+            serviceBlock = serviceBlock
+        )
+
+        val codec = OfdProtocolCodec()
+        val bytes = codec.encode(json)
+        assertNotNull(bytes)
+        assertTrue(bytes.isNotEmpty())
+    }
+
 }
