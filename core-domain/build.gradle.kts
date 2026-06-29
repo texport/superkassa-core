@@ -11,13 +11,13 @@ repositories {
     mavenCentral()
 }
 
-val conflictingOfflineQueue by configurations.creating
+val conflictingOfflineQueue = configurations.create("conflictingOfflineQueue")
 
 dependencies {
     conflictingOfflineQueue(libs.superkassa.offline.queue)
 }
 
-val cleanOfflineQueueJar by tasks.registering(Jar::class) {
+val cleanOfflineQueueJar = tasks.register<Jar>("cleanOfflineQueueJar") {
     archiveClassifier.set("clean")
     val inputJar = conflictingOfflineQueue.elements.map { it.first().asFile }
     from(inputJar.map { zipTree(it) }) {
