@@ -1,7 +1,7 @@
 # superkassa-core
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.texport/core-domain.svg?label=Maven%20Central)](https://central.sonatype.com/search?q=g:io.github.texport)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/texport/superkassa-core/releases)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.texport/superkassa-core.svg?label=Maven%20Central)](https://central.sonatype.com/search?q=g:io.github.texport)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/texport/superkassa-core/releases)
 [![Coverage](https://img.shields.io/badge/coverage-91%25-green.svg)](https://github.com/texport/superkassa-core/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI Build](https://img.shields.io/github/actions/workflow/status/texport/superkassa-core/ci.yml?branch=main&label=CI%20Build)](https://github.com/texport/superkassa-core/actions)
@@ -20,17 +20,15 @@
 2. **`core-data`**: Implementations of storage backing, OFD communication orchestration, retry policies, and lease locking.
 3. **`core-presentation`**: Presentation layer facade (`SuperkassaApi`) that exposes the core system functions to client applications.
 
-### Integration
-
-#### Kotlin / Gradle
-
-To use the core KMP modules in your multi-project Gradle build:
+To use the unified core KMP module in your Multiplatform or JVM Gradle build:
 
 ```kotlin
 dependencies {
-    implementation("io.github.texport:core-domain:1.0.0")
-    implementation("io.github.texport:core-data:1.0.0")
-    implementation("io.github.texport:core-presentation:1.0.0")
+    // For Multiplatform targets
+    implementation("io.github.texport:superkassa-core:1.0.1")
+    
+    // Or for JVM-only targets (like server)
+    implementation("io.github.texport:superkassa-core-jvm:1.0.1")
 }
 ```
 
@@ -40,7 +38,7 @@ The iOS target is packaged as a unified `SuperkassaCore` binary `XCFramework` di
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/texport/superkassa-core", from: "1.0.0")
+    .package(url: "https://github.com/texport/superkassa-core", from: "1.0.1")
 ]
 ```
 
@@ -54,17 +52,15 @@ dependencies: [
 2. **`core-data`**: Реализации портов хранения, отправки документов в ОФД, политик повторных попыток и межпроцессных блокировок.
 3. **`core-presentation`**: Фасад презентационного слоя (`SuperkassaApi`), предоставляющий методы интеграции ядра с внешними клиентами.
 
-### Интеграция
-
-#### Kotlin / Gradle
-
-Подключите необходимые KMP модули в зависимости вашего Gradle-проекта:
+Подключите единый KMP модуль в зависимости вашего Gradle-проекта:
 
 ```kotlin
 dependencies {
-    implementation("io.github.texport:core-domain:1.0.0")
-    implementation("io.github.texport:core-data:1.0.0")
-    implementation("io.github.texport:core-presentation:1.0.0")
+    // Для мультиплатформенных (KMP) проектов
+    implementation("io.github.texport:superkassa-core:1.0.1")
+    
+    // Для классических JVM-проектов (например, сервер)
+    implementation("io.github.texport:superkassa-core-jvm:1.0.1")
 }
 ```
 
@@ -74,6 +70,6 @@ dependencies {
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/texport/superkassa-core", from: "1.0.0")
+    .package(url: "https://github.com/texport/superkassa-core", from: "1.0.1")
 ]
 ```
