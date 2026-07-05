@@ -1,12 +1,9 @@
 package kz.mybrain.superkassa.offline_queue.application.logging
 
-import kotlin.reflect.KClass
 import org.slf4j.LoggerFactory
+import kotlin.reflect.KClass
 
 actual class Logger(private val delegate: org.slf4j.Logger) {
-    actual fun info(message: String) {
-        delegate.info(message)
-    }
     actual fun info(message: String, vararg args: Any?) {
         delegate.info(message, *args)
     }

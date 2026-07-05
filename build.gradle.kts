@@ -3,22 +3,30 @@ import java.security.MessageDigest
 import java.io.FileInputStream
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipEntry
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 
 plugins {
-    alias(libs.plugins.detekt)
-    alias(libs.plugins.nmcp)
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.nmcp)
+    alias(libs.plugins.nmcp.aggregation)
     `maven-publish`
     signing
-    jacoco
 }
 
 group = "io.github.texport"
-version = "1.0.2"
+version = "1.0.3"
 
 repositories {
-    mavenLocal()
+    google()
     mavenCentral()
+}
+
+dependencies {
+    detektPlugins(libs.detekt.formatting)
+    add("nmcpAggregation", dependencies.project(mapOf("path" to ":")))
 }
 
 detekt {
@@ -26,14 +34,52 @@ detekt {
     buildUponDefaultConfig = true
     allRules = true
     autoCorrect = true
+    source.setFrom(files(
+        "src/commonMain/kotlin",
+        "src/jvmMain/kotlin",
+        "src/androidMain/kotlin",
+        "src/iosMain/kotlin"
+    ))
 }
 
-dependencies {
-    detektPlugins(libs.detekt.formatting)
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "kz.mybrain.superkassa.offline_queue.application.logging.*"
+                )
+            }
+        }
+
+        verify {
+            rule {
+                bound {
+                    coverageUnits = CoverageUnit.INSTRUCTION
+                    minValue = 90
+                }
+                bound {
+                    coverageUnits = CoverageUnit.BRANCH
+                    minValue = 94
+                }
+                bound {
+                    coverageUnits = CoverageUnit.LINE
+                    minValue = 99
+                }
+            }
+        }
+    }
 }
 
 kotlin {
     jvm()
+    android {
+        namespace = "kz.mybrain.superkassa.offline_queue"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+
+        withHostTest {}
+    }
     
     val xcf = XCFramework("SuperkassaOfflineQueue")
     listOf(iosArm64(), iosX64(), iosSimulatorArm64()).forEach { target ->
@@ -43,62 +89,31 @@ kotlin {
         }
     }
 
-    jvmToolchain(libs.versions.java.get().toInt())
-
     sourceSets {
-        commonMain {
-            dependencies {
-                // Core offline-queue logic has no external dependencies
-            }
+        commonMain.dependencies {
+            // Core offline-queue logic has no external dependencies
         }
-        commonTest {
-            dependencies {
-                implementation(kotlin("test"))
-            }
+        jvmMain.dependencies {
+            implementation(libs.slf4j.api)
         }
-        jvmMain {
-            dependencies {
-                implementation(libs.slf4j.api)
-            }
-        }
-        jvmTest {
-            // JVM-specific tests
+        commonTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 
-    targets.all {
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions {
-                    freeCompilerArgs.add("-Xexpect-actual-classes")
-                }
-            }
-        }
-    }
+    jvmToolchain(libs.versions.javaTargetCore.get().toInt())
 }
 
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    jvmTarget = libs.versions.java.get()
-}
-
-jacoco {
-    toolVersion = libs.versions.jacocoVersion.get()
-}
-
-tasks.named<Test>("jvmTest") {
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
-    finalizedBy(tasks.named("jacocoTestReport"))
 }
 
-val jacocoTestReport: org.gradle.api.tasks.TaskProvider<JacocoReport> = tasks.register<JacocoReport>("jacocoTestReport") {
-    description = "Generates Jacoco code coverage report for the JVM target."
-    dependsOn(tasks.named("jvmTest"))
-    classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
-    sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))
-    executionData.setFrom(files(layout.buildDirectory.file("jacoco/jvmTest.exec")))
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
+tasks.withType<Javadoc>().configureEach {
+    options {
+        encoding = "UTF-8"
+        if (this is StandardJavadocDocletOptions) {
+            addStringOption("Xdoclint:none", "-quiet")
+        }
     }
 }
 
@@ -114,14 +129,14 @@ publishing {
             name.set("superkassa-offline-queue")
             description.set("Offline command queue and synchronization logic for Superkassa")
             url.set("https://github.com/texport/superkassa-offline-queue")
-
+            
             licenses {
                 license {
                     name.set("The Apache License, Version 2.0")
                     url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
                 }
             }
-
+            
             developers {
                 developer {
                     id.set("sergeyivanov")
@@ -129,7 +144,7 @@ publishing {
                     email.set("ivanov.sergey.ekb@gmail.com")
                 }
             }
-
+            
             scm {
                 connection.set("scm:git:git://github.com/texport/superkassa-offline-queue.git")
                 developerConnection.set("scm:git:ssh://github.com/texport/superkassa-offline-queue.git")
@@ -140,21 +155,26 @@ publishing {
 }
 
 signing {
-    val signingKey = System.getenv("SIGNING_KEY")
-    val signingPassword = System.getenv("SIGNING_PASSWORD")
-    if (!signingKey.isNullOrEmpty() && !signingPassword.isNullOrEmpty()) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
-    }
     isRequired = false
     sign(publishing.publications)
 }
 
-nmcp {
-    publishAllPublicationsToCentralPortal {
+nmcpAggregation {
+    centralPortal {
         username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
         password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
-        publishingType.set("AUTOMATIC")
+        publishingType.set("USER_MANAGED")
     }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+}
+
+tasks.named("check") {
+    dependsOn("koverVerify")
 }
 
 tasks.register("generateSpmManifest") {
@@ -162,11 +182,13 @@ tasks.register("generateSpmManifest") {
     description = "Zips SuperkassaOfflineQueue XCFramework, calculates SHA-256 and writes Package.swift"
     dependsOn("assembleSuperkassaOfflineQueueReleaseXCFramework")
 
+    val versionStr = project.version.toString()
+    val outputDir = layout.buildDirectory.dir("XCFrameworks/release").get().asFile
+    val packageSwiftFile = rootProject.file("Package.swift")
+
     doLast {
-        val versionStr = project.version.toString()
         val repoUrl = "https://github.com/texport/superkassa-offline-queue"
         val zipName = "SuperkassaOfflineQueue.xcframework.zip"
-        val outputDir = layout.buildDirectory.dir("XCFrameworks/release").get().asFile
         val xcframeworkDir = File(outputDir, "SuperkassaOfflineQueue.xcframework")
         val zipFile = File(outputDir, zipName)
 
@@ -178,16 +200,20 @@ tasks.register("generateSpmManifest") {
         println("Zipping XCFramework to ${zipFile.absolutePath}...")
         zipFile.delete()
         ZipOutputStream(zipFile.outputStream().buffered()).use { zos ->
-            xcframeworkDir.walkTopDown().forEach { file ->
-                if (file.isFile) {
-                    val relativePath = file.relativeTo(xcframeworkDir.parentFile).path
-                    zos.putNextEntry(ZipEntry(relativePath))
+            xcframeworkDir.walkTopDown()
+                .filter { it.isFile }
+                .sortedBy { it.relativeTo(xcframeworkDir.parentFile).invariantSeparatorsPath }
+                .forEach { file ->
+                    val relativePath = file.relativeTo(xcframeworkDir.parentFile).invariantSeparatorsPath
+                    val entry = ZipEntry(relativePath).apply {
+                        time = 0L
+                    }
+                    zos.putNextEntry(entry)
                     file.inputStream().buffered().use { input ->
                         input.copyTo(zos)
                     }
                     zos.closeEntry()
                 }
-            }
         }
 
         // 2. Compute SHA-256
@@ -206,7 +232,6 @@ tasks.register("generateSpmManifest") {
         println("SHA-256: $checksum")
 
         // 3. Write Package.swift
-        val packageSwiftFile = rootProject.file("Package.swift")
         println("Writing Package.swift to ${packageSwiftFile.absolutePath}...")
         packageSwiftFile.writeText(
             """
@@ -238,4 +263,3 @@ tasks.register("generateSpmManifest") {
         println("SPM manifest generation complete for version $versionStr!")
     }
 }
-

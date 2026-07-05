@@ -1,7 +1,7 @@
 # superkassa-offline-queue
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.texport/superkassa-offline-queue.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.texport/superkassa-offline-queue)
-[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/texport/superkassa-offline-queue/releases)
+[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/texport/superkassa-offline-queue/releases)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://github.com/texport/superkassa-offline-queue/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI Build](https://img.shields.io/github/actions/workflow/status/texport/superkassa-offline-queue/ci.yml?branch=main&label=CI%20Build)](https://github.com/texport/superkassa-offline-queue/actions)
@@ -32,7 +32,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation("io.github.texport:superkassa-offline-queue:1.0.1")
+                implementation("io.github.texport:superkassa-offline-queue:1.0.3")
             }
         }
     }
@@ -43,7 +43,7 @@ kotlin {
 You can integrate this library directly into your iOS project using Xcode's Swift Package Manager:
 1. In Xcode, select **File ➔ Add Package Dependencies...**
 2. Enter the repository URL: `https://github.com/texport/superkassa-offline-queue.git`
-3. Set the version rules to **Up to Next Major** starting with `1.0.1`.
+3. Set the version rules to **Up to Next Major** starting with `1.0.3`.
 
 ---
 
@@ -51,6 +51,7 @@ You can integrate this library directly into your iOS project using Xcode's Swif
 
 ```kotlin
 import kz.mybrain.superkassa.offline_queue.application.model.DispatchResult
+import kz.mybrain.superkassa.offline_queue.application.model.DispatchStatus
 import kz.mybrain.superkassa.offline_queue.application.policy.DefaultBackoffPolicy
 import kz.mybrain.superkassa.offline_queue.application.service.QueueCommandHandler
 import kz.mybrain.superkassa.offline_queue.application.service.QueueService
@@ -60,9 +61,10 @@ import kz.mybrain.superkassa.offline_queue.domain.model.QueueStatus
 
 // 1. Define command handler
 val commandHandler = object : QueueCommandHandler {
-    override fun handle(command: QueueCommand): DispatchResult {
+    override fun handle(command: QueueCommand, renewLock: () -> Boolean): DispatchResult {
         println("Processing command: ${command.id}")
-        return DispatchResult(status = QueueStatus.SENT)
+        // renewLock() can be invoked periodically during long-running tasks
+        return DispatchResult(status = DispatchStatus.SENT)
     }
 }
 
@@ -79,7 +81,12 @@ val queueService = QueueService(
 queueService.processBatch(cashboxId = "cashbox-123", lane = QueueLane.OFFLINE, limit = 10)
 ```
 
+### Architecture Boundary
+The library defines abstract domain ports for durable storage (`QueueStoragePort`) and mutual-exclusion locking (`LeaseLockPort`). Concrete implementations (e.g., Room on Android, CoreData on iOS, or JDBC/Redis on the Server) must be provided by the consumer application.
+
 ---
+
+### Документация на русском языке
 
 Легковесная мультиплатформенная библиотека (Kotlin Multiplatform / KMP) для управления локальной очередью команд и асинхронной синхронизации в системе фискализации **Superkassa**.
 
@@ -101,7 +108,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation("io.github.texport:superkassa-offline-queue:1.0.1")
+                implementation("io.github.texport:superkassa-offline-queue:1.0.3")
             }
         }
     }
@@ -112,7 +119,7 @@ kotlin {
 Вы можете подключить библиотеку непосредственно в iOS приложение с помощью Swift Package Manager в Xcode:
 1. Выберите в Xcode: **File ➔ Add Package Dependencies...**
 2. Введите URL репозитория: `https://github.com/texport/superkassa-offline-queue.git`
-3. Установите правило версии **Up to Next Major** начиная с `1.0.1`.
+3. Установите правило версии **Up to Next Major** начиная с `1.0.3`.
 
 ---
 
@@ -120,6 +127,7 @@ kotlin {
 
 ```kotlin
 import kz.mybrain.superkassa.offline_queue.application.model.DispatchResult
+import kz.mybrain.superkassa.offline_queue.application.model.DispatchStatus
 import kz.mybrain.superkassa.offline_queue.application.policy.DefaultBackoffPolicy
 import kz.mybrain.superkassa.offline_queue.application.service.QueueCommandHandler
 import kz.mybrain.superkassa.offline_queue.application.service.QueueService
@@ -129,9 +137,10 @@ import kz.mybrain.superkassa.offline_queue.domain.model.QueueStatus
 
 // 1. Создание обработчика команд
 val commandHandler = object : QueueCommandHandler {
-    override fun handle(command: QueueCommand): DispatchResult {
+    override fun handle(command: QueueCommand, renewLock: () -> Boolean): DispatchResult {
         println("Отправка команды: ${command.id}")
-        return DispatchResult(status = QueueStatus.SENT)
+        // renewLock() может вызываться для продления блокировки при длительных задачах
+        return DispatchResult(status = DispatchStatus.SENT)
     }
 }
 
@@ -147,3 +156,6 @@ val queueService = QueueService(
 // 3. Запуск обработки пакета команд
 queueService.processBatch(cashboxId = "cashbox-123", lane = QueueLane.OFFLINE, limit = 10)
 ```
+
+### Границы архитектуры
+Библиотека определяет абстрактные порты предметной области для долговременного хранения (`QueueStoragePort`) и взаимного исключения параллельного выполнения (`LeaseLockPort`). Конкретные реализации (например, Room на Android, CoreData в iOS или JDBC/Redis на сервере) должны быть предоставлены вызывающим приложением.

@@ -3,7 +3,6 @@ package kz.mybrain.superkassa.offline_queue.domain.model
 /**
  * Тип команды, которая будет отправляться в ОФД.
  */
-@Suppress("unused")
 enum class QueueCommandType {
     TICKET,
     REPORT_X,

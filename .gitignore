@@ -1,5 +1,6 @@
 # Gradle files
 .gradle/
+.kotlin/
 build/
 
 # IDE files
@@ -10,3 +11,8 @@ build/
 
 # Android local configs
 local.properties
+
+# Codex Rules
+AGENTS.md
+.agents/
+

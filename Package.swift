@@ -16,8 +16,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "SuperkassaOfflineQueue",
-            url: "https://github.com/texport/superkassa-offline-queue/releases/download/v1.0.2/SuperkassaOfflineQueue.xcframework.zip",
-            checksum: "f39a708113660a42ad17122bab7d8d90e71ebace5fc839f0f668b5cc26cb2bd4"
+            url: "https://github.com/texport/superkassa-offline-queue/releases/download/v1.0.3/SuperkassaOfflineQueue.xcframework.zip",
+            checksum: "ad9a3f622b325aed4822677bf924b6e6a63930c08a1ab71be4c5850ef54ed409"
         )
     ]
 )
