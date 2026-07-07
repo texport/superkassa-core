@@ -135,4 +135,41 @@ class StorageBackedQueueStorageAdapterTest {
         every { storage.deleteQueueTasksByCashbox("kkm-1") } returns false
         assertFalse(adapter.deleteByCashbox("kkm-1"))
     }
+
+    @Test
+    fun testHasPendingCommands() {
+        val taskPending = QueueTask(
+            id = "cmd-1",
+            cashboxId = "kkm-1",
+            lane = "OFFLINE",
+            type = "TICKET",
+            payloadRef = "doc-1",
+            createdAt = 100L,
+            status = "PENDING",
+            attempt = 1,
+            nextAttemptAt = null,
+            lastError = null
+        )
+        val taskSent = QueueTask(
+            id = "cmd-2",
+            cashboxId = "kkm-1",
+            lane = "OFFLINE",
+            type = "TICKET",
+            payloadRef = "doc-2",
+            createdAt = 100L,
+            status = "SENT",
+            attempt = 1,
+            nextAttemptAt = null,
+            lastError = null
+        )
+
+        every { storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 100, 0) } returns listOf(taskPending, taskSent)
+        assertTrue(adapter.hasPendingCommands("kkm-1", QueueLane.OFFLINE))
+
+        every { storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 100, 0) } returns listOf(taskSent)
+        assertFalse(adapter.hasPendingCommands("kkm-1", QueueLane.OFFLINE))
+
+        every { storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 100, 0) } returns emptyList()
+        assertFalse(adapter.hasPendingCommands("kkm-1", QueueLane.OFFLINE))
+    }
 }

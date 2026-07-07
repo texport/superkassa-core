@@ -1,6 +1,5 @@
 package kz.mybrain.superkassa.core.domain.exception
 
-import kotlinx.serialization.Serializable
 import kz.mybrain.superkassa.core.domain.model.common.format
 
 /**
@@ -13,7 +12,6 @@ import kz.mybrain.superkassa.core.domain.model.common.format
  * @property kk Текст сообщения на казахском языке.
  * @property en Текст сообщения на английском языке.
  */
-@Serializable
 data class TrilingualMessage(
     val ru: String,
     val kk: String,

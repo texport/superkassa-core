@@ -10,7 +10,6 @@ import kz.mybrain.superkassa.core.domain.port.DeliveryPort
 import kz.mybrain.superkassa.core.domain.port.DocumentConvertPort
 import kz.mybrain.superkassa.core.domain.port.ReceiptRenderPort
 import kz.mybrain.superkassa.core.domain.port.StoragePort
-import kotlinx.datetime.Clock
 
 /**
  * Вспомогательный класс для доставки и повторной отправки фискальных чеков
@@ -55,8 +54,8 @@ class ReceiptDeliveryHelper(
     ) {
         val kkm = storage.findKkm(kkmId) ?: KkmInfo(
             id = kkmId,
-            createdAt = Clock.System.now().toEpochMilliseconds(),
-            updatedAt = Clock.System.now().toEpochMilliseconds(),
+            createdAt = kotlin.time.Clock.System.now().toEpochMilliseconds(),
+            updatedAt = kotlin.time.Clock.System.now().toEpochMilliseconds(),
             mode = "ACTIVE",
             state = "ACTIVE"
         )
@@ -203,8 +202,8 @@ class ReceiptDeliveryHelper(
     ): List<Pair<String, Boolean>> {
         val kkm = storage.findKkm(kkmId) ?: KkmInfo(
             id = kkmId,
-            createdAt = Clock.System.now().toEpochMilliseconds(),
-            updatedAt = Clock.System.now().toEpochMilliseconds(),
+            createdAt = kotlin.time.Clock.System.now().toEpochMilliseconds(),
+            updatedAt = kotlin.time.Clock.System.now().toEpochMilliseconds(),
             mode = "ACTIVE",
             state = "ACTIVE"
         )

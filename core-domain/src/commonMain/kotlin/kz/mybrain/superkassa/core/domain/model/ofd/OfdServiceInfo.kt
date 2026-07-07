@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.ofd
 
-import kotlinx.serialization.Serializable
-
 /**
  * Служебная информация о налогоплательщике/организации в ОФД.
  *
@@ -14,7 +12,6 @@ import kotlinx.serialization.Serializable
  * @property geoLongitude Географическая долгота места установки ККМ (умноженная на 1 000 000 для целочисленного формата).
  * @property geoSource Источник получения координат (например, GPS, MANUAL).
  */
-@Serializable
 data class OfdServiceInfo(
     val orgTitle: String,
     val orgAddress: String,

@@ -7,6 +7,7 @@ import kz.mybrain.superkassa.core.domain.port.ClockPort
 import kz.mybrain.superkassa.core.domain.port.StoragePort
 import kz.mybrain.superkassa.core.domain.usecase.ofd.SendFiscalCommandUseCase
 import kz.mybrain.superkassa.offline_queue.application.model.DispatchResult
+import kz.mybrain.superkassa.offline_queue.application.model.QueueErrorMessage
 import kz.mybrain.superkassa.offline_queue.domain.model.QueueCommand
 import kz.mybrain.superkassa.offline_queue.domain.model.QueueCommandType
 import kz.mybrain.superkassa.offline_queue.domain.model.QueueStatus
@@ -43,15 +44,28 @@ class ProcessQueueCommandUseCase(
                 updateDocumentOnSuccess(command, result)
                 DispatchResult(QueueStatus.SENT)
             }
-            OfdCommandStatus.FAILED -> DispatchResult(
-                QueueStatus.FAILED,
-                errorMessage = result.errorMessage,
-                retryAt = clock.now() + 60_000
-            )
+            OfdCommandStatus.FAILED -> {
+                val errorMsg = result.errorMessage ?: "OFD command failed"
+                DispatchResult(
+                    status = QueueStatus.FAILED,
+                    errorMessage = errorMsg,
+                    retryAt = clock.now() + 60_000,
+                    error = QueueErrorMessage(
+                        messageRu = "Ошибка отправки в ОФД: $errorMsg",
+                        messageKk = "ОФД-ға жіберу қатесі: $errorMsg",
+                        messageEn = "OFD delivery failure: $errorMsg"
+                    )
+                )
+            }
             OfdCommandStatus.TIMEOUT -> DispatchResult(
-                QueueStatus.FAILED,
+                status = QueueStatus.FAILED,
                 errorMessage = "OFD timeout",
-                retryAt = clock.now() + 30_000
+                retryAt = clock.now() + 30_000,
+                error = QueueErrorMessage(
+                    messageRu = "Тайм-аут ожидания ответа от ОФД",
+                    messageKk = "ОФД жауабын күту уақыты бітті",
+                    messageEn = "OFD connection timeout"
+                )
             )
         }
     }

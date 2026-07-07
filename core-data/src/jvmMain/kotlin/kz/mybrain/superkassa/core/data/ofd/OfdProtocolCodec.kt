@@ -95,7 +95,6 @@ class OfdProtocolCodec(
          * @param text Исходный JSON-текст.
          * @return Объект [JsonElement].
          */
-        @Suppress("unused")
         fun parseJson(text: String): JsonElement = Json.parseToJsonElement(text)
     }
 }

@@ -29,7 +29,15 @@ expect annotation class Schema(
  */
 @OptIn(ExperimentalMultiplatform::class)
 @OptionalExpectation
-@Target(AnnotationTarget.TYPE, AnnotationTarget.FIELD, AnnotationTarget.PROPERTY, AnnotationTarget.VALUE_PARAMETER)
+@Target(
+    AnnotationTarget.FIELD,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.CONSTRUCTOR,
+    AnnotationTarget.FUNCTION,
+    AnnotationTarget.PROPERTY_GETTER,
+    AnnotationTarget.PROPERTY_SETTER,
+    AnnotationTarget.TYPE
+)
 expect annotation class Valid()
 
 /**

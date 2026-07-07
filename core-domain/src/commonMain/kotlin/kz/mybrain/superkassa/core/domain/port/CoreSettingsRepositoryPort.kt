@@ -6,7 +6,6 @@ import kz.mybrain.superkassa.core.domain.model.settings.CoreSettings
  * Порт репозитория настроек ядра системы (хранилище конфигурации).
  * Обеспечивает доступ к глобальным конфигурационным параметрам приложения и ККМ.
  */
-@Suppress("unused")
 interface CoreSettingsRepositoryPort {
 
     /**

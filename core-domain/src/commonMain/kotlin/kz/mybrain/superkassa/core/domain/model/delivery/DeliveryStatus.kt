@@ -1,11 +1,8 @@
 package kz.mybrain.superkassa.core.domain.model.delivery
 
-import kotlinx.serialization.Serializable
-
 /**
  * Статус доставки документа в ОФД с точки зрения ядра (статусы попыток доставки чеков).
  */
-@Serializable
 enum class DeliveryStatus {
     /**
      * Документ успешно доставлен в ОФД в режиме реального времени и подтвержден.

@@ -36,8 +36,22 @@ class ListQueueItemsUseCase(
         val status: String,
         val attempt: Int,
         val nextAttemptAt: Long?,
-        val lastError: String?
+        val lastError: String?,
+        val errorRu: String? = null,
+        val errorKk: String? = null,
+        val errorEn: String? = null
     )
+
+    private fun parseCompactError(compactError: String?): Triple<String?, String?, String?> {
+        if (compactError == null) return Triple(null, null, null)
+        val regex = Regex("""^RU:\s*(.*?)\s*\|\s*KK:\s*(.*?)\s*\|\s*EN:\s*(.*?)$""")
+        val match = regex.find(compactError)
+        return if (match != null) {
+            Triple(match.groupValues[1].trim(), match.groupValues[2].trim(), match.groupValues[3].trim())
+        } else {
+            Triple(compactError, compactError, compactError)
+        }
+    }
 
     /**
      * Выполняет сценарий получения списка задач из офлайн-очереди ОФД.
@@ -50,7 +64,6 @@ class ListQueueItemsUseCase(
      * @throws kz.mybrain.superkassa.core.domain.exception.NotFoundException Если ККМ не найдена.
      * @throws kz.mybrain.superkassa.core.domain.exception.ForbiddenException Если ПИН-код неверный или у пользователя нет прав администратора.
      */
-    @Suppress("unused")
     fun execute(kkmId: String, pin: String): List<QueueItemView> {
         val kkm = authorizeUserUseCase.requireKkm(kkmId)
         authorizeUserUseCase.requireRole(kkm.id, pin, setOf(UserRole.ADMIN))
@@ -58,6 +71,7 @@ class ListQueueItemsUseCase(
         val offline = queueStorage.listByCashbox(kkmId, QueueLane.OFFLINE, limit = 100, offset = 0)
 
         return offline.map {
+            val (ru, kk, en) = parseCompactError(it.lastError)
             QueueItemView(
                 id = it.id,
                 lane = it.lane.name,
@@ -65,7 +79,10 @@ class ListQueueItemsUseCase(
                 status = it.status.name,
                 attempt = it.attempt,
                 nextAttemptAt = it.nextAttemptAt,
-                lastError = it.lastError
+                lastError = it.lastError,
+                errorRu = ru,
+                errorKk = kk,
+                errorEn = en
             )
         }
     }

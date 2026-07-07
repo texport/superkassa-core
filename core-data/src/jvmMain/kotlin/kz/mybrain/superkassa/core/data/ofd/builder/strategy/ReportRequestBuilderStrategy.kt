@@ -16,7 +16,6 @@ import kz.mybrain.superkassa.core.domain.helper.zxreport.ZxReportBuilder
  * подготавливает структуру сменного отчета X-типа и формирует JSON-запрос отчета для ОФД.
  */
 // Регистрируется и используется динамически через список стратегий сборщика запросов / DI
-@Suppress("unused", "DuplicatedCode")
 class ReportRequestBuilderStrategy(
     private val storage: StoragePort,
     private val recalculateShiftCountersUseCase: RecalculateShiftCountersUseCase
@@ -65,28 +64,4 @@ class ReportRequestBuilderStrategy(
             zxReport = zxInput,
             serviceBlock = serviceBlock
         )
-    }
-
-    /**
-     * Формирует служебный JSON-блок (payload) с регистрационной информацией и геолокацией.
-     *
-     * @param command запрос команды ОФД.
-     * @return JSON-объект [JsonObject] со служебной информацией или `null`, если параметры неполны.
-     */
-    private fun buildServiceBlock(command: OfdCommandRequest): JsonObject? {
-        val serviceInfo = command.serviceInfo ?: return null
-        val regNo = command.registrationNumber ?: return null
-        val factoryNo = command.factoryNumber ?: return null
-        val systemId = command.ofdSystemId ?: return null
-        val begin = command.offlineBeginMillis ?: System.currentTimeMillis()
-        val end = command.offlineEndMillis ?: System.currentTimeMillis()
-        return OfdRequestFactory.buildServicePayload(
-            serviceInfo = serviceInfo,
-            registrationNumber = regNo,
-            factoryNumber = factoryNo,
-            systemId = systemId,
-            offlineBeginMillis = begin,
-            offlineEndMillis = end
-        )
-    }
-}
+    }}

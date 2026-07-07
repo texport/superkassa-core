@@ -50,7 +50,7 @@ class OfdQueueCommandHandlerAdapterTest {
             attempt = 0
         )
 
-        val result = adapter.handle(command)
+        val result = adapter.handle(command, renewLock = { true })
         assertEquals(QueueStatus.SENT, result.status)
 
         verify {

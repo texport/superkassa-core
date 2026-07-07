@@ -15,7 +15,6 @@ import kz.mybrain.superkassa.core.domain.exception.ValidationException
  * @property tokenCodec Кодек для шифрования и дешифрования токенов ОФД.
  * @property generateRequestNumberUseCase Сценарий для работы с порядковыми номерами запросов ОФД.
  */
-@Suppress("unused")
 class GetOfdAuthInfoUseCase(
     private val authorizeUserUseCase: AuthorizeUserUseCase,
     private val tokenCodec: TokenCodecPort,

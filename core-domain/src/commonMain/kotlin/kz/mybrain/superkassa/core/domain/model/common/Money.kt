@@ -1,14 +1,11 @@
 package kz.mybrain.superkassa.core.domain.model.common
 
-import kotlinx.serialization.Serializable
-
 /**
  * Представление денежной суммы с фиксированной точностью (соответствует формату bills/coins в ОФД).
  *
  * @property bills Целая часть суммы (тенге).
  * @property coins Дробная часть суммы (тиыны).
  */
-@Serializable
 data class Money(
     val bills: Long,
     val coins: Int

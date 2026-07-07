@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.zxreport
 
-import kotlinx.serialization.Serializable
-
 /**
  * Входные агрегированные данные для построения X/Z-отчетов (ZxReport).
  *
@@ -23,7 +21,6 @@ import kotlinx.serialization.Serializable
  * @property moneyPlacements Агрегированные операции внесения и изъятия наличных.
  * @property taxes Агрегированные налоговые показатели в разрезе ставок НДС.
  */
-@Serializable
 data class ZxReportInput(
     val dateTimeMillis: Long,
     val shiftNumber: Int,

@@ -233,5 +233,33 @@ class UserUseCasesTest {
         assertEquals(UserRole.CASHIER, user.role)
         assertEquals("5555", user.pin)
     }
+
+    @Test
+    fun testCreateUserDefaultPin() {
+        every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
+        every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
+
+        assertFailsWith<ValidationException> {
+            createUser.execute("kkm-1", "admin-pin", "John", UserRole.ADMIN, "0000")
+        }
+        assertFailsWith<ValidationException> {
+            createUser.execute("kkm-1", "admin-pin", "John", UserRole.ADMIN, "1111")
+        }
+    }
+
+    @Test
+    fun testUpdateUserDefaultPin() {
+        val existing = KkmUser("user-1", "John", UserRole.CASHIER, "1111", 500L)
+        every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
+        every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
+        every { storage.listUsers("kkm-1") } returns listOf(existing)
+
+        assertFailsWith<ValidationException> {
+            updateUser.execute("kkm-1", "user-1", "admin-pin", "John New", UserRole.ADMIN, "0000")
+        }
+        assertFailsWith<ValidationException> {
+            updateUser.execute("kkm-1", "user-1", "admin-pin", "John New", UserRole.ADMIN, "1111")
+        }
+    }
 }
 

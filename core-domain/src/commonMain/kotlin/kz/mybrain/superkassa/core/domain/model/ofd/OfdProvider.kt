@@ -26,10 +26,10 @@ enum class OfdProvider(
             OfdEnvironment.TEST to OfdEndpoint(
                 host = "37.150.215.187",
                 port = 7777,
-                checkDomain = "dev.consumer.oofd.kz"
+                checkDomain = "consumer.test-oofd.kz"
             ),
             OfdEnvironment.PROD to OfdEndpoint(
-                host = "xml.oofd.kz",
+                host = "10.8.29.11",
                 port = 7777,
                 checkDomain = "consumer.oofd.kz"
             )

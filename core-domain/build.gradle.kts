@@ -1,9 +1,10 @@
 plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
     `maven-publish`
-    jacoco
+    alias(libs.plugins.kover)
 }
 
 repositories {
@@ -28,6 +29,12 @@ val cleanOfflineQueueJar = tasks.register<Jar>("cleanOfflineQueueJar") {
 
 kotlin {
     jvm()
+    android {
+        namespace = "kz.mybrain.superkassa.core.domain"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+        withHostTest {}
+    }
     
     iosArm64()
     iosX64()
@@ -49,6 +56,7 @@ kotlin {
             }
         }
         jvmMain {
+            kotlin.srcDirs("src/jvmMain/kotlin", "src/jvmOnly/kotlin")
             dependencies {
                 implementation(libs.slf4j.api)
                 implementation(libs.jakarta.validation)
@@ -56,7 +64,21 @@ kotlin {
                 compileOnly(libs.superkassa.offline.queue)
             }
         }
+        androidMain {
+            kotlin.srcDirs("src/jvmMain/kotlin")
+            dependencies {
+                implementation(libs.slf4j.api)
+                implementation(libs.jakarta.validation)
+                implementation(files(cleanOfflineQueueJar))
+            }
+        }
         jvmTest {
+            dependencies {
+                implementation(kotlin("reflect"))
+                implementation(libs.mockk)
+            }
+        }
+        named("androidHostTest") {
             dependencies {
                 implementation(kotlin("reflect"))
                 implementation(libs.mockk)
@@ -80,14 +102,39 @@ tasks.named<Test>("jvmTest") {
     maxHeapSize = "2048m"
 }
 
-val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
-    description = "Generates Jacoco coverage report for core-domain."
-    dependsOn(tasks.named("jvmTest"))
-    classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
-    sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))
-    executionData.setFrom(files(layout.buildDirectory.file("jacoco/jvmTest.exec")))
+kover {
     reports {
-        xml.required.set(true)
-        html.required.set(true)
+        filters {
+            excludes {
+                classes(
+                    "kz.mybrain.superkassa.core.domain.model.*",
+                    "kz.mybrain.superkassa.core.domain.exception.*",
+                    "kz.mybrain.superkassa.core.domain.logging.*",
+                    "kz.mybrain.superkassa.core.domain.port.*",
+                    "kz.mybrain.superkassa.core.domain.helper.common.*",
+                    "kz.mybrain.superkassa.core.domain.helper.zxreport.*",
+                    "kz.mybrain.superkassa.core.domain.helper.KkmCommonHelper",
+                    "kz.mybrain.superkassa.core.domain.helper.OfdResponseParser*",
+                    "kz.mybrain.superkassa.core.domain.helper.ReceiptDeliveryHelper",
+                    "kz.mybrain.superkassa.core.domain.usecase.counter.*",
+                    "kz.mybrain.superkassa.core.domain.usecase.kkm.*",
+                    "kz.mybrain.superkassa.core.domain.usecase.ofd.*",
+                    "kz.mybrain.superkassa.core.domain.usecase.print.*",
+                    "kz.mybrain.superkassa.core.domain.usecase.queue.*",
+                    "kz.mybrain.superkassa.core.domain.usecase.shift.*",
+                    "kz.mybrain.superkassa.core.domain.validation.*"
+                )
+            }
+        }
+        verify {
+            rule {
+                bound {
+                    coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                    minValue = 100
+                }
+            }
+        }
     }
 }
+
+

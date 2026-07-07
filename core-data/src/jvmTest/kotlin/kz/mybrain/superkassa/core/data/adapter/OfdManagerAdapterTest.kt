@@ -822,7 +822,6 @@ class OfdManagerAdapterTest {
     }
 
     @Test
-    @Suppress("UNCHECKED_CAST")
     fun testSendThrottlingExpired() {
         val request = OfdCommandRequest(
             kkmId = "kkm-throttle-expired",

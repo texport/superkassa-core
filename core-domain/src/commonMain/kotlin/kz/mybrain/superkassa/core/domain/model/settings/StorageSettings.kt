@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.settings
 
-import kotlinx.serialization.Serializable
-
 /**
  * Настройки хранилища и параметров подключения к базе данных.
  *
@@ -10,7 +8,6 @@ import kotlinx.serialization.Serializable
  * @property user Имя пользователя для авторизации в БД.
  * @property password Пароль для авторизации в БД.
  */
-@Serializable
 data class StorageSettings(
     val engine: String,
     val jdbcUrl: String,

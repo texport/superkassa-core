@@ -24,3 +24,6 @@ local.properties
 .agents/
 
 
+
+# Codex Rules
+.agents/AGENTS.md

@@ -1,6 +1,7 @@
 package kz.mybrain.superkassa.core.domain.helper.zxreport
 
 import kz.mybrain.superkassa.core.domain.model.common.CounterKeyFormats
+import kz.mybrain.superkassa.core.domain.model.common.format
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -70,5 +71,54 @@ class ZxTicketOperationsBlockBuilderTest {
         val creditPayment = sellOp.payments.first { it.payment == "PAYMENT_CREDIT" }
         assertEquals(0L, creditPayment.sumBills)
         assertEquals(0L, creditPayment.count)
+    }
+
+    @Test
+    fun `resolveTicketOperations handles all payment types with large numbers`() {
+        val op = "OPERATION_BUY_RETURN"
+        val counters = mapOf(
+            CounterKeyFormats.TICKET_SUM.format(op) to Long.MAX_VALUE,
+            CounterKeyFormats.PAYMENT_SUM.format(op, "PAYMENT_CASH") to 1000L,
+            CounterKeyFormats.PAYMENT_COUNT.format(op, "PAYMENT_CASH") to 1L,
+            CounterKeyFormats.PAYMENT_SUM.format(op, "PAYMENT_CARD") to 2000L,
+            CounterKeyFormats.PAYMENT_COUNT.format(op, "PAYMENT_CARD") to 2L,
+            CounterKeyFormats.PAYMENT_SUM.format(op, "PAYMENT_CREDIT") to 3000L,
+            CounterKeyFormats.PAYMENT_COUNT.format(op, "PAYMENT_CREDIT") to 3L,
+            CounterKeyFormats.PAYMENT_SUM.format(op, "PAYMENT_TARE") to 4000L,
+            CounterKeyFormats.PAYMENT_COUNT.format(op, "PAYMENT_TARE") to 4L,
+            CounterKeyFormats.PAYMENT_SUM.format(op, "PAYMENT_MOBILE") to 5000L,
+            CounterKeyFormats.PAYMENT_COUNT.format(op, "PAYMENT_MOBILE") to 5L,
+            CounterKeyFormats.PAYMENT_SUM.format(op, "PAYMENT_ELECTRONIC") to 6000L,
+            CounterKeyFormats.PAYMENT_COUNT.format(op, "PAYMENT_ELECTRONIC") to 6L
+        )
+
+        val result = ZxTicketOperationsBlockBuilder.resolveTicketOperations(counters)
+        val targetOp = result.first { it.operation == op }
+
+        assertEquals(Long.MAX_VALUE, targetOp.ticketsSumBills)
+
+        val cash = targetOp.payments.first { it.payment == "PAYMENT_CASH" }
+        assertEquals(1000L, cash.sumBills)
+        assertEquals(1L, cash.count)
+
+        val card = targetOp.payments.first { it.payment == "PAYMENT_CARD" }
+        assertEquals(2000L, card.sumBills)
+        assertEquals(2L, card.count)
+
+        val credit = targetOp.payments.first { it.payment == "PAYMENT_CREDIT" }
+        assertEquals(3000L, credit.sumBills)
+        assertEquals(3L, credit.count)
+
+        val tare = targetOp.payments.first { it.payment == "PAYMENT_TARE" }
+        assertEquals(4000L, tare.sumBills)
+        assertEquals(4L, tare.count)
+
+        val mobile = targetOp.payments.first { it.payment == "PAYMENT_MOBILE" }
+        assertEquals(5000L, mobile.sumBills)
+        assertEquals(5L, mobile.count)
+
+        val electronic = targetOp.payments.first { it.payment == "PAYMENT_ELECTRONIC" }
+        assertEquals(6000L, electronic.sumBills)
+        assertEquals(6L, electronic.count)
     }
 }

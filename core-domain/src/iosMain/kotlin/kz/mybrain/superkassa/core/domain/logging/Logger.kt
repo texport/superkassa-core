@@ -1,6 +1,5 @@
 package kz.mybrain.superkassa.core.domain.logging
 
-@Suppress("unused")
 actual class Logger(private val tag: String) {
     actual fun info(message: String, arg1: Any?, arg2: Any?) {
         println("INFO [$tag]: ${format(message, arg1, arg2)}")

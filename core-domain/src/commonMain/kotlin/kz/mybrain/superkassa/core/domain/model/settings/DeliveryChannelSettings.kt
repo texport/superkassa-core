@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.settings
 
-import kotlinx.serialization.Serializable
-
 /**
  * Настройки каналов отправки и маршрутизации сообщений.
  *
@@ -11,7 +9,6 @@ import kotlinx.serialization.Serializable
  * @property documentFormat Формат документа для отправки (например, "PDF", "HTML").
  * @property destination Адрес назначения (номер телефона, email и т.д.).
  */
-@Serializable
 data class DeliveryChannelSettings(
     val channel: String,
     val enabled: Boolean = true,

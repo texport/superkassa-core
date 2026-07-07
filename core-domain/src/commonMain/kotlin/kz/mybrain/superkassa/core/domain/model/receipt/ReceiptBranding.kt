@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.receipt
 
-import kotlinx.serialization.Serializable
-
 /**
  * Настройки брендирования, визуального оформления и ширины ленты чека.
  *
@@ -22,7 +20,6 @@ import kotlinx.serialization.Serializable
  * @property customBackgroundColorHex Произвольный фоновый цвет в формате HEX.
  * @property customCardTopBorderColorHex Произвольный цвет верхней границы карточки чека в формате HEX.
  */
-@Serializable
 data class ReceiptBranding(
     val language: ReceiptLanguage = ReceiptLanguage.MIXED,
     val headerLogoUrl: String? = null,

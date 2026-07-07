@@ -24,13 +24,10 @@ class OfflineQueueAdapterTest {
 
     @Test
     fun testCanSendDirectly() {
-        // hasOfflineQueue is checked by calling listByCashbox on the storage
-        every { storage.listByCashbox("kkm-1", QueueLane.OFFLINE, 100) } returns emptyList()
+        every { storage.hasPendingCommands("kkm-1", QueueLane.OFFLINE) } returns false
         assertTrue(adapter.canSendDirectly("kkm-1"))
 
-        val mockCommand = mockk<QueueCommand>()
-        every { mockCommand.status } returns QueueStatus.PENDING
-        every { storage.listByCashbox("kkm-1", QueueLane.OFFLINE, 100) } returns listOf(mockCommand)
+        every { storage.hasPendingCommands("kkm-1", QueueLane.OFFLINE) } returns true
         assertFalse(adapter.canSendDirectly("kkm-1"))
     }
 

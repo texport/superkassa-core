@@ -47,7 +47,6 @@ class ProcessOfdDocumentResultUseCase(
      * @param now Текущее системное время в миллисекундах.
      * @param receiptContext Контекст чека (запрос чека и ID смены) для обновления счетчиков.
      */
-    @Suppress("NestedBlockDepth")
     fun execute(
         kkm: KkmInfo,
         documentId: String,
@@ -61,78 +60,79 @@ class ProcessOfdDocumentResultUseCase(
         // Обновление статуса блокировки ККМ на основе кода ошибки ОФД (код 15 означает блокировку)
         updateKkmBlockedStateFromOfd(kkm, ofdResult, now)
 
-        if (resultCode != null) {
-            // Результат получен от ОФД напрямую (онлайн)
-            val success = resultCode == 0
+        if (resultCode == null) {
+            // Если resultCode == null, произошел таймаут или обрыв связи — фискализируем автономно
+            val autonomousSign = clock.now().toString()
             storage.updateReceiptStatus(
                 documentId = documentId,
-                fiscalSign = ofdResult.fiscalSign,
-                autonomousSign = ofdResult.autonomousSign,
-                ofdStatus = if (success) "SENT" else "FAILED",
-                deliveredAt = if (success) now else null,
-                isAutonomous = false
+                fiscalSign = null,
+                autonomousSign = autonomousSign,
+                ofdStatus = "PENDING",
+                deliveredAt = null,
+                isAutonomous = true
             )
-            if (success) {
-                // Если отправка успешна, проверяем возможность выхода из автономного режима
-                clearAutonomousIfReady(kkm, now)
 
-                // Для чеков продаж/возвратов обновляем счетчики и доставляем чек
-                if (commandType == OfdCommandType.TICKET && receiptContext != null) {
-                    updateCountersUseCase.execute(
-                        kkmId,
-                        receiptContext.second,
-                        receiptContext.first,
-                        isOffline = false
-                    )
-                    val (receipt, _) = receiptContext
-                    val doc = storage.findFiscalDocumentById(documentId)
-                    if (doc != null) {
-                        deliverReceipt.execute(
-                            kkmId = kkmId,
-                            documentId = documentId,
-                            receipt = receipt,
-                            docSnapshot = doc,
-                            receiptUrl = ofdResult.receiptUrl,
-                            responseBin = ofdResult.responseBin
-                        )
-                    }
-                }
+            // Постановка фискального документа в очередь для отложенной отправки при восстановлении связи
+            queue.enqueueOffline(
+                OfflineQueueCommandRequest(
+                    kkmId = kkmId,
+                    type = commandType.value,
+                    payloadRef = documentId
+                )
+            )
+
+            // Переводим кассу в автономный (офлайн) режим
+            markAutonomousStarted(kkm, now)
+
+            // Обновляем счетчики продаж с пометкой автономного (офлайн) режима
+            if (commandType == OfdCommandType.TICKET && receiptContext != null) {
+                updateCountersUseCase.execute(
+                    kkmId,
+                    receiptContext.second,
+                    receiptContext.first,
+                    isOffline = true
+                )
             }
             return
         }
 
-        // Если resultCode == null, произошел таймаут или обрыв связи — фискализируем автономно
-        val autonomousSign = clock.now().toString()
+        // Результат получен от ОФД напрямую (онлайн)
+        val success = resultCode == 0
         storage.updateReceiptStatus(
             documentId = documentId,
-            fiscalSign = null,
-            autonomousSign = autonomousSign,
-            ofdStatus = "PENDING",
-            deliveredAt = null,
-            isAutonomous = true
+            fiscalSign = ofdResult.fiscalSign,
+            autonomousSign = ofdResult.autonomousSign,
+            ofdStatus = if (success) "SENT" else "FAILED",
+            deliveredAt = if (success) now else null,
+            isAutonomous = false
         )
 
-        // Постановка фискального документа в очередь для отложенной отправки при восстановлении связи
-        queue.enqueueOffline(
-            OfflineQueueCommandRequest(
-                kkmId = kkmId,
-                type = commandType.value,
-                payloadRef = documentId
-            )
+        if (!success) return
+
+        // Если отправка успешна, проверяем возможность выхода из автономного режима
+        clearAutonomousIfReady(kkm, now)
+
+        // Для чеков продаж/возвратов обновляем счетчики и доставляем чек
+        if (commandType != OfdCommandType.TICKET || receiptContext == null) return
+
+        updateCountersUseCase.execute(
+            kkmId,
+            receiptContext.second,
+            receiptContext.first,
+            isOffline = false
         )
 
-        // Переводим кассу в автономный (офлайн) режим
-        markAutonomousStarted(kkm, now)
+        val (receipt, _) = receiptContext
+        val doc = storage.findFiscalDocumentById(documentId) ?: return
 
-        // Обновляем счетчики продаж с пометкой автономного (офлайн) режима
-        if (commandType == OfdCommandType.TICKET && receiptContext != null) {
-            updateCountersUseCase.execute(
-                kkmId,
-                receiptContext.second,
-                receiptContext.first,
-                isOffline = true
-            )
-        }
+        deliverReceipt.execute(
+            kkmId = kkmId,
+            documentId = documentId,
+            receipt = receipt,
+            docSnapshot = doc,
+            receiptUrl = ofdResult.receiptUrl,
+            responseBin = ofdResult.responseBin
+        )
     }
 
     /**

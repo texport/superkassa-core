@@ -62,7 +62,6 @@ class ShiftUseCasesTest {
         every { idGenerator.nextId() } returns "id-gen"
         every { storage.findKkmForUpdate(any()) } answers { storage.findKkm(firstArg()) }
         every { storage.inTransaction<Any?>(any()) } answers {
-            @Suppress("UNCHECKED_CAST")
             val block = firstArg<() -> Any?>()
             block()
         }

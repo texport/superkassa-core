@@ -3,6 +3,7 @@ package kz.mybrain.superkassa.core.domain.helper.zxreport
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kz.mybrain.superkassa.core.domain.model.common.CounterKeyFormats
+import kz.mybrain.superkassa.core.domain.model.common.format
 
 class ZxCashBlockBuilderTest {
 
@@ -73,6 +74,23 @@ class ZxCashBlockBuilderTest {
         val counters = emptyMap<String, Long>()
         val result = ZxCashBlockBuilder.resolveCashSum(counters)
         assertEquals(0L, result)
+    }
+
+    @Test
+    fun `resolveNonNullableSums with extremely large numbers and fallback combinations`() {
+        val counters = mutableMapOf<String, Long>().apply {
+            put(CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL"), Long.MAX_VALUE - 1000L)
+            put(CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL"), 1000L)
+            
+            // For BUY, explicit non nullable is negative (e.g. invalid/edge state check, should handle values correctly)
+            put(CounterKeyFormats.NON_NULLABLE_SUM.format("OPERATION_BUY"), -500L)
+        }
+
+        val endShift = ZxCashBlockBuilder.resolveNonNullableSums(counters).toMap()
+        assertEquals(Long.MAX_VALUE, endShift["OPERATION_SELL"])
+        assertEquals(-500L, endShift["OPERATION_BUY"])
+        assertEquals(0L, endShift["OPERATION_SELL_RETURN"])
+        assertEquals(0L, endShift["OPERATION_BUY_RETURN"])
     }
 }
 

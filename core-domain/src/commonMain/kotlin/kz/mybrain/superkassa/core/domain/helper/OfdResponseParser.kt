@@ -13,7 +13,6 @@ import kz.mybrain.superkassa.core.domain.model.ofd.OfdServiceInfo
  * Позволяет извлекать информацию о смене, сервисных данных организации, регистрационных
  * и заводских номерах ККМ, а также извлекать сырой блок Zx-отчета.
  */
-@Suppress("DuplicatedCode") // Похожая структура обхода древовидного JSON-ответа для разных типов данных
 object OfdResponseParser {
 
     /**
@@ -24,7 +23,7 @@ object OfdResponseParser {
      */
     fun extractShiftNumber(responseJson: JsonObject?): Int? {
         val zxReport = extractZxReport(responseJson) ?: return null
-        return zxReport.getNestedInt(listOf("shiftNumber"))
+        return zxReport.getNestedInt("shiftNumber")
     }
 
     /**
@@ -47,17 +46,17 @@ object OfdResponseParser {
         val pos = regInfo.getNestedObject(listOf("pos"))
 
         return OfdServiceInfo(
-            orgTitle = org?.getNestedString(listOf("title")) ?: fallback.orgTitle,
-            orgAddress = org?.getNestedString(listOf("address"))
-                ?: pos?.getNestedString(listOf("address"))
+            orgTitle = org?.getNestedString("title") ?: fallback.orgTitle,
+            orgAddress = org?.getNestedString("address")
+                ?: pos?.getNestedString("address")
                 ?: fallback.orgAddress,
-            orgAddressKz = org?.getNestedString(listOf("addressKz"))
-                ?: pos?.getNestedString(listOf("addressKz"))
+            orgAddressKz = org?.getNestedString("addressKz")
+                ?: pos?.getNestedString("addressKz")
                 ?: fallback.orgAddressKz,
-            orgInn = org?.getNestedString(listOf("inn")) ?: fallback.orgInn,
-            orgOkved = org?.getNestedString(listOf("okved")) ?: fallback.orgOkved,
-            geoLatitude = pos?.getNestedInt(listOf("latitude")) ?: fallback.geoLatitude,
-            geoLongitude = pos?.getNestedInt(listOf("longitude")) ?: fallback.geoLongitude,
+            orgInn = org?.getNestedString("inn") ?: fallback.orgInn,
+            orgOkved = org?.getNestedString("okved") ?: fallback.orgOkved,
+            geoLatitude = pos?.getNestedInt("latitude") ?: fallback.geoLatitude,
+            geoLongitude = pos?.getNestedInt("longitude") ?: fallback.geoLongitude,
             geoSource = fallback.geoSource
         )
     }
@@ -75,14 +74,14 @@ object OfdResponseParser {
         val regInfo = responseJson?.getNestedObject(listOf("payload", "service", "regInfo")) ?: return null
 
         val kkm = regInfo.getNestedObject(listOf("kkm"))
-        val fnsKkmId = kkm?.getNestedString(listOf("fnsKkmId"))
+        val fnsKkmId = kkm?.getNestedString("fnsKkmId")
         if (!fnsKkmId.isNullOrBlank()) {
             return fnsKkmId
         }
 
         val pos = regInfo.getNestedObject(listOf("pos"))
-        return pos?.getNestedString(listOf("registrationNumber"))
-            ?: pos?.getNestedString(listOf("regNumber"))
+        return pos?.getNestedString("registrationNumber")
+            ?: pos?.getNestedString("regNumber")
     }
 
     /**
@@ -98,14 +97,14 @@ object OfdResponseParser {
         val regInfo = responseJson?.getNestedObject(listOf("payload", "service", "regInfo")) ?: return null
 
         val kkm = regInfo.getNestedObject(listOf("kkm"))
-        val serialNumber = kkm?.getNestedString(listOf("serialNumber"))
+        val serialNumber = kkm?.getNestedString("serialNumber")
         if (!serialNumber.isNullOrBlank()) {
             return serialNumber
         }
 
         val pos = regInfo.getNestedObject(listOf("pos"))
-        return pos?.getNestedString(listOf("factoryNumber"))
-            ?: pos?.getNestedString(listOf("factoryNum"))
+        return pos?.getNestedString("factoryNumber")
+            ?: pos?.getNestedString("factoryNum")
     }
 
     /**
@@ -126,38 +125,18 @@ object OfdResponseParser {
             ?: service.getNestedObject(listOf("zxReport"))
     }
 
-    /**
-     * Вспомогательный метод для извлечения строкового значения по вложенному пути.
-     */
-    private fun JsonObject.getNestedString(path: List<String>): String? {
-        var current: JsonObject? = this
-        for (i in 0 until path.size - 1) {
-            current = current?.get(path[i])?.jsonObject
-            if (current == null) return null
-        }
-        return current?.get(path.last())?.jsonPrimitive?.contentOrNull
+    private fun JsonObject.getNestedString(key: String): String? {
+        return this[key]?.jsonPrimitive?.contentOrNull
     }
 
-    /**
-     * Вспомогательный метод для извлечения целочисленного значения по вложенному пути.
-     */
-    private fun JsonObject.getNestedInt(path: List<String>): Int? {
-        var current: JsonObject? = this
-        for (i in 0 until path.size - 1) {
-            current = current?.get(path[i])?.jsonObject
-            if (current == null) return null
-        }
-        return current?.get(path.last())?.jsonPrimitive?.intOrNull
+    private fun JsonObject.getNestedInt(key: String): Int? {
+        return this[key]?.jsonPrimitive?.intOrNull
     }
 
-    /**
-     * Вспомогательный метод для извлечения вложенного JSON-объекта по указанному пути.
-     */
     private fun JsonObject.getNestedObject(path: List<String>): JsonObject? {
         var current: JsonObject? = this
         for (key in path) {
-            current = current?.get(key)?.jsonObject
-            if (current == null) return null
+            current = current?.get(key)?.jsonObject ?: return null
         }
         return current
     }

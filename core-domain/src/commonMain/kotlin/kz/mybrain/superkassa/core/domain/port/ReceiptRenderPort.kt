@@ -11,7 +11,6 @@ import kz.mybrain.superkassa.core.domain.model.shift.ShiftInfo
  * Порт рендеринга чеков и отчётов ККМ в формат HTML.
  * Сгенерированная HTML-версия используется для отображения, печати, генерации PDF/изображений и доставки клиентам.
  */
-@Suppress("unused")
 interface ReceiptRenderPort {
 
     /**

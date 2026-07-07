@@ -21,7 +21,6 @@ import kz.mybrain.superkassa.core.domain.helper.tax.TaxCalculator
  *
  * @property storage Порт для доступа к хранилищу данных ККМ, смен, документов и счетчиков.
  */
-@Suppress("unused", "DuplicatedCode")
 class RecalculateShiftCountersUseCase(
     private val storage: StoragePort
 ) {
@@ -138,15 +137,17 @@ class RecalculateShiftCountersUseCase(
         // Обновляем счетчики по секциям/отделам
         request.items.forEach { item ->
             val sectionCode = item.sectionCode.ifBlank { "001" }
+            val countDelta = if (item.isStorno) -1L else 1L
+            val sumDelta = if (item.isStorno) -item.sum.bills else item.sum.bills
             increment(
                 counters,
                 CounterKeyFormats.SECTION_OPERATION_COUNT.format(sectionCode, operationKey),
-                1L
+                countDelta
             )
             increment(
                 counters,
                 CounterKeyFormats.SECTION_OPERATION_SUM.format(sectionCode, operationKey),
-                item.sum.bills
+                sumDelta
             )
         }
 
@@ -222,7 +223,7 @@ class RecalculateShiftCountersUseCase(
                 CounterKeyFormats.TAX_SUM.format(taxKey, operationKey),
                 line.taxSum.bills
             )
-            val turnoverWithoutTax = line.taxBase.bills - line.taxSum.bills
+            val turnoverWithoutTax = line.taxBase.bills
             increment(
                 counters,
                 CounterKeyFormats.TAX_TURNOVER_NO_TAX.format(taxKey, operationKey),

@@ -110,4 +110,92 @@ class OfdCommandRequestFactoryTest {
             )
         }
     }
+
+    @Test
+    fun testBuildMissingSystemId() {
+        val kkm = KkmInfo(
+            id = "kkm-1",
+            createdAt = 0L,
+            updatedAt = 0L,
+            mode = "ACTIVE",
+            state = "ACTIVE",
+            ofdProvider = "TAG",
+            systemId = null
+        )
+        every { ofdConfig.parseTag("TAG") } returns ("P" to "E")
+        every { ofdConfig.validateAndFormatTag("P", "E") } returns "P:E"
+
+        val exception = assertFailsWith<ValidationException> {
+            factory.build(
+                kkm = kkm,
+                commandType = OfdCommandType.TICKET,
+                payloadRef = "p",
+                token = 1,
+                reqNum = 1,
+                now = 1,
+                defaultServiceInfo = { defaultService }
+            )
+        }
+        assertEquals("KKM_SYSTEM_ID_REQUIRED", exception.code)
+    }
+
+    @Test
+    fun testBuildMissingRegistrationNumber() {
+        val kkm = KkmInfo(
+            id = "kkm-1",
+            createdAt = 0L,
+            updatedAt = 0L,
+            mode = "ACTIVE",
+            state = "ACTIVE",
+            ofdProvider = "TAG",
+            systemId = "12345",
+            registrationNumber = null,
+            factoryNumber = "FAC"
+        )
+        every { ofdConfig.parseTag("TAG") } returns ("P" to "E")
+        every { ofdConfig.validateAndFormatTag("P", "E") } returns "P:E"
+
+        val exception = assertFailsWith<ValidationException> {
+            factory.build(
+                kkm = kkm,
+                commandType = OfdCommandType.TICKET,
+                payloadRef = "p",
+                token = 1,
+                reqNum = 1,
+                now = 1,
+                defaultServiceInfo = { defaultService }
+            )
+        }
+        assertEquals("KKM_REG_REQUIRED", exception.code)
+    }
+
+    @Test
+    fun testBuildMissingFactoryNumber() {
+        val kkm = KkmInfo(
+            id = "kkm-1",
+            createdAt = 0L,
+            updatedAt = 0L,
+            mode = "ACTIVE",
+            state = "ACTIVE",
+            ofdProvider = "TAG",
+            systemId = "12345",
+            registrationNumber = "REG",
+            factoryNumber = null
+        )
+        every { ofdConfig.parseTag("TAG") } returns ("P" to "E")
+        every { ofdConfig.validateAndFormatTag("P", "E") } returns "P:E"
+
+        val exception = assertFailsWith<ValidationException> {
+            factory.build(
+                kkm = kkm,
+                commandType = OfdCommandType.TICKET,
+                payloadRef = "p",
+                token = 1,
+                reqNum = 1,
+                now = 1,
+                defaultServiceInfo = { defaultService }
+            )
+        }
+        assertEquals("KKM_FACTORY_REQUIRED", exception.code)
+    }
 }

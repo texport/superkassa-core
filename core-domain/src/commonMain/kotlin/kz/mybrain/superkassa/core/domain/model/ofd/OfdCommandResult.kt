@@ -1,6 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.ofd
 
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -18,7 +17,6 @@ import kotlinx.serialization.json.JsonObject
  * @property errorMessage Описание ошибки на уровне сетевого обмена или обработки.
  * @property receiptUrl Ссылка на электронный чек на сервере ОФД.
  */
-@Serializable
 data class OfdCommandResult(
     val status: OfdCommandStatus,
     val responseBin: ByteArray? = null,

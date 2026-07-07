@@ -73,3 +73,65 @@ dependencies: [
     .package(url: "https://github.com/texport/superkassa-core", from: "1.0.1")
 ]
 ```
+
+---
+
+## Quick Start / Usage
+
+Here is a quick example of how to initialize and interact with `SuperkassaApi` in your application:
+
+```kotlin
+import kz.mybrain.superkassa.core.presentation.facade.SuperkassaApi
+import kz.mybrain.superkassa.core.presentation.model.KkmInitDirectRequest
+import kz.mybrain.superkassa.core.presentation.model.ReceiptSellRequest
+import kz.mybrain.superkassa.core.presentation.model.ReceiptItemDto
+import kz.mybrain.superkassa.core.presentation.model.ReceiptPaymentDto
+
+// Retrieve the API implementation (e.g., via dependency injection)
+val api: SuperkassaApi = ... 
+
+// 1. Initialize a physical KKM (Direct)
+val kkm = api.initKkm(
+    pin = "1234",
+    request = KkmInitDirectRequest(
+        ofdId = "kazakhtelecom",
+        ofdEnvironment = "prod",
+        ofdSystemId = "sys-12345",
+        ofdToken = "token-abc-123",
+        kkmKgdId = "123456789012",
+        factoryNumber = "SWK-0001",
+        manufactureYear = 2026
+    )
+)
+
+// 2. Register a cashier sell receipt
+val sellResult = api.createSellReceipt(
+    kkmId = kkm.id,
+    pin = "1111",
+    request = ReceiptSellRequest(
+        items = listOf(
+            ReceiptItemDto(
+                name = "Фискальный товар",
+                price = 1500.0,
+                quantity = 1L,
+                vatGroup = "VAT_12",
+                measureUnitCode = "796"
+            )
+        ),
+        payments = listOf(
+            ReceiptPaymentDto(type = "CASH", sum = 1500.0)
+        ),
+        idempotencyKey = "unique-receipt-key-1"
+    )
+)
+
+println("Receipt registered successfully with ticket number: ${sellResult.ticketNumber}")
+```
+
+## Architecture Boundary
+
+The project follows a strict Clean Architecture boundary design:
+
+- **core-domain (Entities & Use Cases):** Contains the core business models and interfaces. There is absolutely no external dependency on presentation logic, and all domain models are completely decoupled from serialization logic (e.g. no `@Serializable` annotations).
+- **core-data (Adapters & Infrastructure):** Implements ports for storage, OFD network connections, and offline queuing. It relies only on `core-domain`.
+- **core-presentation (API & DTOs):** Exposes a clean facade layer via `SuperkassaApi`. All serialization logic and API request/response structures are declared here as decoupled DTOs (e.g. `UserRoleDto`, `TaxRegimeDto`), preventing serialization libraries or annotations from leaking into the domain layer.

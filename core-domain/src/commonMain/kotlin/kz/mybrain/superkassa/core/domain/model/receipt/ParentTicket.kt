@@ -1,6 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.receipt
 
-import kotlinx.serialization.Serializable
 import kz.mybrain.superkassa.core.domain.model.common.Money
 
 /**
@@ -13,7 +12,6 @@ import kz.mybrain.superkassa.core.domain.model.common.Money
  * @property parentTicketTotal Полная сумма исходного чека.
  * @property parentTicketIsOffline Признак того, был ли исходный чек оформлен в автономном режиме.
  */
-@Serializable
 data class ParentTicket(
     val parentTicketNumber: Long,
     val parentTicketDateTimeMillis: Long,

@@ -10,7 +10,6 @@ package kz.mybrain.superkassa.core.domain.exception
  * @param code Уникальный строковый код ошибки (по умолчанию "STORAGE_ERROR").
  * @param cause Первопричина исключения (например, SQLException).
  */
-@Suppress("unused") // Исключение выбрасывается при ошибках инфраструктуры БД и обрабатывается глобально
 class StorageException(
     trilingualMessage: TrilingualMessage,
     code: String = "STORAGE_ERROR",

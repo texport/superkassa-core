@@ -15,7 +15,7 @@ import kz.mybrain.superkassa.core.domain.model.receipt.ReceiptRequest
 import kz.mybrain.superkassa.core.presentation.model.ParentTicketDto
 import kz.mybrain.superkassa.core.presentation.model.ReceiptItemDto
 import kz.mybrain.superkassa.core.presentation.model.ReceiptPaymentDto
-import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 
 /**
  * Маппер для преобразования HTTP DTO в domain модели для чеков.
@@ -102,8 +102,16 @@ object ReceiptMapper {
      */
     private fun toParentTicket(dto: ParentTicketDto?): ParentTicket? {
         if (dto == null) return null
-        val instant = Instant.parse(dto.parentTicketDateTime)
-        val millis = instant.toEpochMilliseconds()
+        val dateTimeStr = dto.parentTicketDateTime
+        val cleanDateTimeStr = if (dateTimeStr.endsWith("Z")) {
+            dateTimeStr.substring(0, dateTimeStr.length - 1)
+        } else {
+            dateTimeStr
+        }
+        val localDateTime = kotlinx.datetime.LocalDateTime.parse(cleanDateTimeStr)
+        val millis = localDateTime.toInstant(
+            kotlinx.datetime.TimeZone.UTC
+        ).toEpochMilliseconds()
         return ParentTicket(
             parentTicketNumber = dto.parentTicketNumber,
             parentTicketDateTimeMillis = millis,
@@ -130,7 +138,6 @@ object ReceiptMapper {
         markupSum: Double?,
         payments: List<ReceiptPaymentDto>,
         taken: Double?,
-        @Suppress("UNUSED_PARAMETER") change: Double?, // не передаём в ОФД; сдача считается по taken и total
         parentTicket: ParentTicketDto? = null,
         defaultVatGroup: String? = null,
         customerBin: String? = null

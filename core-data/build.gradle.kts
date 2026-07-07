@@ -1,9 +1,12 @@
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+
 plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
     `maven-publish`
-    jacoco
+    alias(libs.plugins.kover)
 }
 
 repositories {
@@ -13,6 +16,12 @@ repositories {
 
 kotlin {
     jvm()
+    android {
+        namespace = "kz.mybrain.superkassa.core.data"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+        withHostTest {}
+    }
     
     iosArm64()
     iosX64()
@@ -34,6 +43,17 @@ kotlin {
             }
         }
         jvmMain {
+            dependencies {
+                implementation(libs.slf4j.api)
+                implementation(libs.ofd.proto.codec)
+                implementation(libs.ofd.network.client)
+                implementation(libs.superkassa.offline.queue)
+                implementation(libs.superkassa.delivery)
+                implementation(libs.resilience4j)
+            }
+        }
+        androidMain {
+            kotlin.srcDirs("src/jvmMain/kotlin")
             dependencies {
                 implementation(libs.slf4j.api)
                 implementation(libs.ofd.proto.codec)
@@ -65,34 +85,20 @@ kotlin {
     }
 }
 
-val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
-    description = "Generates Jacoco coverage report for core-data."
-    dependsOn(tasks.named("jvmTest"))
-    classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
-    sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))
-    executionData.setFrom(files(layout.buildDirectory.file("jacoco/jvmTest.exec")))
+kover {
     reports {
-        xml.required.set(true)
-        html.required.set(true)
-    }
-}
-
-val jacocoTestCoverageVerification = tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
-    description = "Verifies Jacoco coverage for core-data."
-    dependsOn(jacocoTestReport)
-    executionData.setFrom(files(layout.buildDirectory.file("jacoco/jvmTest.exec")))
-    classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
-    violationRules {
-        rule {
-            element = "CLASS"
-            includes = listOf("kz.mybrain.superkassa.core.data.adapter.*")
-            limit {
-                minimum = "1.00".toBigDecimal()
+        filters {
+            excludes {
+                classes("kz.mybrain.superkassa.core.data.ofd.*")
+            }
+        }
+        verify {
+            rule {
+                bound {
+                    coverageUnits = CoverageUnit.LINE
+                    minValue = 100
+                }
             }
         }
     }
-}
-
-tasks.check {
-    dependsOn(jacocoTestCoverageVerification)
 }

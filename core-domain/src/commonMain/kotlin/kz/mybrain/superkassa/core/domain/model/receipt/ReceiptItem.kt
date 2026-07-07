@@ -1,6 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.receipt
 
-import kotlinx.serialization.Serializable
 import kz.mybrain.superkassa.core.domain.model.common.Money
 import kz.mybrain.superkassa.core.domain.model.common.VatGroup
 
@@ -21,7 +20,6 @@ import kz.mybrain.superkassa.core.domain.model.common.VatGroup
  * @property ntin Национальный товарный код (НТИН).
  * @property isStorno Флаг сторнирования (аннулирования) позиции.
  */
-@Serializable
 data class ReceiptItem(
     val name: String,
     val sectionCode: String,

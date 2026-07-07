@@ -23,7 +23,6 @@ import kz.mybrain.superkassa.core.domain.helper.tax.TaxCalculator
  *
  * @property storage Порт для доступа и обновления данных счетчиков в хранилище.
  */
-@Suppress("unused", "DuplicatedCode")
 class UpdateCountersUseCase(
     private val storage: StoragePort
 ) {
@@ -66,19 +65,21 @@ class UpdateCountersUseCase(
         // Секционные счётчики по позициям чека.
         request.items.forEach { item ->
             val sectionCode = item.sectionCode.ifBlank { "001" }
+            val countDelta = if (item.isStorno) -1L else 1L
+            val sumDelta = if (item.isStorno) -item.sum.bills else item.sum.bills
             increment(
                 kkmId,
                 CounterScopes.SHIFT,
                 shiftId,
                 CounterKeyFormats.SECTION_OPERATION_COUNT.format(sectionCode, operationKey),
-                1
+                countDelta
             )
             increment(
                 kkmId,
                 CounterScopes.SHIFT,
                 shiftId,
                 CounterKeyFormats.SECTION_OPERATION_SUM.format(sectionCode, operationKey),
-                item.sum.bills
+                sumDelta
             )
         }
 
@@ -187,7 +188,7 @@ class UpdateCountersUseCase(
                 CounterKeyFormats.TAX_SUM.format(taxKey, operationKey),
                 line.taxSum.bills
             )
-            val turnoverWithoutTax = line.taxBase.bills - line.taxSum.bills
+            val turnoverWithoutTax = line.taxBase.bills
             increment(
                 kkmId,
                 CounterScopes.SHIFT,
@@ -206,19 +207,21 @@ class UpdateCountersUseCase(
         // Глобальные секционные счётчики по позициям чека.
         request.items.forEach { item ->
             val sectionCode = item.sectionCode.ifBlank { "001" }
+            val countDelta = if (item.isStorno) -1L else 1L
+            val sumDelta = if (item.isStorno) -item.sum.bills else item.sum.bills
             increment(
                 kkmId,
                 CounterScopes.GLOBAL,
                 null,
                 CounterKeyFormats.SECTION_OPERATION_COUNT.format(sectionCode, operationKey),
-                1
+                countDelta
             )
             increment(
                 kkmId,
                 CounterScopes.GLOBAL,
                 null,
                 CounterKeyFormats.SECTION_OPERATION_SUM.format(sectionCode, operationKey),
-                item.sum.bills
+                sumDelta
             )
         }
 

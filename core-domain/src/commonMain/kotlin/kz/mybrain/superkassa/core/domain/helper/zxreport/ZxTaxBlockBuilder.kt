@@ -45,7 +45,7 @@ object ZxTaxBlockBuilder {
             // NO_VAT не считается налогом и не должен попадать в блок taxes ZXReport.
             if (group == VatGroup.NO_VAT) continue
 
-            val type = taxTypeEnumCodeForGroup(group)
+            val type = taxTypeEnumCodeForGroup()
             val typeCode = taxTypeCodeForGroup(group)
             val percent = percentForGroup(group)
 
@@ -84,7 +84,7 @@ object ZxTaxBlockBuilder {
      *
      * По спецификации протокола ZXReport для всех групп НДС используется единый тип 100.
      */
-    private fun taxTypeEnumCodeForGroup(@Suppress("UNUSED_PARAMETER") group: VatGroup): Int =
+    private fun taxTypeEnumCodeForGroup(): Int =
         100
 
     /**

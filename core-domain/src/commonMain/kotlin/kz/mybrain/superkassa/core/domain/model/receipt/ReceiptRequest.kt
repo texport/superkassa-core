@@ -1,6 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.receipt
 
-import kotlinx.serialization.Serializable
 import kz.mybrain.superkassa.core.domain.model.common.Money
 import kz.mybrain.superkassa.core.domain.model.common.TaxRegime
 import kz.mybrain.superkassa.core.domain.model.common.VatGroup
@@ -25,7 +24,6 @@ import kz.mybrain.superkassa.core.domain.model.common.VatGroup
  * @property customerBin БИН/ИИН покупателя (если требуется указание).
  * @property ticketTaxes Рассчитанные строки распределения налогов по чеку (заполняются во внутреннем Use Case).
  */
-@Serializable
 data class ReceiptRequest(
     val kkmId: String,
     val pin: String,

@@ -213,4 +213,67 @@ class KkmCommonHelperTest {
             helper.requireSyncAllowed("kkm-1", "1234", false, authorization, queue)
         }
     }
+    @Test
+    fun testEnsureSystemTimeValidFailureNullMessage() {
+        every { timeValidator.validate(clock) } returns TimeValidationResult(ok = false, trilingualMessage = null)
+        val exception = assertFailsWith<ValidationException> {
+            helper.ensureSystemTimeValid()
+        }
+        assertEquals("SYSTEM_TIME_INVALID", exception.code)
+    }    @Test
+    fun testSendOfdCommandSuccessNoResponseToken() {
+        val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE", tokenEncryptedBase64 = "encrypted")
+        val request = mockk<OfdCommandRequest>()
+        val result = OfdCommandResult(
+            status = OfdCommandStatus.OK,
+            responseToken = null
+        )
+
+        every { tokenCodec.decodeToken("encrypted") } returns 1234L
+        every { generateRequestNumberUseCase.execute("kkm-1") } returns 77
+        every { clock.now() } returns 1000L
+        every {
+            ofdCommandRequestFactory.build(
+                kkm = kkm,
+                commandType = OfdCommandType.TICKET,
+                payloadRef = "payload",
+                token = 1234L,
+                reqNum = 77,
+                now = 1000L,
+                serviceInfoOverride = null,
+                registrationNumberOverride = null,
+                factoryNumberOverride = null,
+                ofdProviderOverride = null,
+                defaultServiceInfo = any()
+            )
+        } returns request
+
+        every { ofd.send(request) } returns result
+
+        val res = helper.sendOfdCommand(kkm, OfdCommandType.TICKET, "payload")
+        assertEquals(result, res)
+
+        verify(exactly = 0) { storage.updateKkmToken(any(), any(), any()) }
+    }
+
+    @Test
+    fun testRequireSyncAllowedAllowOpenShiftTrue() {
+        val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
+        val authorization = mockk<AuthorizeUserUseCase>()
+        val queue = mockk<OfflineQueuePort>()
+
+        every { timeValidator.validate(clock) } returns TimeValidationResult(ok = true)
+        every { authorization.requireRole("kkm-1", "1234", setOf(UserRole.ADMIN)) } returns Unit
+        
+        val transactionSlot = slot<() -> KkmInfo>()
+        every { storage.inTransaction(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke()
+        }
+        every { authorization.requireKkm("kkm-1") } returns kkm
+        every { queue.canSendDirectly("kkm-1") } returns true
+
+        val res = helper.requireSyncAllowed("kkm-1", "1234", true, authorization, queue)
+        assertEquals(kkm, res)
+        verify(exactly = 0) { storage.findOpenShift(any()) }
+    }
 }

@@ -77,6 +77,7 @@ import kz.mybrain.superkassa.core.domain.usecase.user.UpdateUserUseCase
 import kz.mybrain.superkassa.core.presentation.mapper.ReceiptMapper
 import kz.mybrain.superkassa.core.presentation.model.FactoryNumberResponse
 import kz.mybrain.superkassa.core.presentation.model.KkmInitDirectRequest
+import kz.mybrain.superkassa.core.presentation.model.toDomain
 import kz.mybrain.superkassa.core.presentation.model.KkmInitSimpleRequest
 import kz.mybrain.superkassa.core.presentation.model.KkmListParams
 import kz.mybrain.superkassa.core.presentation.model.KkmListResult
@@ -87,6 +88,7 @@ import kz.mybrain.superkassa.core.presentation.model.ReceiptSellRequest
 import kz.mybrain.superkassa.core.presentation.model.ReceiptSellReturnRequest
 import kz.mybrain.superkassa.core.presentation.model.UserCreateRequest
 import kz.mybrain.superkassa.core.presentation.model.UserResponse
+import kz.mybrain.superkassa.core.presentation.model.UserRoleDto
 import kz.mybrain.superkassa.core.presentation.model.UserUpdateRequest
 import kz.mybrain.superkassa.core.presentation.model.VatRateResponse
 
@@ -108,7 +110,6 @@ import kz.mybrain.superkassa.core.presentation.model.VatRateResponse
  * @param documentConvertPort Конвертер документов (HTML в PDF).
  * @param timeValidator Валидатор системного времени ККМ.
  */
-@Suppress("LargeClass", "TooManyFunctions")
 class SuperkassaApiImpl(
     private val storage: StoragePort,
     private val queue: OfflineQueuePort,
@@ -298,7 +299,7 @@ class SuperkassaApiImpl(
             kkmKgdId = request.kkmKgdId,
             factoryNumber = request.factoryNumber,
             manufactureYear = request.manufactureYear,
-            serviceInfo = request.serviceInfo,
+            serviceInfo = request.serviceInfo?.toDomain(),
             okved = request.okved
         )
 
@@ -312,7 +313,7 @@ class SuperkassaApiImpl(
             ofdEnvironment = request.ofdEnvironment,
             ofdSystemId = request.ofdSystemId,
             ofdToken = request.ofdToken,
-            defaultVatGroup = request.defaultVatGroup,
+            defaultVatGroup = VatGroup.valueOf(request.defaultVatGroup.name),
             okved = request.okved
         )
 
@@ -404,12 +405,18 @@ class SuperkassaApiImpl(
     override fun listUsers(kkmId: String, pin: String): List<UserResponse> {
         authorization.requireKkm(kkmId)
         authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN), allowDefaultPin = true)
-        return storage.listUsers(kkmId).map { UserResponse(it.id, it.name, it.role, it.pin) }
+        return storage.listUsers(kkmId).map { UserResponse(it.id, it.name, UserRoleDto.valueOf(it.role.name), it.pin) }
     }
 
     override fun createUser(kkmId: String, pin: String, request: UserCreateRequest): UserResponse {
-        val user = createUserUseCase.execute(kkmId, pin, request.name, request.role, request.userPin)
-        return UserResponse(user.id, user.name, user.role, user.pin)
+        val user = createUserUseCase.execute(
+            kkmId,
+            pin,
+            request.name,
+            UserRole.valueOf(request.role.name),
+            request.userPin
+        )
+        return UserResponse(user.id, user.name, UserRoleDto.valueOf(user.role.name), user.pin)
     }
 
     override fun updateUser(
@@ -418,8 +425,15 @@ class SuperkassaApiImpl(
         pin: String,
         request: UserUpdateRequest
     ): UserResponse {
-        val user = updateUserUseCase.execute(kkmId, userId, pin, request.name, request.role, request.userPin)
-        return UserResponse(user.id, user.name, user.role, user.pin)
+        val user = updateUserUseCase.execute(
+            kkmId,
+            userId,
+            pin,
+            request.name,
+            request.role?.let { UserRole.valueOf(it.name) },
+            request.userPin
+        )
+        return UserResponse(user.id, user.name, UserRoleDto.valueOf(user.role.name), user.pin)
     }
 
     override fun deleteUser(kkmId: String, userId: String, pin: String): Boolean {
@@ -500,7 +514,6 @@ class SuperkassaApiImpl(
             markupSum = request.markupSum,
             payments = request.payments,
             taken = request.taken,
-            change = request.change,
             defaultVatGroup = request.defaultVatGroup,
             customerBin = request.customerBin
         )
@@ -520,7 +533,6 @@ class SuperkassaApiImpl(
             markupSum = request.markupSum,
             payments = request.payments,
             taken = request.taken,
-            change = request.change,
             parentTicket = request.parentTicket,
             defaultVatGroup = request.defaultVatGroup,
             customerBin = request.customerBin
@@ -541,7 +553,6 @@ class SuperkassaApiImpl(
             markupSum = request.markupSum,
             payments = request.payments,
             taken = request.taken,
-            change = request.change,
             defaultVatGroup = request.defaultVatGroup,
             customerBin = request.customerBin
         )
@@ -561,7 +572,6 @@ class SuperkassaApiImpl(
             markupSum = request.markupSum,
             payments = request.payments,
             taken = request.taken,
-            change = request.change,
             parentTicket = request.parentTicket,
             defaultVatGroup = request.defaultVatGroup,
             customerBin = request.customerBin

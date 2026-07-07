@@ -89,6 +89,5 @@ object OfdCommonRequestHelper {
      * @param group группа НДС [VatGroup].
      * @return код типа налога.
      */
-    @Suppress("FunctionOnlyReturningConstant", "UNUSED_PARAMETER")
     fun taxTypeForGroup(group: VatGroup): Int = 100
 }

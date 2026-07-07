@@ -91,7 +91,13 @@ class OfdManagerAdapter(
                     status = OfdCommandStatus.FAILED,
                     errorMessage = DataErrorMessages.ofdRequestFailed("Missing required request parameters")
                 )
-            logger.info("OFD SEND: commandType={}, kkmId={}, reqNum={}, token={}", command.commandType, command.kkmId, command.reqNum, command.token)
+            logger.info(
+                "OFD SEND: commandType={}, kkmId={}, reqNum={}, token={}",
+                command.commandType,
+                command.kkmId,
+                command.reqNum,
+                command.token
+            )
             val bytes = codec.encode(json)
             val response = runBlocking {
                 try {
@@ -109,7 +115,12 @@ class OfdManagerAdapter(
                 val error = response.exceptionOrNull()?.message ?: "unknown"
                 val isTimeout = error.contains("timeout", ignoreCase = true)
                 lastNoConnectionMillis[throttleKey] = now
-                logger.warn("OFD SEND FAILED: commandType={}, kkmId={}, error={}", command.commandType, command.kkmId, error)
+                logger.warn(
+                    "OFD SEND FAILED: commandType={}, kkmId={}, error={}",
+                    command.commandType,
+                    command.kkmId,
+                    error
+                )
                 return OfdCommandResult(
                     status = if (isTimeout) OfdCommandStatus.TIMEOUT else OfdCommandStatus.FAILED,
                     errorMessage = DataErrorMessages.ofdRequestFailed(error)
@@ -131,12 +142,17 @@ class OfdManagerAdapter(
             if (status == OfdCommandStatus.OK) {
                 logger.info(
                     "OFD RECV SUCCESS: commandType={}, resultCode=0, responseToken={}, responseReqNum={}, fiscalSign={}",
-                    command.commandType, responseToken, responseReqNum, fiscalSign
+                    command.commandType,
+                    responseToken,
+                    responseReqNum,
+                    fiscalSign
                 )
             } else {
                 logger.warn(
                     "OFD RECV ERROR: commandType={}, resultCode={}, text={}",
-                    command.commandType, resultCode, resultText
+                    command.commandType,
+                    resultCode,
+                    resultText
                 )
             }
 

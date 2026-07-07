@@ -1,6 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.report
 
-import kotlinx.serialization.Serializable
 import kz.mybrain.superkassa.core.domain.model.delivery.DeliveryStatus
 
 /**
@@ -11,7 +10,6 @@ import kz.mybrain.superkassa.core.domain.model.delivery.DeliveryStatus
  * @property deliveryError Текст ошибки доставки, если отправка завершилась неудачно.
  * @property deliveryPayload Бинарное представление сгенерированного отчета (например, PDF/ESC_POS).
  */
-@Serializable
 data class ReportResult(
     val documentId: String,
     val deliveryStatus: DeliveryStatus = DeliveryStatus.NOT_SENT,

@@ -28,7 +28,6 @@ object OfdTicketRequestBuilder {
      * @param serviceBlock сформированный ранее служебный JSON-блок (опционально).
      * @return JSON-объект [JsonObject] сформированного фискального чека.
      */
-    @Suppress("LongMethod")
     fun buildTicketRequest(
         ofdId: String,
         protocolVersion: String,

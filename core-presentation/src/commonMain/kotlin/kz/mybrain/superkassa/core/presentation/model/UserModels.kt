@@ -4,7 +4,9 @@ import kz.mybrain.superkassa.core.presentation.annotations.Schema
 import kz.mybrain.superkassa.core.presentation.annotations.NotBlank
 import kz.mybrain.superkassa.core.presentation.annotations.Size
 import kotlinx.serialization.Serializable
-import kz.mybrain.superkassa.core.domain.model.auth.UserRole
+
+@Serializable
+enum class UserRoleDto { ADMIN, CASHIER }
 
 /**
  * Запрос на создание пользователя ККМ (кассира или администратора).
@@ -20,7 +22,7 @@ data class UserCreateRequest(
     @field:NotBlank(message = "Name is required")
     val name: String,
     @Schema(description = "Роль пользователя (ADMIN или CASHIER)", example = "CASHIER")
-    val role: UserRole,
+    val role: UserRoleDto,
     @Schema(description = "ПИН-код нового пользователя", example = "1234")
     @field:NotBlank(message = "User PIN is required")
     @field:Size(min = 4, max = 10, message = "PIN length must be between 4 and 10")
@@ -39,7 +41,7 @@ data class UserCreateRequest(
 data class UserUpdateRequest(
     @Schema(description = "Новое имя пользователя", example = "Петр Петров")
     val name: String? = null,
-    @Schema(description = "Новая роль", example = "ADMIN") val role: UserRole? = null,
+    @Schema(description = "Новая роль", example = "ADMIN") val role: UserRoleDto? = null,
     @Schema(description = "Новый ПИН-код пользователя", example = "4321")
     val userPin: String? = null
 )
@@ -72,7 +74,7 @@ data class UserDeleteRequest(
 data class UserResponse(
     @Schema(description = "ID пользователя", example = "user-123") val userId: String,
     @Schema(description = "Имя пользователя", example = "Иван Иванов") val name: String,
-    @Schema(description = "Роль пользователя", example = "CASHIER") val role: UserRole,
+    @Schema(description = "Роль пользователя", example = "CASHIER") val role: UserRoleDto,
     @Schema(
         description = "ПИН-код пользователя (возвращается только для справки)",
         example = "1234"

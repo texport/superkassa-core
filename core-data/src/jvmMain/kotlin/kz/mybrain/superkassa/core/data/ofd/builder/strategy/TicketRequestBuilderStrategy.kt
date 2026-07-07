@@ -16,8 +16,6 @@ import kz.mybrain.superkassa.core.domain.port.StoragePort
  * Извлекает сохраненный фискальный документ и его платежную нагрузку из хранилища,
  * после чего формирует JSON-запрос чека для ОФД с расчетом налоговых ставок.
  */
-@Suppress("unused", "DuplicatedCode", "RedundantNullableReturnType")
-// Используется динамически в списке стратегий сборщика / DI;
 // возвращаемый тип nullable переопределяет интерфейс
 class TicketRequestBuilderStrategy(
     private val storage: StoragePort? = null
@@ -65,28 +63,4 @@ class TicketRequestBuilderStrategy(
             request = receipt,
             serviceBlock = serviceBlock
         )
-    }
-
-    /**
-     * Формирует служебный JSON-блок (payload) с регистрационной информацией и геолокацией.
-     *
-     * @param command запрос команды ОФД.
-     * @return JSON-объект [JsonObject] со служебной информацией или `null`, если параметры неполны.
-     */
-    private fun buildServiceBlock(command: OfdCommandRequest): JsonObject? {
-        val serviceInfo = command.serviceInfo ?: return null
-        val regNo = command.registrationNumber ?: return null
-        val factoryNo = command.factoryNumber ?: return null
-        val systemId = command.ofdSystemId ?: return null
-        val begin = command.offlineBeginMillis ?: System.currentTimeMillis()
-        val end = command.offlineEndMillis ?: System.currentTimeMillis()
-        return OfdRequestFactory.buildServicePayload(
-            serviceInfo = serviceInfo,
-            registrationNumber = regNo,
-            factoryNumber = factoryNo,
-            systemId = systemId,
-            offlineBeginMillis = begin,
-            offlineEndMillis = end
-        )
-    }
-}
+    }}

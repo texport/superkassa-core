@@ -1,6 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.receipt
 
-import kotlinx.serialization.Serializable
 import kz.mybrain.superkassa.core.domain.model.delivery.DeliveryStatus
 
 /**
@@ -13,7 +12,6 @@ import kz.mybrain.superkassa.core.domain.model.delivery.DeliveryStatus
  * @property deliveryStatus Текущий статус отправки чека в ОФД/клиенту.
  * @property deliveryError Текст возникшей ошибки при попытке отправки/печати чека.
  */
-@Serializable
 data class ReceiptResult(
     val documentId: String,
     val fiscalSign: String? = null,

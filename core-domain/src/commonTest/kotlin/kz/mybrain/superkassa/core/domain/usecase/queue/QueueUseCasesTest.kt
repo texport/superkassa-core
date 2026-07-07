@@ -63,7 +63,7 @@ class QueueUseCasesTest {
             status = QueueStatus.FAILED,
             attempt = 1,
             nextAttemptAt = 1000L,
-            lastError = "error",
+            lastError = "RU: Ошибка | KK: Қате | EN: Error",
             createdAt = 1000L
         )
         every { queueStorage.listByCashbox("kkm-1", QueueLane.OFFLINE, 100, 0) } returns listOf(mockCommand)
@@ -71,6 +71,10 @@ class QueueUseCasesTest {
         val list = listQueueItems.execute("kkm-1", "1234")
         assertEquals(1, list.size)
         assertEquals("cmd-1", list[0].id)
+        assertEquals("RU: Ошибка | KK: Қате | EN: Error", list[0].lastError)
+        assertEquals("Ошибка", list[0].errorRu)
+        assertEquals("Қате", list[0].errorKk)
+        assertEquals("Error", list[0].errorEn)
     }
 
     @Test
@@ -129,6 +133,11 @@ class QueueUseCasesTest {
         assertEquals(QueueStatus.FAILED, res.status)
         assertEquals("Server error", res.errorMessage)
         assertEquals(62000L, res.retryAt)
+        val err = res.error
+        kotlin.test.assertNotNull(err)
+        assertEquals("Ошибка отправки в ОФД: Server error", err.messageRu)
+        assertEquals("ОФД-ға жіберу қатесі: Server error", err.messageKk)
+        assertEquals("OFD delivery failure: Server error", err.messageEn)
     }
 
     @Test
@@ -156,6 +165,11 @@ class QueueUseCasesTest {
         assertEquals(QueueStatus.FAILED, res.status)
         assertEquals("OFD timeout", res.errorMessage)
         assertEquals(32000L, res.retryAt)
+        val err = res.error
+        kotlin.test.assertNotNull(err)
+        assertEquals("Тайм-аут ожидания ответа от ОФД", err.messageRu)
+        assertEquals("ОФД жауабын күту уақыты бітті", err.messageKk)
+        assertEquals("OFD connection timeout", err.messageEn)
     }
 
     @Test

@@ -11,13 +11,14 @@ import org.gradle.plugins.signing.SigningExtension
 plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.nmcp)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
+    alias(libs.plugins.nmcp.aggregation)
     `maven-publish`
-    jacoco
+    alias(libs.plugins.kover)
 }
 
 group = "io.github.texport"
-version = "1.0.1"
+version = "1.0.2"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
@@ -74,7 +75,7 @@ allprojects {
             }
         }
         
-        apply(plugin = "signing")
+        plugins.apply("signing")
         configure<SigningExtension> {
             val signingKey = System.getenv("SIGNING_KEY")
             val signingPassword = System.getenv("SIGNING_PASSWORD")
@@ -105,6 +106,12 @@ repositories {
 
 kotlin {
     jvm()
+    android {
+        namespace = "kz.mybrain.superkassa.core"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+        withHostTest {}
+    }
     
     iosArm64()
     iosX64()
@@ -163,9 +170,7 @@ tasks.named<Jar>("jvmJar") {
     }
 }
 
-jacoco {
-    toolVersion = "0.8.12"
-}
+
 
 detekt {
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
@@ -257,8 +262,8 @@ tasks.register("generateSpmManifest") {
     }
 }
 
-nmcp {
-    publishAllPublicationsToCentralPortal {
+nmcpAggregation {
+    centralPortal {
         username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
         password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
         publishingType.set("AUTOMATIC")

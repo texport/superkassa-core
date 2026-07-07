@@ -4,7 +4,6 @@ package kz.mybrain.superkassa.core.domain.port
  * Порт для генерации графических QR-кодов.
  * Используется для кодирования фискального признака и ссылки для проверки чека.
  */
-@Suppress("unused")
 interface QrCodeGeneratorPort {
 
     /**

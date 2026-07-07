@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.common
 
-import kotlinx.serialization.Serializable
-
 /**
  * Группы ставок НДС.
  *
@@ -10,7 +8,6 @@ import kotlinx.serialization.Serializable
  * @property description Описание налоговой ставки.
  * @property taxTypeCode Код типа налога для протокола ОФД.
  */
-@Serializable
 enum class VatGroup(
     val percent: Int,
     val percentThousandths: Int,

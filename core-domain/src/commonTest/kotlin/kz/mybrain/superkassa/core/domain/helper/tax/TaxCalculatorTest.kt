@@ -65,4 +65,37 @@ class TaxCalculatorTest {
 
         assertEquals(0, result.ticketTaxes.size)
     }
+
+    @Test
+    fun `calculateTicketTaxes subtracts storno items from group total`() {
+        val items = listOf(
+            ReceiptItem(
+                name = "Item",
+                sectionCode = "001",
+                quantity = 1,
+                price = Money(1160, 0),
+                sum = Money(1160, 0),
+                vatGroup = VatGroup.VAT_16,
+                isStorno = false
+            ),
+            ReceiptItem(
+                name = "Item Cancelled",
+                sectionCode = "001",
+                quantity = 1,
+                price = Money(1160, 0),
+                sum = Money(1160, 0),
+                vatGroup = VatGroup.VAT_16,
+                isStorno = true
+            )
+        )
+
+        val result = taxService.calculateTicketTaxes(
+            items = items,
+            taxRegime = TaxRegime.VAT_PAYER,
+            defaultVatGroup = VatGroup.VAT_16
+        )
+
+        // Итоговая сумма группы НДС должна быть 0 (1160 - 1160), поэтому налоговых строк быть не должно.
+        assertEquals(0, result.ticketTaxes.size)
+    }
 }

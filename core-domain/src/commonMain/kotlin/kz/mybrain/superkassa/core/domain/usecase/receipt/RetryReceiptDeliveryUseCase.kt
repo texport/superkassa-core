@@ -17,7 +17,6 @@ import kz.mybrain.superkassa.core.domain.helper.ReceiptDeliveryHelper
  * @property authorizeUserUseCase Сценарий авторизации и проверки прав доступа пользователя.
  * @property helper Вспомогательный компонент для управления отправкой чека.
  */
-@Suppress("unused", "DuplicatedCode")
 class RetryReceiptDeliveryUseCase(
     private val storage: StoragePort,
     private val authorizeUserUseCase: AuthorizeUserUseCase,

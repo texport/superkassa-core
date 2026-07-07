@@ -1,9 +1,10 @@
 plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
     `maven-publish`
-    jacoco
+    alias(libs.plugins.kover)
 }
 
 repositories {
@@ -13,6 +14,12 @@ repositories {
 
 kotlin {
     jvm()
+    android {
+        namespace = "kz.mybrain.superkassa.core"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+        withHostTest {}
+    }
     
     iosArm64()
     iosX64()
@@ -41,7 +48,20 @@ kotlin {
                 implementation(libs.swagger.annotations)
             }
         }
+        androidMain {
+            kotlin.srcDirs("src/jvmMain/kotlin")
+            dependencies {
+                implementation(libs.slf4j.api)
+                implementation(libs.jakarta.validation)
+                implementation(libs.swagger.annotations)
+            }
+        }
         jvmTest {
+            dependencies {
+                implementation(libs.mockk)
+            }
+        }
+        named("androidHostTest") {
             dependencies {
                 implementation(libs.mockk)
             }
@@ -59,14 +79,24 @@ kotlin {
     }
 }
 
-val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
-    description = "Generates Jacoco coverage report for core-presentation."
-    dependsOn(tasks.named("jvmTest"))
-    classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
-    sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))
-    executionData.setFrom(files(layout.buildDirectory.file("jacoco/jvmTest.exec")))
+kover {
     reports {
-        xml.required.set(true)
-        html.required.set(true)
+        filters {
+            excludes {
+                classes(
+                    "kz.mybrain.superkassa.core.presentation.model.*"
+                )
+            }
+        }
+        verify {
+            rule {
+                bound {
+                    coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                    minValue = 100
+                }
+            }
+        }
     }
 }
+
+

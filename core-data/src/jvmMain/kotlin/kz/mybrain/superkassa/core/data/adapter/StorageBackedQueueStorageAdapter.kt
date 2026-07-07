@@ -83,6 +83,11 @@ class StorageBackedQueueStorageAdapter(
         return storage.deleteQueueTasksByCashbox(cashboxId)
     }
 
+    override fun hasPendingCommands(cashboxId: String, lane: QueueLane): Boolean {
+        return storage.listQueueTasksByCashbox(cashboxId, lane.name, limit = 100, offset = 0)
+            .any { it.status != QueueStatus.SENT.name }
+    }
+
     /**
      * Маппит доменный DTO QueueTask в структуру QueueCommand оффлайн-очереди.
      */

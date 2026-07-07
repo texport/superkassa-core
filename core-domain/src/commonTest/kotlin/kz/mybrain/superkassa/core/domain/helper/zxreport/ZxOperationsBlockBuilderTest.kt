@@ -1,6 +1,7 @@
 package kz.mybrain.superkassa.core.domain.helper.zxreport
 
 import kz.mybrain.superkassa.core.domain.model.common.CounterKeyFormats
+import kz.mybrain.superkassa.core.domain.model.common.format
 import kz.mybrain.superkassa.core.domain.model.zxreport.OperationAggregate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -204,5 +205,31 @@ class ZxOperationsBlockBuilderTest {
         // 500 + 300 - 100 - 50 = 650
         assertEquals(650L, sum)
         assertEquals(0, coins)
+    }
+
+    @Test
+    fun `resolveRevenue fallback when some operations are missing`() {
+        val counters = mapOf(
+            CounterKeyFormats.NON_NULLABLE_SUM.format("OPERATION_SELL") to 500L
+            // other operations are missing, should default to 0L
+        )
+        val (sum, coins) = ZxOperationsBlockBuilder.resolveRevenue(counters)
+        assertEquals(500L, sum)
+        assertEquals(0, coins)
+    }
+
+    @Test
+    fun `resolveSections with blank or malformed section codes`() {
+        val counters = mapOf(
+            "section.   .operation.OPERATION_SELL.count" to 10L, // blank section code
+            "section..operation.OPERATION_SELL.count" to 5L // empty section code
+        )
+        val fallback = listOf(
+            OperationAggregate("OPERATION_SELL", 1L, 100L)
+        )
+        val sections = ZxOperationsBlockBuilder.resolveSections(counters, fallback)
+        assertEquals(2, sections.size)
+        assertTrue(sections.any { it.sectionCode == "   " })
+        assertTrue(sections.any { it.sectionCode == "" })
     }
 }

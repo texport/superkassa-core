@@ -1,10 +1,8 @@
 package kz.mybrain.superkassa.core.presentation.model
 
 import kotlinx.serialization.json.Json
-import kz.mybrain.superkassa.core.domain.model.common.TaxRegime
 import kz.mybrain.superkassa.core.domain.model.common.UnitOfMeasurement
 import kz.mybrain.superkassa.core.domain.model.common.VatGroup
-import kz.mybrain.superkassa.core.domain.model.auth.UserRole
 import kz.mybrain.superkassa.core.domain.model.kkm.KkmInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -60,7 +58,7 @@ class ModelsTest {
     fun testUserModelsSerialization() {
         val createReq = UserCreateRequest(
             name = "Test User",
-            role = UserRole.CASHIER,
+            role = UserRoleDto.CASHIER,
             userPin = "1234"
         )
         val createStr = json.encodeToString(createReq)
@@ -69,7 +67,7 @@ class ModelsTest {
 
         val updateReq = UserUpdateRequest(
             name = "Updated Name",
-            role = UserRole.ADMIN,
+            role = UserRoleDto.ADMIN,
             userPin = "4321"
         )
         val updateStr = json.encodeToString(updateReq)
@@ -84,7 +82,7 @@ class ModelsTest {
         val response = UserResponse(
             userId = "user-1",
             name = "User One",
-            role = UserRole.CASHIER,
+            role = UserRoleDto.CASHIER,
             pin = "1234"
         )
         val responseStr = json.encodeToString(response)
@@ -155,8 +153,8 @@ class ModelsTest {
         assertEquals(draftUpdate.ofdId, draftUpdateDec.ofdId)
 
         val taxUpdate = KkmTaxSettingsUpdateRequest(
-            taxRegime = TaxRegime.MIXED,
-            defaultVatGroup = VatGroup.VAT_16
+            taxRegime = TaxRegimeDto.MIXED,
+            defaultVatGroup = VatGroupDto.VAT_16
         )
         val taxUpdateStr = json.encodeToString(taxUpdate)
         val taxUpdateDec = json.decodeFromString<KkmTaxSettingsUpdateRequest>(taxUpdateStr)

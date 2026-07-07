@@ -9,9 +9,11 @@ complexity:
     thresholdInClasses: 60
     thresholdInInterfaces: 50
     thresholdInObjects: 100
+    excludes: ['**/SuperkassaApiImpl.kt']
   LongMethod:
     active: true
     threshold: 310
+    excludes: ['**/test/**', '**/*Test.kt', '**/OfdTicketRequestBuilder.kt']
   LongParameterList:
     active: true
     functionThreshold: 22
@@ -20,7 +22,7 @@ complexity:
   LargeClass:
     active: true
     threshold: 400
-    excludes: ['**/test/**', '**/*Test.kt']
+    excludes: ['**/test/**', '**/*Test.kt', '**/SuperkassaApiImpl.kt']
   CyclomaticComplexMethod:
     active: true
     threshold: 60
@@ -51,7 +53,7 @@ style:
     excludes: ['**/test/**', '**/*Test.kt']
   FunctionOnlyReturningConstant:
     active: true
-    excludes: ['**/ErrorMessages.kt', '**/ZxTaxBlockBuilder.kt']
+    excludes: ['**/ErrorMessages.kt', '**/ZxTaxBlockBuilder.kt', '**/OfdCommonRequestHelper.kt']
   ThrowsCount:
     active: true
     max: 10

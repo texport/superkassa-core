@@ -5,7 +5,6 @@ package kz.mybrain.superkassa.core.domain.model.ofd
  *
  * @property id Идентификатор окружения в строковом виде.
  */
-@Suppress("unused") // Элементы перечисления считываются внешними API конфигурации и фабриками бинов
 enum class OfdEnvironment(val id: String) {
     /** Стенд разработки. */
     DEV("DEV"),

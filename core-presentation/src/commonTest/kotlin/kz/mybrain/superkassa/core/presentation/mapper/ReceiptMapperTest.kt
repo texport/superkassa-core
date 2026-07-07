@@ -116,7 +116,6 @@ class ReceiptMapperTest {
             markupSum = null,
             payments = listOf(paymentDto),
             taken = 250.0,
-            change = null,
             defaultVatGroup = "VAT_0"
         )
 
@@ -148,7 +147,6 @@ class ReceiptMapperTest {
                 markupSum = null,
                 payments = listOf(paymentDto),
                 taken = 100.0,
-                change = null,
                 parentTicket = null
             )
         }
@@ -178,13 +176,15 @@ class ReceiptMapperTest {
             markupSum = null,
             payments = listOf(paymentDto),
             taken = 100.0,
-            change = null,
             parentTicket = parentTicketDto
         )
 
         assertNotNull(request.parentTicket)
         assertEquals(12345L, request.parentTicket!!.parentTicketNumber)
         assertEquals(1782554400000L, request.parentTicket!!.parentTicketDateTimeMillis)
+        assertEquals("kgd-1", request.parentTicket!!.kgdKkmId)
+        assertEquals(Money.fromTenge(100.0), request.parentTicket!!.parentTicketTotal)
+        assertEquals(false, request.parentTicket!!.parentTicketIsOffline)
     }
 
     @Test
@@ -204,8 +204,7 @@ class ReceiptMapperTest {
                 markupPercent = null,
                 markupSum = null,
                 payments = listOf(paymentDto),
-                taken = 95.0,
-                change = null
+                taken = 95.0
             )
         }
     }
@@ -227,8 +226,7 @@ class ReceiptMapperTest {
                 markupPercent = null,
                 markupSum = null,
                 payments = listOf(paymentDto),
-                taken = 50.0,
-                change = null
+                taken = 50.0
             )
         }
     }
@@ -251,9 +249,56 @@ class ReceiptMapperTest {
                 markupSum = null,
                 payments = listOf(paymentDto),
                 taken = 100.0,
-                change = null,
                 defaultVatGroup = "INVALID_VAT_GROUP"
             )
         }
+    }
+
+    @Test
+    fun `toReceiptItem maps optional and advanced fields correctly`() {
+        val dto = ReceiptItemDto(
+            name = "Storno Item",
+            price = 500.0,
+            quantity = 1,
+            isStorno = true,
+            listExciseStamp = listOf("ES-0001", "ES-0002"),
+            ntin = "NTIN-9999"
+        )
+        val item = ReceiptMapper.toReceiptItem(dto)
+        assertEquals(true, item.isStorno)
+        assertEquals(listOf("ES-0001", "ES-0002"), item.listExciseStamp)
+        assertEquals("NTIN-9999", item.ntin)
+    }
+
+    @Test
+    fun `toReceiptRequest parses parent ticket without Z suffix successfully`() {
+        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1)
+        val paymentDto = ReceiptPaymentDto(type = "CASH", sum = 100.0)
+        val parentTicketDto = ParentTicketDto(
+            parentTicketNumber = 12345,
+            parentTicketDateTime = "2026-06-27T10:00:00",
+            kgdKkmId = "kgd-1",
+            parentTicketTotal = 100.0,
+            parentTicketIsOffline = false
+        )
+
+        val request = ReceiptMapper.toReceiptRequest(
+            kkmId = "kkm-1",
+            pin = "1234",
+            operation = ReceiptOperationType.SELL_RETURN,
+            idempotencyKey = "key-1",
+            items = listOf(itemDto),
+            discountPercent = null,
+            discountSum = null,
+            markupPercent = null,
+            markupSum = null,
+            payments = listOf(paymentDto),
+            taken = 100.0,
+            parentTicket = parentTicketDto
+        )
+
+        assertNotNull(request.parentTicket)
+        assertEquals(12345L, request.parentTicket!!.parentTicketNumber)
+        assertEquals(1782554400000L, request.parentTicket!!.parentTicketDateTimeMillis)
     }
 }

@@ -8,9 +8,6 @@ import kz.mybrain.superkassa.core.domain.model.auth.UserRole
  * Предоставляет централизованные фабричные методы для создания локализованных
  * сообщений [TrilingualMessage], используемых во всех доменных исключениях.
  */
-@Suppress(
-    "unused"
-) // Публичный справочник ошибок; некоторые функции могут вызываться только из слоя презентации или тестов
 object ErrorMessages {
     fun badRequest(): TrilingualMessage = TrilingualMessage(
         ru = "Некорректный запрос",

@@ -5,7 +5,6 @@ package kz.mybrain.superkassa.core.domain.model.ofd
  *
  * @property value Строковое представление типа команды в протоколе.
  */
-@Suppress("unused") // Элементы перечисления используются внешними сервисами и механизмами сериализации API
 enum class OfdCommandType(val value: String) {
     /** Оформление чека продажи/возврата/покупки/возврата покупки. */
     TICKET("COMMAND_TICKET"),

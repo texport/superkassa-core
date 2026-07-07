@@ -55,8 +55,14 @@ class TaxCalculator {
         itemsByGroup.forEach { (vatGroup, groupItems) ->
             val percent = vatGroup.percent
 
+            // Расчет налогооблагаемой базы производится только для облагаемых НДС групп (процент > 0).
+            // Необлагаемый оборот (NO_VAT) и ставка НДС 0% (VAT_0) здесь отсекаются, так как для них
+            // налоговые начисления и налогооблагаемый оборот не рассчитываются.
             if (percent > 0) {
-                val groupTotal = groupItems.sumOf { it.sum.bills.toDouble() + it.sum.coins / 100.0 }
+                val groupTotal = groupItems.sumOf { item ->
+                    val itemTotal = item.sum.bills.toDouble() + item.sum.coins / 100.0
+                    if (item.isStorno) -itemTotal else itemTotal
+                }
                 if (groupTotal > 0.0) {
                     val vatAmount = groupTotal - groupTotal / (1.0 + percent / 100.0)
                     val baseAmount = groupTotal - vatAmount

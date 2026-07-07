@@ -32,7 +32,7 @@ class OfdCommandRequestFactory(
      * @param token Токен ОФД для авторизации запроса.
      * @param reqNum Номер запроса (последовательный счетчик).
      * @param now Текущее системное время в миллисекундах.
-     * @param serviceInfoOverride Необязательное переопределение информации об услугах ОФД.
+     * @param serviceInfoOverride Необязательное переопределене информации об услугах ОФД.
      * @param registrationNumberOverride Необязательное переопределение регистрационного номера ККМ.
      * @param factoryNumberOverride Необязательное переопределение заводского (серийного) номера ККМ.
      * @param ofdProviderOverride Необязательное переопределение провайдера ОФД.
@@ -66,39 +66,16 @@ class OfdCommandRequestFactory(
         val deviceId = systemId.toLongOrNull()
             ?: throw ValidationException(ErrorMessages.kkmSystemIdInvalid(systemId), "KKM_SYSTEM_ID_INVALID")
 
-        // payload.service обязателен для всех команд от кассы (протокол ОФД)
-        val requiresService = commandType in setOf(
-            OfdCommandType.SYSTEM,
-            OfdCommandType.INFO,
-            OfdCommandType.TICKET,
-            OfdCommandType.MONEY_PLACEMENT,
-            OfdCommandType.REPORT,
-            OfdCommandType.CLOSE_SHIFT
-        )
-        val serviceInfo = if (requiresService) {
-            serviceInfoOverride ?: kkm.ofdServiceInfo ?: defaultServiceInfo()
-        } else {
-            null
-        }
-        val registrationNumber = if (requiresService) {
-            registrationNumberOverride ?: kkm.registrationNumber
-                ?: throw ValidationException(ErrorMessages.kkmRegistrationRequired(), "KKM_REG_REQUIRED")
-        } else {
-            registrationNumberOverride ?: kkm.registrationNumber
-        }
-        val factoryNumber = if (requiresService) {
-            factoryNumberOverride ?: kkm.factoryNumber
-                ?: throw ValidationException(ErrorMessages.kkmFactoryRequired(), "KKM_FACTORY_REQUIRED")
-        } else {
-            factoryNumberOverride ?: kkm.factoryNumber
-        }
+        // payload.service, регистрационный номер и заводской номер обязательны для всех команд от ККМ к ОФД
+        val serviceInfo = serviceInfoOverride ?: kkm.ofdServiceInfo ?: defaultServiceInfo()
+
+        val registrationNumber = registrationNumberOverride ?: kkm.registrationNumber
+            ?: throw ValidationException(ErrorMessages.kkmRegistrationRequired(), "KKM_REG_REQUIRED")
+
+        val factoryNumber = factoryNumberOverride ?: kkm.factoryNumber
+            ?: throw ValidationException(ErrorMessages.kkmFactoryRequired(), "KKM_FACTORY_REQUIRED")
 
         // Первая попытка онлайн: begin = end = now; при офлайн-повторе end обновит worker
-        val (offlineBegin, offlineEnd) = if (requiresService) {
-            now to now
-        } else {
-            (now - 60_000) to now
-        }
         return OfdCommandRequest(
             kkmId = kkm.id,
             commandType = commandType,
@@ -112,8 +89,8 @@ class OfdCommandRequestFactory(
             factoryNumber = factoryNumber,
             ofdSystemId = systemId,
             serviceInfo = serviceInfo,
-            offlineBeginMillis = offlineBegin,
-            offlineEndMillis = offlineEnd
+            offlineBeginMillis = now,
+            offlineEndMillis = now
         )
     }
 }

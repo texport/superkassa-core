@@ -19,7 +19,6 @@ import kz.mybrain.superkassa.core.domain.exception.ForbiddenException
  * @property tokenCodec Кодек для разбора и шифрования токенов ОФД.
  * @property authorizeUserUseCase Сценарий проверки прав доступа и состояния ККМ.
  */
-@Suppress("unused")
 class UpdateOfdTokenUseCase(
     private val storage: StoragePort,
     private val clock: ClockPort,

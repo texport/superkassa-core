@@ -163,7 +163,7 @@ object OfdInfoCountersSnapshotParser {
             val second = time["second"]?.jsonPrimitive?.int ?: 0
 
             val localDateTime = LocalDateTime(year, month, day, hour, minute, second)
-            localDateTime.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+            localDateTime.toInstant(TimeZone.of("Asia/Almaty")).toEpochMilliseconds()
         } catch (_: Exception) {
             null
         }

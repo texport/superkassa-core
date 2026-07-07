@@ -1,6 +1,7 @@
 package kz.mybrain.superkassa.core.domain.helper.zxreport
 
 import kz.mybrain.superkassa.core.domain.model.common.CounterKeyFormats
+import kz.mybrain.superkassa.core.domain.model.common.format
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -53,5 +54,22 @@ class ZxMoneyPlacementsBlockBuilderTest {
         assertEquals(4L, withdrawal.operationsCount)
         assertEquals(3000L, withdrawal.operationsSumBills)
         assertEquals(1L, withdrawal.offlineCount)
+    }
+
+    @Test
+    fun `build with partial or huge money placements values`() {
+        val counters = mapOf(
+            CounterKeyFormats.MONEY_PLACEMENT_SUM.format("MONEY_PLACEMENT_DEPOSIT") to Long.MAX_VALUE,
+            CounterKeyFormats.MONEY_PLACEMENT_COUNT.format("MONEY_PLACEMENT_WITHDRAWAL") to 999999L
+        )
+
+        val result = ZxMoneyPlacementsBlockBuilder.build(counters)
+        val deposit = result.first { it.operation == "MONEY_PLACEMENT_DEPOSIT" }
+        assertEquals(Long.MAX_VALUE, deposit.operationsSumBills)
+        assertEquals(0L, deposit.operationsCount)
+
+        val withdrawal = result.first { it.operation == "MONEY_PLACEMENT_WITHDRAWAL" }
+        assertEquals(999999L, withdrawal.operationsCount)
+        assertEquals(0L, withdrawal.operationsSumBills)
     }
 }

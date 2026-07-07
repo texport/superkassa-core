@@ -13,7 +13,6 @@ import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandType
  * серийные номера, оффлайн-периоды и информацию о версии ККМ в ОФД.
  */
 // Регистрируется и используется динамически через список стратегий сборщика запросов / DI
-@Suppress("unused", "DuplicatedCode")
 class ServiceRequestBuilderStrategy : OfdRequestBuilderStrategy {
 
     /**

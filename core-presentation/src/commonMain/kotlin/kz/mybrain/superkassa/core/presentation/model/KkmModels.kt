@@ -2,41 +2,129 @@ package kz.mybrain.superkassa.core.presentation.model
 
 import kz.mybrain.superkassa.core.presentation.annotations.Schema
 import kotlinx.serialization.Serializable
-import kz.mybrain.superkassa.core.domain.model.ofd.OfdServiceInfo
-import kz.mybrain.superkassa.core.domain.model.receipt.ReceiptBranding
 import kz.mybrain.superkassa.core.domain.model.kkm.KkmInfo
-import kz.mybrain.superkassa.core.domain.model.common.TaxRegime
-import kz.mybrain.superkassa.core.domain.model.common.VatGroup
 import kz.mybrain.superkassa.core.presentation.annotations.NotBlank
 import kz.mybrain.superkassa.core.presentation.annotations.Min
 import kz.mybrain.superkassa.core.presentation.annotations.Max
 
+@Serializable
+enum class TaxRegimeDto {
+    NO_VAT,
+    VAT_PAYER,
+    MIXED
+}
+
+@Serializable
+enum class VatGroupDto {
+    NO_VAT,
+    VAT_0,
+    VAT_5,
+    VAT_10,
+    VAT_16
+}
+
+@Serializable
+enum class ReceiptLanguageDto {
+    RU,
+    KK,
+    MIXED
+}
+
+@Serializable
+data class OfdServiceInfoDto(
+    val orgTitle: String,
+    val orgAddress: String,
+    val orgAddressKz: String,
+    val orgInn: String,
+    val orgOkved: String,
+    val geoLatitude: Int,
+    val geoLongitude: Int,
+    val geoSource: String
+)
+
+@Serializable
+data class ReceiptBrandingDto(
+    val language: ReceiptLanguageDto = ReceiptLanguageDto.MIXED,
+    val headerLogoUrl: String? = null,
+    val paperWidthMm: Int = 80,
+    val themeColor: String = "indigo",
+    val beforeHeaderMsg: String? = null,
+    val headerMsg: String? = null,
+    val afterHeaderMsg: String? = null,
+    val beforeItemsMsg: String? = null,
+    val afterItemsMsg: String? = null,
+    val beforeTotalsMsg: String? = null,
+    val afterTotalsMsg: String? = null,
+    val beforeQrMsg: String? = null,
+    val footerMsg: String? = null,
+    val useForceDarkTheme: Boolean = false,
+    val customBackgroundColorHex: String? = null,
+    val customCardTopBorderColorHex: String? = null
+)
+
+// Mapping helpers
+fun kz.mybrain.superkassa.core.domain.model.ofd.OfdServiceInfo.toDto(): OfdServiceInfoDto = OfdServiceInfoDto(
+    orgTitle = orgTitle,
+    orgAddress = orgAddress,
+    orgAddressKz = orgAddressKz,
+    orgInn = orgInn,
+    orgOkved = orgOkved,
+    geoLatitude = geoLatitude,
+    geoLongitude = geoLongitude,
+    geoSource = geoSource
+)
+
+fun OfdServiceInfoDto.toDomain(): kz.mybrain.superkassa.core.domain.model.ofd.OfdServiceInfo = kz.mybrain.superkassa.core.domain.model.ofd.OfdServiceInfo(
+    orgTitle = orgTitle,
+    orgAddress = orgAddress,
+    orgAddressKz = orgAddressKz,
+    orgInn = orgInn,
+    orgOkved = orgOkved,
+    geoLatitude = geoLatitude,
+    geoLongitude = geoLongitude,
+    geoSource = geoSource
+)
+
+fun kz.mybrain.superkassa.core.domain.model.receipt.ReceiptBranding.toDto(): ReceiptBrandingDto = ReceiptBrandingDto(
+    language = ReceiptLanguageDto.valueOf(language.name),
+    headerLogoUrl = headerLogoUrl,
+    paperWidthMm = paperWidthMm,
+    themeColor = themeColor,
+    beforeHeaderMsg = beforeHeaderMsg,
+    headerMsg = headerMsg,
+    afterHeaderMsg = afterHeaderMsg,
+    beforeItemsMsg = beforeItemsMsg,
+    afterItemsMsg = afterItemsMsg,
+    beforeTotalsMsg = beforeTotalsMsg,
+    afterTotalsMsg = afterTotalsMsg,
+    beforeQrMsg = beforeQrMsg,
+    footerMsg = footerMsg,
+    useForceDarkTheme = useForceDarkTheme,
+    customBackgroundColorHex = customBackgroundColorHex,
+    customCardTopBorderColorHex = customCardTopBorderColorHex
+)
+
+fun ReceiptBrandingDto.toDomain(): kz.mybrain.superkassa.core.domain.model.receipt.ReceiptBranding = kz.mybrain.superkassa.core.domain.model.receipt.ReceiptBranding(
+    language = kz.mybrain.superkassa.core.domain.model.receipt.ReceiptLanguage.valueOf(language.name),
+    headerLogoUrl = headerLogoUrl,
+    paperWidthMm = paperWidthMm,
+    themeColor = themeColor,
+    beforeHeaderMsg = beforeHeaderMsg,
+    headerMsg = headerMsg,
+    afterHeaderMsg = afterHeaderMsg,
+    beforeItemsMsg = beforeItemsMsg,
+    afterItemsMsg = afterItemsMsg,
+    beforeTotalsMsg = beforeTotalsMsg,
+    afterTotalsMsg = afterTotalsMsg,
+    beforeQrMsg = beforeQrMsg,
+    footerMsg = footerMsg,
+    useForceDarkTheme = useForceDarkTheme,
+    customBackgroundColorHex = customBackgroundColorHex,
+    customCardTopBorderColorHex = customCardTopBorderColorHex
+)
+
 /**
  * Информация о ККМ, возвращаемая API.
- *
- * @property kkmId Уникальный идентификатор ККМ.
- * @property createdAt Метка времени создания (epoch ms).
- * @property updatedAt Метка времени последнего обновления (epoch ms).
- * @property mode Режим работы ККМ (например, REGISTRATION).
- * @property state Состояние ККМ (например, ACTIVE).
- * @property ofdId ID провайдера ОФД.
- * @property ofdEnvironment Среда ОФД (test/prod).
- * @property kkmKgdId Регистрационный номер ККМ (КГД).
- * @property factoryNumber Заводской номер ККМ.
- * @property manufactureYear Год выпуска ККМ.
- * @property ofdSystemId Системный ID в ОФД.
- * @property ofdServiceInfo Сервисная информация ОФД.
- * @property tokenEncryptedBase64 Зашифрованный токен ОФД (Base64).
- * @property tokenUpdatedAt Время обновления токена.
- * @property lastShiftNo Номер последней смены.
- * @property lastReceiptNo Номер последнего чека.
- * @property lastZReportNo Номер последнего Z-отчета.
- * @property autonomousSince Время начала автономного режима (если активен).
- * @property autoCloseShift Автоматическое закрытие смены.
- * @property lastFiscalHashBase64 Хэш последней фискальной операции.
- * @property taxRegime Налоговый режим ККМ.
- * @property defaultVatGroup Базовая группа НДС по умолчанию.
- * @property branding Настройки брендирования чеков.
  */
 @Serializable
 @Schema(description = "Информация о ККМ")
@@ -62,7 +150,7 @@ data class KkmResponse(
     @Schema(description = "Системный ID в ОФД", example = "sys-123")
     val ofdSystemId: String? = null,
     @Schema(description = "Сервисная информация ОФД")
-    val ofdServiceInfo: OfdServiceInfo? = null,
+    val ofdServiceInfo: OfdServiceInfoDto? = null,
     @Schema(
         description = "Зашифрованный токен ОФД (Base64)",
         hidden = true
@@ -95,14 +183,11 @@ data class KkmResponse(
     )
     val defaultVatGroup: String? = null,
     @Schema(description = "Настройки брендирования чеков")
-    val branding: ReceiptBranding? = null
+    val branding: ReceiptBrandingDto? = null
 )
 
 /**
  * Результат листинга ККМ.
- *
- * @property items Список ККМ.
- * @property total Общее количество ККМ, подходящих под условия фильтра.
  */
 data class KkmListResult(
     val items: List<KkmInfo>,
@@ -111,13 +196,6 @@ data class KkmListResult(
 
 /**
  * Параметры листинга ККМ.
- *
- * @property limit Максимальное количество возвращаемых записей.
- * @property offset Смещение выборки.
- * @property state Фильтрация по состоянию.
- * @property search Поисковый запрос.
- * @property sortBy Поле сортировки (например, createdAt).
- * @property sortOrder Направление сортировки (ASC/DESC).
  */
 @Serializable
 data class KkmListParams(
@@ -140,8 +218,6 @@ data class KkmListParams(
 
 /**
  * Запрос на обновление общих настроек ККМ.
- *
- * @property autoCloseShift Настройка автозакрытия смены.
  */
 @Serializable
 data class KkmSettingsUpdateRequest(
@@ -150,12 +226,6 @@ data class KkmSettingsUpdateRequest(
 
 /**
  * Запрос на обновление параметров черновика ККМ.
- *
- * @property ofdId ID провайдера ОФД.
- * @property ofdEnvironment Среда ОФД (test/prod).
- * @property ofdSystemId Системный ID ККМ в ОФД.
- * @property factoryNumber Заводской номер ККМ.
- * @property manufactureYear Год выпуска ККМ.
  */
 @Serializable
 @Schema(description = "Запрос на обновление параметров черновика ККМ")
@@ -172,9 +242,6 @@ data class KkmDraftUpdateRequest(
 
 /**
  * Запрос на обновление налоговых настроек ККМ.
- *
- * @property taxRegime Налоговый режим ККМ (NO_VAT, VAT_PAYER, MIXED).
- * @property defaultVatGroup Базовая группа НДС по умолчанию.
  */
 @Serializable
 @Schema(description = "Обновление налогового режима и базовой группы НДС ККМ")
@@ -184,24 +251,17 @@ data class KkmTaxSettingsUpdateRequest(
         example = "NO_VAT",
         allowableValues = ["NO_VAT", "VAT_PAYER", "MIXED"]
     )
-    val taxRegime: TaxRegime,
+    val taxRegime: TaxRegimeDto,
     @Schema(
         description = "Базовая группа НДС по умолчанию",
         example = "NO_VAT",
         allowableValues = ["NO_VAT", "VAT_0", "VAT_16"]
     )
-    val defaultVatGroup: VatGroup
+    val defaultVatGroup: VatGroupDto
 )
 
 /**
  * Упрощенный запрос на инициализацию ККМ без черновика.
- *
- * @property ofdId ID провайдера ОФД.
- * @property ofdEnvironment Среда ОФД (test/prod).
- * @property ofdSystemId Системный ID ККМ в ОФД.
- * @property ofdToken Токен доступа ОФД.
- * @property defaultVatGroup Базовая группа НДС по умолчанию.
- * @property okved Ручной ввод ОКЭД при отсутствии данных от ОФД.
  */
 @Serializable
 @Schema(description = "Упрощенный запрос на инициализацию ККМ (данные получаются из ОФД)")
@@ -227,24 +287,13 @@ data class KkmInitSimpleRequest(
             "Если не указана — считается NO_VAT (касса не плательщик НДС).",
         example = "NO_VAT"
     )
-    val defaultVatGroup: VatGroup = VatGroup.NO_VAT,
+    val defaultVatGroup: VatGroupDto = VatGroupDto.NO_VAT,
     @Schema(description = "Ручной ввод ОКЭД при отсутствии данных от ОФД")
     val okved: String? = null
 )
 
 /**
  * Запрос на прямую инициализацию ККМ (без черновика).
- *
- * @property ofdId ID провайдера ОФД.
- * @property ofdEnvironment Среда ОФД (test/prod).
- * @property ofdSystemId Системный ID ККМ в ОФД.
- * @property ofdToken Токен доступа ОФД.
- * @property kkmKgdId Регистрационный номер ККМ (КГД).
- * @property factoryNumber Заводской номер ККМ.
- * @property manufactureYear Год выпуска ККМ.
- * @property serviceInfo Сервисная информация ОФД.
- * @property okved Ручной ввод ОКЭД при отсутствии данных от ОФД.
- * @property _unused Не используется.
  */
 @Serializable
 @Schema(description = "Запрос на прямую инициализацию ККМ (без черновика)")
@@ -271,7 +320,7 @@ data class KkmInitDirectRequest(
     @field:Min(2000)
     @field:Max(2100)
     val manufactureYear: Int,
-    @Schema(description = "Сервисная информация ОФД") val serviceInfo: OfdServiceInfo? = null,
+    @Schema(description = "Сервисная информация ОФД") val serviceInfo: OfdServiceInfoDto? = null,
     @Schema(description = "Ручной ввод ОКЭД при отсутствии данных от ОФД") val okved: String? = null,
     @Schema(
         description = "Не используется. ПИН-код администратора передаётся только в заголовке Authorization",
@@ -282,13 +331,6 @@ data class KkmInitDirectRequest(
 
 /**
  * Запрос на фискализацию ранее созданного черновика ККМ.
- *
- * @property kkmId ID черновика ККМ.
- * @property ofdSystemId Системный ID ККМ в ОФД.
- * @property ofdToken Токен доступа ОФД.
- * @property kkmKgdId Регистрационный номер ККМ (КГД).
- * @property serviceInfo Сервисная информация ОФД.
- * @property _unused Не используется.
  */
 @Serializable
 @Schema(description = "Запрос на фискализацию ранее созданного черновика ККМ")
@@ -305,7 +347,7 @@ data class KkmInitDraftRequest(
     @Schema(description = "Регистрационный номер ККМ (КГД)", example = "123456789012")
     @field:NotBlank(message = "Registration number is required")
     val kkmKgdId: String,
-    @Schema(description = "Сервисная информация ОФД") val serviceInfo: OfdServiceInfo? = null,
+    @Schema(description = "Сервисная информация ОФД") val serviceInfo: OfdServiceInfoDto? = null,
     @Schema(
         description = "Не используется. ПИН-код администратора передаётся только в заголовке Authorization",
         example = "deprecated"

@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.shift
 
-import kotlinx.serialization.Serializable
-
 /**
  * Информация о текущей или завершенной кассовой смене.
  *
@@ -14,7 +12,6 @@ import kotlinx.serialization.Serializable
  * @property openDocumentId Идентификатор фискального документа открытия смены.
  * @property closeDocumentId Идентификатор фискального документа закрытия смены.
  */
-@Serializable
 data class ShiftInfo(
     val id: String,
     val kkmId: String,

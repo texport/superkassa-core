@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.common
 
-import kotlinx.serialization.Serializable
-
 /**
  * Слепок значений счетчиков ККМ.
  *
@@ -11,7 +9,6 @@ import kotlinx.serialization.Serializable
  * @property value Числовое значение счетчика.
  * @property updatedAt Время последнего обновления значения счетчика (в миллисекундах).
  */
-@Serializable
 data class CounterSnapshot(
     val scope: String,
     val shiftId: String? = null,

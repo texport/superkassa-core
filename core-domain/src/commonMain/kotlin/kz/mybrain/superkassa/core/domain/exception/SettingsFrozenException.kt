@@ -9,7 +9,6 @@ package kz.mybrain.superkassa.core.domain.exception
  * @property messageText Текст сообщения об ошибке (будет продублирован для всех языков).
  * @param code Уникальный строковый код ошибки (по умолчанию "SETTINGS_FROZEN").
  */
-@Suppress("unused") // Исключение выбрасывается динамически в рантайме и обрабатывается глобальными перехватчиками
 class SettingsFrozenException(
     val messageText: String,
     code: String = "SETTINGS_FROZEN"

@@ -9,7 +9,6 @@ import kz.mybrain.superkassa.core.domain.exception.TrilingualMessage
  * @property reason Текстовая причина ошибки (null, если проверка пройдена).
  * @property trilingualMessage Трехъязычное сообщение об ошибке проверки времени.
  */
-@Suppress("unused") // Публичные свойства используются при внешней сериализации и в презентационном слое DTO
 data class TimeValidationResult(
     val ok: Boolean,
     val reason: String? = null,

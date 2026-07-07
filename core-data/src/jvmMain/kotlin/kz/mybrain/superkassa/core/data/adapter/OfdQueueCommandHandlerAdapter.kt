@@ -12,7 +12,6 @@ import kz.mybrain.superkassa.offline_queue.domain.model.QueueCommand
  * Реализация QueueCommandHandler — отправляет команды из очереди в ОФД.
  * Делегирует выполнение сценарию [ProcessQueueCommandUseCase].
  */
-@Suppress("unused") // Создается динамически фреймворком Spring как компонент системы
 class OfdQueueCommandHandlerAdapter(
     sendFiscalCommand: SendFiscalCommandUseCase,
     storage: StoragePort,
@@ -20,7 +19,7 @@ class OfdQueueCommandHandlerAdapter(
 ) : QueueCommandHandler {
     private val processUseCase = ProcessQueueCommandUseCase(sendFiscalCommand, storage, clock)
 
-    override fun handle(command: QueueCommand): DispatchResult {
+    override fun handle(command: QueueCommand, renewLock: () -> Boolean): DispatchResult {
         return processUseCase.execute(command)
     }
 }

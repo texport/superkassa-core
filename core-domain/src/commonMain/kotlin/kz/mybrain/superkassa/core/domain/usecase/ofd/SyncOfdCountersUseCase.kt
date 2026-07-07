@@ -29,7 +29,6 @@ import kz.mybrain.superkassa.core.domain.helper.OfdInfoCountersSnapshotParser
  * @property authorizeUserUseCase Сценарий проверки прав доступа и состояния ККМ.
  * @property kkmCommonHelper Вспомогательный класс общего функционала работы с ККМ.
  */
-@Suppress("unused", "DuplicatedCode")
 class SyncOfdCountersUseCase(
     private val storage: StoragePort,
     private val queue: OfflineQueuePort,

@@ -222,11 +222,11 @@ class SuperkassaApiImplTest {
         every { pinHasher.hash("4321") } returns "hash-4321"
         every { storage.createUser(any(), any(), any(), any(), any(), any(), any()) } returns true
 
-        val request = UserCreateRequest(name = "New User", role = UserRole.CASHIER, userPin = "4321")
+        val request = UserCreateRequest(name = "New User", role = UserRoleDto.CASHIER, userPin = "4321")
         val created = api.createUser("kkm-1", "1234", request)
         assertEquals("user-new", created.userId)
         assertEquals("New User", created.name)
-        assertEquals(UserRole.CASHIER, created.role)
+        assertEquals(UserRoleDto.CASHIER, created.role)
     }
 
     @Test

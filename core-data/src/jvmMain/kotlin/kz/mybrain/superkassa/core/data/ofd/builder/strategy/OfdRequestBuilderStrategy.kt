@@ -2,6 +2,7 @@ package kz.mybrain.superkassa.core.data.ofd.builder.strategy
 
 import kotlinx.serialization.json.JsonObject
 import kz.mybrain.superkassa.core.data.ofd.OfdConfig
+import kz.mybrain.superkassa.core.data.ofd.OfdRequestFactory
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandRequest
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandType
 
@@ -28,4 +29,24 @@ interface OfdRequestBuilderStrategy {
      * @return JSON-объект [JsonObject] запроса или `null`, если построить запрос не удалось.
      */
     fun build(command: OfdCommandRequest, config: OfdConfig): JsonObject?
+}
+
+/**
+ * Вспомогательный метод построения служебного блока, общий для всех стратегий.
+ */
+fun OfdRequestBuilderStrategy.buildServiceBlock(command: OfdCommandRequest): JsonObject? {
+    val serviceInfo = command.serviceInfo ?: return null
+    val regNo = command.registrationNumber ?: return null
+    val factoryNo = command.factoryNumber ?: return null
+    val systemId = command.ofdSystemId ?: return null
+    val begin = command.offlineBeginMillis ?: System.currentTimeMillis()
+    val end = command.offlineEndMillis ?: System.currentTimeMillis()
+    return OfdRequestFactory.buildServicePayload(
+        serviceInfo = serviceInfo,
+        registrationNumber = regNo,
+        factoryNumber = factoryNo,
+        systemId = systemId,
+        offlineBeginMillis = begin,
+        offlineEndMillis = end
+    )
 }

@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.domain.model.kkm
 
-import kotlinx.serialization.Serializable
-
 /**
  * Запрос на проведение операции с наличными (внесение/изъятие).
  *
@@ -9,7 +7,6 @@ import kotlinx.serialization.Serializable
  * @property amount Сумма операции с наличными.
  * @property idempotencyKey Ключ idempotency для предотвращения дублирования операций.
  */
-@Serializable
 data class CashOperationRequest(
     val pin: String = "",
     val amount: Double,

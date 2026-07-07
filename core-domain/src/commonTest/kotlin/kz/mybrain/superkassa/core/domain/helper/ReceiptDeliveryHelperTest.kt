@@ -297,4 +297,79 @@ class ReceiptDeliveryHelperTest {
         val results = helper.retryDelivery("kkm-1", "doc-1", receipt, snapshot)
         assertTrue(results.isEmpty())
     }
+
+    @Test
+    fun testDeliverReceiptFindKkmFallback() {
+        val coreSettings = CoreSettings(mode = mockMode, storage = mockStorage, delivery = null)
+        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+
+        every { storage.findKkm("kkm-missing") } returns null
+        every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
+
+        val receipt = mockk<ReceiptRequest>()
+        val snapshot = mockk<FiscalDocumentSnapshot>()
+
+        helper.deliverReceipt("kkm-missing", "doc-1", receipt, snapshot, null, null)
+        // verify no delivery attempted since responseBin is null
+        verify(exactly = 0) { delivery.deliver(any()) }
+    }
+
+    @Test
+    fun testDeliverReceiptPrintNullConnectionAndDestination() {
+        val coreSettings = CoreSettings(
+            mode = mockMode,
+            storage = mockStorage,
+            delivery = DeliverySettings(
+                print = PrintDeliverySettings(
+                    enabled = true,
+                    paperWidthMm = 80,
+                    connection = null
+                ),
+                channels = listOf(
+                    DeliveryChannelSettings(
+                        channel = "EMAIL",
+                        enabled = true,
+                        destination = null,
+                        payloadType = "LINK"
+                    )
+                )
+            )
+        )
+        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+
+        every { storage.findKkm("kkm-1") } returns KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
+        every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
+
+        val receipt = mockk<ReceiptRequest>()
+        val snapshot = mockk<FiscalDocumentSnapshot>()
+
+        helper.deliverReceipt("kkm-1", "doc-1", receipt, snapshot, "http://receipt.url", null)
+        // verify no delivery because connection is null and destination is null
+        verify(exactly = 0) { delivery.deliver(any()) }
+    }
+
+    @Test
+    fun testRetryDeliveryPrintNullConnectionAndFindKkmFallback() {
+        val coreSettings = CoreSettings(
+            mode = mockMode,
+            storage = mockStorage,
+            delivery = DeliverySettings(
+                print = PrintDeliverySettings(
+                    enabled = true,
+                    paperWidthMm = 80,
+                    connection = PrintConnectionSettings(host = null, port = null)
+                )
+            )
+        )
+        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+
+        every { storage.findKkm("kkm-missing") } returns null
+        every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
+
+        val receipt = mockk<ReceiptRequest>()
+        val snapshot = mockk<FiscalDocumentSnapshot>()
+
+        val results = helper.retryDelivery("kkm-missing", "doc-1", receipt, snapshot)
+        assertTrue(results.isEmpty())
+    }
 }
