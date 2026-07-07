@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.nmcp.aggregation)
+    alias(libs.plugins.nmcp) apply false
     `maven-publish`
     alias(libs.plugins.kover)
 }
@@ -22,6 +23,10 @@ version = "1.0.2"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
+    add("nmcpAggregation", project(":"))
+    add("nmcpAggregation", project(":core-domain"))
+    add("nmcpAggregation", project(":core-presentation"))
+    add("nmcpAggregation", project(":core-data"))
 }
 
 allprojects {
@@ -30,6 +35,7 @@ allprojects {
     repositories {
         mavenLocal()
         mavenCentral()
+        google()
     }
     dependencies {
         plugins.withId("io.gitlab.arturbosch.detekt") {
@@ -85,6 +91,7 @@ allprojects {
             isRequired = false
             sign(extensions.getByType<PublishingExtension>().publications)
         }
+        plugins.apply("com.gradleup.nmcp")
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
