@@ -13,20 +13,17 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.nmcp.aggregation)
-    alias(libs.plugins.nmcp) apply false
+    alias(libs.plugins.nmcp)
     `maven-publish`
     alias(libs.plugins.kover)
 }
 
 group = "io.github.texport"
-version = "1.0.2"
+version = "1.0.3"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
     add("nmcpAggregation", project(":"))
-    add("nmcpAggregation", project(":core-domain"))
-    add("nmcpAggregation", project(":core-presentation"))
-    add("nmcpAggregation", project(":core-data"))
 }
 
 allprojects {
@@ -91,7 +88,6 @@ allprojects {
             isRequired = false
             sign(extensions.getByType<PublishingExtension>().publications)
         }
-        plugins.apply("com.gradleup.nmcp")
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {

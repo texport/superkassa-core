@@ -16,8 +16,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "SuperkassaCore",
-            url: "https://github.com/texport/superkassa-core/releases/download/v1.0.2/SuperkassaCore.xcframework.zip",
-            checksum: "9e887335253000fc53796ee819a1743ecf0d299b67d013b199fed7c207b52509"
+            url: "https://github.com/texport/superkassa-core/releases/download/v1.0.3/SuperkassaCore.xcframework.zip",
+            checksum: "5303d7c6b66a35e6fdbb7e09ec165ec71944bbc4c14dafdd69e66ebe2caf6981"
         )
     ]
 )
