@@ -1,7 +1,7 @@
 # superkassa-core
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.texport/superkassa-core.svg?label=Maven%20Central)](https://central.sonatype.com/search?q=g:io.github.texport)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/texport/superkassa-core/releases)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/texport/superkassa-core/releases)
 [![Coverage](https://img.shields.io/badge/coverage-91%25-green.svg)](https://github.com/texport/superkassa-core/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI Build](https://img.shields.io/github/actions/workflow/status/texport/superkassa-core/ci.yml?branch=main&label=CI%20Build)](https://github.com/texport/superkassa-core/actions)
@@ -25,10 +25,10 @@ To use the unified core KMP module in your Multiplatform or JVM Gradle build:
 ```kotlin
 dependencies {
     // For Multiplatform targets
-    implementation("io.github.texport:superkassa-core:1.0.1")
+    implementation("io.github.texport:superkassa-core:1.0.2")
     
     // Or for JVM-only targets (like server)
-    implementation("io.github.texport:superkassa-core-jvm:1.0.1")
+    implementation("io.github.texport:superkassa-core-jvm:1.0.2")
 }
 ```
 
@@ -38,7 +38,7 @@ The iOS target is packaged as a unified `SuperkassaCore` binary `XCFramework` di
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/texport/superkassa-core", from: "1.0.1")
+    .package(url: "https://github.com/texport/superkassa-core", from: "1.0.2")
 ]
 ```
 
@@ -57,10 +57,10 @@ dependencies: [
 ```kotlin
 dependencies {
     // Для мультиплатформенных (KMP) проектов
-    implementation("io.github.texport:superkassa-core:1.0.1")
+    implementation("io.github.texport:superkassa-core:1.0.2")
     
     // Для классических JVM-проектов (например, сервер)
-    implementation("io.github.texport:superkassa-core-jvm:1.0.1")
+    implementation("io.github.texport:superkassa-core-jvm:1.0.2")
 }
 ```
 
@@ -70,7 +70,7 @@ dependencies {
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/texport/superkassa-core", from: "1.0.1")
+    .package(url: "https://github.com/texport/superkassa-core", from: "1.0.2")
 ]
 ```
 
