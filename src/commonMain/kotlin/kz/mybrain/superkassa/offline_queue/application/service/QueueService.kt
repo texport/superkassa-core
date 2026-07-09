@@ -115,7 +115,7 @@ class QueueService(
         val result = try {
             handler.handle(next, renewLock)
         } catch (e: QueueDispatchException) {
-            logger.error("Invalid queue command handler result. id=${next.id}", e)
+            logger.warn("Invalid queue command handler result. id=${next.id}: {}", e.message)
             DispatchResult(DispatchStatus.FAILED, errorMessage = e.error.compact(), error = e.error)
         } catch (e: Exception) {
             logger.error("Unhandled exception in queue command handler. id=${next.id}", e)
