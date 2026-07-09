@@ -12,15 +12,12 @@ coroutines = "1.11.0"
 kotlinxDatetime = "0.8.0"
 validation = "3.1.1"
 swagger = "2.2.52"
-superkassaOfflineQueue = "1.0.4"
-superkassaDelivery = "1.2.0"
 archunit = "1.4.2"
 androidGradlePlugin = "9.2.1"
 androidCompileSdk = "37"
 androidMinSdk = "23"
 kover = "0.9.8"
 nmcp = "1.6.1"
-zxing = "3.5.4"
 
 [libraries]
 # Logging
@@ -43,11 +40,7 @@ detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-form
 ofd-kt-proto = { group = "io.github.texport", name = "ofd-kt-proto", version.ref = "ofdKtProto" }
 ofd-proto-codec = { group = "io.github.texport", name = "ofd-proto-codec", version.ref = "ofdProtoCodec" }
 ofd-network-client = { group = "io.github.texport", name = "ofd-network-client", version.ref = "ofdNetworkClient" }
-superkassa-offline-queue = { group = "io.github.texport", name = "superkassa-offline-queue", version.ref = "superkassaOfflineQueue" }
-superkassa-delivery = { group = "io.github.texport", name = "superkassa-delivery", version.ref = "superkassaDelivery" }
 archunit = { group = "com.tngtech.archunit", name = "archunit-junit5", version.ref = "archunit" }
-zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
-zxing-javase = { group = "com.google.zxing", name = "javase", version.ref = "zxing" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
