@@ -26,7 +26,11 @@ class LookupNomenclatureUseCase(
      */
     fun execute(kkmId: String, barcode: String): OfdNomenclatureLookupResult {
         val kkm = authorizeUserUseCase.requireKkm(kkmId)
-        val result = kkmCommonHelper.sendOfdCommand(kkm = kkm, commandType = OfdCommandType.NOMENCLATURE, payloadRef = barcode)
+        val result = kkmCommonHelper.sendOfdCommand(
+            kkm = kkm,
+            commandType = OfdCommandType.NOMENCLATURE,
+            payloadRef = barcode
+        )
         val parsed = OfdResponseParser.parseNomenclature(
             responseJson = result.responseJson,
             commandStatus = result.status,

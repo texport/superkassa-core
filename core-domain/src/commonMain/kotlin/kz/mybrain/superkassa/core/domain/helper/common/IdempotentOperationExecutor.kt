@@ -2,12 +2,9 @@ package kz.mybrain.superkassa.core.domain.helper.common
 
 import kz.mybrain.superkassa.core.domain.usecase.auth.AuthorizeUserUseCase
 import kz.mybrain.superkassa.core.domain.usecase.kkm.RequireOperationalUseCase
-import kz.mybrain.superkassa.core.domain.exception.ErrorMessages
-import kz.mybrain.superkassa.core.domain.exception.ValidationException
 import kz.mybrain.superkassa.core.domain.model.auth.UserRole
 import kz.mybrain.superkassa.core.domain.model.delivery.DeliveryStatus
 import kz.mybrain.superkassa.core.domain.model.kkm.KkmInfo
-import kz.mybrain.superkassa.core.domain.model.kkm.KkmState
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandResult
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandStatus
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandType
