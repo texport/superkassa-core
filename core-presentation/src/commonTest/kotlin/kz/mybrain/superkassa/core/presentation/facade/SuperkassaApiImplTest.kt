@@ -15,6 +15,7 @@ import kz.mybrain.superkassa.core.domain.model.kkm.FiscalDocumentSnapshot
 import kz.mybrain.superkassa.core.domain.model.kkm.KkmInfo
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandResult
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandStatus
+import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandRequest
 import kz.mybrain.superkassa.core.domain.model.receipt.ReceiptBranding
 import kz.mybrain.superkassa.core.domain.model.receipt.ReceiptRequest
 import kz.mybrain.superkassa.core.domain.model.report.PrintDocumentType
@@ -893,5 +894,65 @@ class SuperkassaApiImplTest {
         val resFailed = api.createReport("kkm-1", "1234")
         assertEquals(DeliveryStatus.ONLINE_ERROR, resFailed.deliveryStatus)
         assertEquals("Failed", resFailed.deliveryError)
+    }
+
+    @Test
+    fun `lookupNomenclature executes nomenclature lookup successfully`() {
+        every { storage.findKkm("kkm-1") } returns testKkmInfo
+        every { pinHasher.hash("1234") } returns "hash-1"
+        every { storage.findUserByPin("kkm-1", "hash-1") } returns testUser
+
+        val responseJson = kotlinx.serialization.json.Json.parseToJsonElement(
+            """{
+                "payload": {
+                    "nomenclature": {
+                        "result": { "code": 0 },
+                        "elements": [
+                            {
+                                "id": 123,
+                                "title": "Soda",
+                                "titleKk": "Soda Kk",
+                                "item": {
+                                    "ntin": "ntin-123",
+                                    "barcode": "5449000176431",
+                                    "sellPrice": {
+                                        "bills": 150,
+                                        "coins": 0
+                                    },
+                                    "measureUnitCode": "163",
+                                    "taxes": [
+                                        {
+                                            "taxType": "VAT",
+                                            "taxPercent": 16
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            }"""
+        ) as kotlinx.serialization.json.JsonObject
+
+        val ofdCommandResult = OfdCommandResult(
+            status = OfdCommandStatus.OK,
+            resultCode = 0,
+            responseJson = responseJson
+        )
+        every { ofd.send(any()) } returns ofdCommandResult
+
+        val response = api.lookupNomenclature("kkm-1", "1234", "5449000176431")
+        assertEquals("OK", response.resultText)
+        assertTrue(response.found)
+        assertEquals(0, response.resultCode)
+        val item = response.item
+        assertNotNull(item)
+        assertEquals(123L, item.id)
+        assertEquals("5449000176431", item.barcode)
+        assertEquals("Soda", item.name)
+        assertEquals("Soda Kk", item.nameKk)
+        assertEquals(150.0, item.price)
+        assertEquals("163", item.measureUnitCode)
+        assertEquals("VAT_16", item.vatGroup)
     }
 }

@@ -438,6 +438,50 @@ class ReceiptUseCasesTest {
     }
 
     @Test
+    fun testProcessOfdDocumentResultSuccessWithTicketAds() {
+        val responseJson = kotlinx.serialization.json.Json.parseToJsonElement(
+            """{
+                "payload": {
+                    "service": {
+                        "ticketAds": [
+                            {"text": "Fresh Ads Content"}
+                        ]
+                    }
+                }
+            }"""
+        ) as kotlinx.serialization.json.JsonObject
+
+        val ofdResult = OfdCommandResult(
+            status = OfdCommandStatus.OK, 
+            resultCode = 0, 
+            receiptUrl = "http://ofd/receipt", 
+            responseBin = byteArrayOf(2),
+            responseJson = responseJson
+        )
+        val receiptReq = mockk<ReceiptRequest>()
+        val shiftId = "shift-1"
+        
+        every { storage.findKkmForUpdate("kkm-1") } returns kkm
+        every { storage.findFiscalDocumentById("doc-3") } returns null
+
+        processOfdDocumentResult.execute(
+            kkm = kkm,
+            documentId = "doc-3",
+            kkmId = "kkm-1",
+            ofdResult = ofdResult,
+            commandType = OfdCommandType.TICKET,
+            now = 1200L,
+            receiptContext = receiptReq to shiftId
+        )
+
+        verify {
+            storage.updateReceiptStatus("doc-3", ofdResult.fiscalSign, ofdResult.autonomousSign, "SENT", 1200L, false)
+            updateCountersUseCase.execute("kkm-1", "shift-1", receiptReq, false)
+            storage.updateKkm(any())
+        }
+    }
+
+    @Test
     fun testProcessOfdDocumentResultKkmBlockedAndUnblocked() {
         val ofdResultBlocked = OfdCommandResult(status = OfdCommandStatus.FAILED, resultCode = 15)
         processOfdDocumentResult.execute(
