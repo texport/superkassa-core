@@ -1,0 +1,32 @@
+package io.github.texport.superkassa.offlinequeue.impl
+
+import org.slf4j.LoggerFactory
+import kotlin.reflect.KClass
+
+/**
+ * Реализация логгера для JVM через SLF4J.
+ */
+internal actual class Logger(private val delegate: org.slf4j.Logger) {
+    actual fun trace(message: String, vararg args: Any?) {
+        delegate.trace(message, *args)
+    }
+    actual fun debug(message: String, vararg args: Any?) {
+        delegate.debug(message, *args)
+    }
+    actual fun info(message: String, vararg args: Any?) {
+        delegate.info(message, *args)
+    }
+    actual fun warn(message: String, vararg args: Any?) {
+        delegate.warn(message, *args)
+    }
+    actual fun error(message: String, throwable: Throwable?) {
+        delegate.error(message, throwable)
+    }
+}
+
+/**
+ * Реализация фабричного метода получения логгера для JVM.
+ */
+internal actual fun getLogger(clazz: KClass<*>): Logger {
+    return Logger(LoggerFactory.getLogger(clazz.java))
+}

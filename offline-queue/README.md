@@ -50,17 +50,16 @@ You can integrate this library directly into your iOS project using Xcode's Swif
 ### Usage Example
 
 ```kotlin
-import kz.mybrain.superkassa.offline_queue.application.model.DispatchResult
-import kz.mybrain.superkassa.offline_queue.application.model.DispatchStatus
-import kz.mybrain.superkassa.offline_queue.application.policy.DefaultBackoffPolicy
-import kz.mybrain.superkassa.offline_queue.application.service.QueueCommandHandler
-import kz.mybrain.superkassa.offline_queue.application.service.QueueService
-import kz.mybrain.superkassa.offline_queue.domain.model.QueueCommand
-import kz.mybrain.superkassa.offline_queue.domain.model.QueueLane
-import kz.mybrain.superkassa.offline_queue.domain.model.QueueStatus
+import io.github.texport.superkassa.offlinequeue.api.createOfflineQueueApi
+import io.github.texport.superkassa.offlinequeue.api.OfflineQueueApi
+import io.github.texport.superkassa.offlinequeue.api.model.DispatchResult
+import io.github.texport.superkassa.offlinequeue.api.model.DispatchStatus
+import io.github.texport.superkassa.offlinequeue.api.model.QueueCommand
+import io.github.texport.superkassa.offlinequeue.api.model.QueueLane
+import io.github.texport.superkassa.offlinequeue.api.port.QueueCommandHandlerPort
 
 // 1. Define command handler
-val commandHandler = object : QueueCommandHandler {
+val commandHandler = object : QueueCommandHandlerPort {
     override fun handle(command: QueueCommand, renewLock: () -> Boolean): DispatchResult {
         println("Processing command: ${command.id}")
         // renewLock() can be invoked periodically during long-running tasks
@@ -68,17 +67,16 @@ val commandHandler = object : QueueCommandHandler {
     }
 }
 
-// 2. Initialize Service with your storage and lock implementations
-val queueService = QueueService(
+// 2. Initialize Api via factory with your storage and lock implementations
+val offlineQueueApi: OfflineQueueApi = createOfflineQueueApi(
     storage = myStoragePortImpl,
     lockPort = myLeaseLockPortImpl,
     handler = commandHandler,
-    backoffPolicy = DefaultBackoffPolicy(),
     ownerId = "node-1"
 )
 
 // 3. Process commands
-queueService.processBatch(cashboxId = "cashbox-123", lane = QueueLane.OFFLINE, limit = 10)
+offlineQueueApi.processBatch(cashboxId = "cashbox-123", lane = QueueLane.OFFLINE, limit = 10)
 ```
 
 ### Architecture Boundary
@@ -126,17 +124,16 @@ kotlin {
 ### Пример использования
 
 ```kotlin
-import kz.mybrain.superkassa.offline_queue.application.model.DispatchResult
-import kz.mybrain.superkassa.offline_queue.application.model.DispatchStatus
-import kz.mybrain.superkassa.offline_queue.application.policy.DefaultBackoffPolicy
-import kz.mybrain.superkassa.offline_queue.application.service.QueueCommandHandler
-import kz.mybrain.superkassa.offline_queue.application.service.QueueService
-import kz.mybrain.superkassa.offline_queue.domain.model.QueueCommand
-import kz.mybrain.superkassa.offline_queue.domain.model.QueueLane
-import kz.mybrain.superkassa.offline_queue.domain.model.QueueStatus
+import io.github.texport.superkassa.offlinequeue.api.createOfflineQueueApi
+import io.github.texport.superkassa.offlinequeue.api.OfflineQueueApi
+import io.github.texport.superkassa.offlinequeue.api.model.DispatchResult
+import io.github.texport.superkassa.offlinequeue.api.model.DispatchStatus
+import io.github.texport.superkassa.offlinequeue.api.model.QueueCommand
+import io.github.texport.superkassa.offlinequeue.api.model.QueueLane
+import io.github.texport.superkassa.offlinequeue.api.port.QueueCommandHandlerPort
 
 // 1. Создание обработчика команд
-val commandHandler = object : QueueCommandHandler {
+val commandHandler = object : QueueCommandHandlerPort {
     override fun handle(command: QueueCommand, renewLock: () -> Boolean): DispatchResult {
         println("Отправка команды: ${command.id}")
         // renewLock() может вызываться для продления блокировки при длительных задачах
@@ -144,17 +141,16 @@ val commandHandler = object : QueueCommandHandler {
     }
 }
 
-// 2. Инициализация сервиса с реализацией БД и блокировок
-val queueService = QueueService(
+// 2. Инициализация API через фабричную функцию
+val offlineQueueApi: OfflineQueueApi = createOfflineQueueApi(
     storage = myStoragePortImpl,
     lockPort = myLeaseLockPortImpl,
     handler = commandHandler,
-    backoffPolicy = DefaultBackoffPolicy(),
     ownerId = "node-1"
 )
 
 // 3. Запуск обработки пакета команд
-queueService.processBatch(cashboxId = "cashbox-123", lane = QueueLane.OFFLINE, limit = 10)
+offlineQueueApi.processBatch(cashboxId = "cashbox-123", lane = QueueLane.OFFLINE, limit = 10)
 ```
 
 ### Границы архитектуры

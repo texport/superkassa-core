@@ -81,11 +81,11 @@ dependencies: [
 Here is a quick example of how to initialize and interact with `SuperkassaApi` in your application:
 
 ```kotlin
-import kz.mybrain.superkassa.core.presentation.facade.SuperkassaApi
-import kz.mybrain.superkassa.core.presentation.model.KkmInitDirectRequest
-import kz.mybrain.superkassa.core.presentation.model.ReceiptSellRequest
-import kz.mybrain.superkassa.core.presentation.model.ReceiptItemDto
-import kz.mybrain.superkassa.core.presentation.model.ReceiptPaymentDto
+import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
+import io.github.texport.superkassa.core.presentation.api.model.KkmInitDirectRequest
+import io.github.texport.superkassa.core.presentation.api.model.ReceiptSellRequest
+import io.github.texport.superkassa.core.presentation.api.model.ReceiptItemDto
+import io.github.texport.superkassa.core.presentation.api.model.ReceiptPaymentDto
 
 // Retrieve the API implementation (e.g., via dependency injection)
 val api: SuperkassaApi = ... 

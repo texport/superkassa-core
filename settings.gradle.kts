@@ -12,4 +12,4 @@ plugins {
 
 rootProject.name = "superkassa-core"
 
-include("core-domain", "core-data", "core-presentation")
+include("core-domain", "core-data", "core-presentation", "offline-queue", "core-string", "delivery", "receipt-renderer")

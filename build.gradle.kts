@@ -19,7 +19,7 @@ plugins {
 }
 
 group = "io.github.texport"
-version = "1.0.4"
+version = "1.1.0"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
@@ -29,20 +29,32 @@ dependencies {
 allprojects {
     group = rootProject.group
     version = rootProject.version
+
+    apply(plugin = "io.gitlab.arturbosch.detekt")
+
     repositories {
         mavenLocal()
         mavenCentral()
         google()
     }
+
     dependencies {
-        plugins.withId("io.gitlab.arturbosch.detekt") {
-            add("detektPlugins", rootProject.libs.detekt.formatting)
+        add("detektPlugins", rootProject.libs.detekt.formatting)
+    }
+
+    plugins.withId("io.gitlab.arturbosch.detekt") {
+        configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+            config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+            buildUponDefaultConfig = true
+            allRules = true
+            autoCorrect = true
         }
     }
 
     plugins.withType<MavenPublishPlugin> {
         configure<PublishingExtension> {
             publications.withType<MavenPublication>().configureEach {
+                artifactId = artifactId.replace(project.name, "superkassa-${project.name}")
                 val javadocJarTask = tasks.register<Jar>("${name}JavadocJar") {
                     description = "Generates Javadoc jar for publication ${this@configureEach.name}"
                     archiveClassifier.set("javadoc")
@@ -110,7 +122,7 @@ repositories {
 kotlin {
     jvm()
     android {
-        namespace = "kz.mybrain.superkassa.core"
+        namespace = "io.github.texport.superkassa.core"
         compileSdk = libs.versions.androidCompileSdk.get().toInt()
         minSdk = libs.versions.androidMinSdk.get().toInt()
         withHostTest {}
@@ -129,6 +141,7 @@ kotlin {
             xcf.add(this)
             export(project(":core-domain"))
             export(project(":core-presentation"))
+            export(project(":offline-queue"))
         }
     }
 
@@ -137,6 +150,7 @@ kotlin {
             dependencies {
                 api(project(":core-domain"))
                 api(project(":core-presentation"))
+                api(project(":offline-queue"))
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
             }
@@ -145,13 +159,11 @@ kotlin {
             dependencies {
                 api(project(":core-data"))
                 api(libs.slf4j.api)
-                api(libs.superkassa.offline.queue)
                 api(libs.jakarta.validation)
                 api(libs.swagger.annotations)
                 api(libs.ofd.proto.codec)
                 api(libs.ofd.network.client)
-                api(libs.superkassa.delivery)
-                api(libs.resilience4j)
+                api(project(":delivery"))
             }
         }
         jvmTest {
@@ -174,14 +186,6 @@ tasks.named<Jar>("jvmJar") {
 }
 
 
-
-detekt {
-    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
-    buildUponDefaultConfig = true
-    allRules = true
-    autoCorrect = true
-    source.setFrom(files("core-domain/src/commonMain/kotlin", "core-presentation/src/commonMain/kotlin", "core-data/src/commonMain/kotlin"))
-}
 
 tasks.register("generateSpmManifest") {
     group = "publishing"

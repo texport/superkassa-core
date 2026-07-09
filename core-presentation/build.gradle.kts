@@ -1,5 +1,4 @@
 plugins {
-    alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
@@ -15,7 +14,7 @@ repositories {
 kotlin {
     jvm()
     android {
-        namespace = "kz.mybrain.superkassa.core"
+        namespace = "io.github.texport.superkassa.core"
         compileSdk = libs.versions.androidCompileSdk.get().toInt()
         minSdk = libs.versions.androidMinSdk.get().toInt()
         withHostTest {}
@@ -31,6 +30,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":core-domain"))
+                implementation(project(":core-string"))
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.datetime)
@@ -39,6 +39,7 @@ kotlin {
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.mockk)
             }
         }
         jvmMain {
@@ -49,21 +50,10 @@ kotlin {
             }
         }
         androidMain {
-            kotlin.srcDirs("src/jvmMain/kotlin")
             dependencies {
                 implementation(libs.slf4j.api)
                 implementation(libs.jakarta.validation)
                 implementation(libs.swagger.annotations)
-            }
-        }
-        jvmTest {
-            dependencies {
-                implementation(libs.mockk)
-            }
-        }
-        named("androidHostTest") {
-            dependencies {
-                implementation(libs.mockk)
             }
         }
     }
@@ -84,7 +74,8 @@ kover {
         filters {
             excludes {
                 classes(
-                    "kz.mybrain.superkassa.core.presentation.model.*"
+                    "io.github.texport.superkassa.core.presentation.model.*",
+                    "io.github.texport.superkassa.core.presentation.api.annotations.*"
                 )
             }
         }
