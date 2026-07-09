@@ -3,9 +3,14 @@ package kz.mybrain.superkassa.core.domain.helper
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdServiceInfo
+import kz.mybrain.superkassa.core.domain.model.ofd.OfdNomenclatureLookupResult
+import kz.mybrain.superkassa.core.domain.model.ofd.OfdNomenclatureItem
+import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandStatus
 
 /**
  * Объект-парсер для извлечения различных бизнес-данных из JSON-ответов ОФД-серверов.
@@ -47,11 +52,11 @@ object OfdResponseParser {
 
         return OfdServiceInfo(
             orgTitle = org?.getNestedString("title") ?: fallback.orgTitle,
-            orgAddress = org?.getNestedString("address")
-                ?: pos?.getNestedString("address")
+            orgAddress = pos?.getNestedString("address")
+                ?: org?.getNestedString("address")
                 ?: fallback.orgAddress,
-            orgAddressKz = org?.getNestedString("addressKz")
-                ?: pos?.getNestedString("addressKz")
+            orgAddressKz = pos?.getNestedString("addressKz")
+                ?: org?.getNestedString("addressKz")
                 ?: fallback.orgAddressKz,
             orgInn = org?.getNestedString("inn") ?: fallback.orgInn,
             orgOkved = org?.getNestedString("okved") ?: fallback.orgOkved,
@@ -140,4 +145,133 @@ object OfdResponseParser {
         }
         return current
     }
+
+    /**
+     * Парсит JSON-ответ ОФД для команды COMMAND_NOMENCLATURE в доменный результат.
+     */
+    fun parseNomenclature(
+        responseJson: JsonObject?,
+        commandStatus: OfdCommandStatus,
+        defaultResultCode: Int?,
+        defaultError: String?
+    ): OfdNomenclatureLookupResult {
+        if (commandStatus != OfdCommandStatus.OK || responseJson == null) {
+            return OfdNomenclatureLookupResult(
+                found = false,
+                item = null,
+                resultCode = defaultResultCode ?: -1,
+                resultText = defaultError ?: "OFD command execution failed"
+            )
+        }
+
+        val payload = responseJson["payload"] as? JsonObject
+            ?: return OfdNomenclatureLookupResult(
+                found = false,
+                item = null,
+                resultCode = defaultResultCode ?: -1,
+                resultText = "Missing payload envelope in OFD response"
+            )
+
+        val nomenclatureObj = payload["nomenclature"] as? JsonObject
+            ?: return OfdNomenclatureLookupResult(
+                found = false,
+                item = null,
+                resultCode = defaultResultCode ?: -1,
+                resultText = "Missing nomenclature payload in OFD response"
+            )
+
+        val resultCodeVal = nomenclatureObj["result"]?.jsonObject?.get("code")?.jsonPrimitive?.intOrNull ?: 0
+        if (resultCodeVal != 0) {
+            val resultName = nomenclatureObj["result"]?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull ?: "UNKNOWN"
+            return OfdNomenclatureLookupResult(
+                found = false,
+                item = null,
+                resultCode = resultCodeVal,
+                resultText = resultName
+            )
+        }
+
+        val elements = nomenclatureObj["elements"] as? kotlinx.serialization.json.JsonArray
+        val element = elements?.firstOrNull() as? JsonObject
+            ?: return OfdNomenclatureLookupResult(
+                found = false,
+                item = null,
+                resultCode = 0,
+                resultText = "No items found in nomenclature response"
+            )
+
+        val itemObj = element["item"] as? JsonObject
+            ?: return OfdNomenclatureLookupResult(
+                found = false,
+                item = null,
+                resultCode = 0,
+                resultText = "Element type is group or item payload is missing"
+            )
+
+        val title = element["title"]?.jsonPrimitive?.content ?: ""
+        val titleKk = element["titleKk"]?.jsonPrimitive?.contentOrNull
+        val ntin = itemObj["ntin"]?.jsonPrimitive?.contentOrNull
+        val idVal = element["id"]?.jsonPrimitive?.longOrNull ?: 0L
+
+        // Price mapping (converting money sum if any or default to 0.0)
+        val sellPriceObj = itemObj["sellPrice"] as? JsonObject
+        val priceVal = if (sellPriceObj != null) {
+            val bills = sellPriceObj["bills"]?.jsonPrimitive?.longOrNull ?: 0L
+            val coins = sellPriceObj["coins"]?.jsonPrimitive?.intOrNull ?: 0
+            bills.toDouble() + (coins.toDouble() / 100.0)
+        } else {
+            0.0
+        }
+
+        val measureUnitCode = itemObj["measureUnitCode"]?.jsonPrimitive?.contentOrNull
+
+        // Tax mapping
+        val taxes = itemObj["taxes"] as? kotlinx.serialization.json.JsonArray
+        val firstTax = taxes?.firstOrNull() as? JsonObject
+        val vatGroupVal = if (firstTax != null) {
+            val taxType = firstTax["taxType"]?.jsonPrimitive?.contentOrNull
+            if (taxType == "VAT") {
+                val taxPercent = firstTax["taxPercent"]?.jsonPrimitive?.intOrNull ?: 0
+                if (taxPercent == 16000 || taxPercent == 16) "VAT_16" else if (taxPercent == 0) "VAT_0" else "NO_VAT"
+            } else {
+                "NO_VAT"
+            }
+        } else {
+            null
+        }
+
+        val barcodeVal = itemObj["barcode"]?.jsonPrimitive?.contentOrNull ?: element["barcode"]?.jsonPrimitive?.contentOrNull ?: ""
+
+        return OfdNomenclatureLookupResult(
+            found = true,
+            item = OfdNomenclatureItem(
+                id = idVal,
+                barcode = barcodeVal,
+                name = title,
+                nameKk = titleKk,
+                ntin = ntin,
+                price = priceVal,
+                measureUnitCode = measureUnitCode,
+                vatGroup = vatGroupVal
+            ),
+            resultCode = 0,
+            resultText = "OK"
+        )
+    }
+
+    /**
+     * Извлекает рекламные тексты ОФД (ticket ads) для печати на чеке.
+     *
+     * @param responseJson JSON-объект ответа от ОФД.
+     * @return Список рекламных текстов.
+     */
+    fun extractTicketAds(responseJson: JsonObject?): List<String> {
+        val payload = responseJson?.getNestedObject(listOf("payload")) ?: return emptyList()
+        val service = payload.getNestedObject(listOf("service")) ?: return emptyList()
+        val ticketAdsArray = service["ticketAds"]?.jsonArray ?: return emptyList()
+        return ticketAdsArray.mapNotNull {
+            it.jsonObject["text"]?.jsonPrimitive?.content
+        }
+    }
 }
+

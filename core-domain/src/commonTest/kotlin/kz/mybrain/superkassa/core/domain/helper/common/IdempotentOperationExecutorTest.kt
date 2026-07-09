@@ -12,7 +12,9 @@ import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandStatus
 import kz.mybrain.superkassa.core.domain.port.ClockPort
 import kz.mybrain.superkassa.core.domain.port.IdGeneratorPort
 import kz.mybrain.superkassa.core.domain.port.StoragePort
+import kz.mybrain.superkassa.core.domain.exception.ErrorMessages
 import kz.mybrain.superkassa.core.domain.usecase.auth.AuthorizeUserUseCase
+import kz.mybrain.superkassa.core.domain.usecase.kkm.RequireOperationalUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -23,7 +25,8 @@ class IdempotentOperationExecutorTest {
     private val idGenerator = mockk<IdGeneratorPort>()
     private val clock = mockk<ClockPort>()
     private val authorizeUserUseCase = mockk<AuthorizeUserUseCase>()
-    private val executor = IdempotentOperationExecutor(storage, idGenerator, clock, authorizeUserUseCase)
+    private val requireOperationalUseCase = mockk<RequireOperationalUseCase>(relaxed = true)
+    private val executor = IdempotentOperationExecutor(storage, idGenerator, clock, authorizeUserUseCase, requireOperationalUseCase)
 
     init {
         every { storage.inTransaction<Any>(any()) } answers {
@@ -100,6 +103,10 @@ class IdempotentOperationExecutorTest {
         val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = KkmState.PROGRAMMING.name)
         every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
         every { authorizeUserUseCase.requireRole("kkm-1", "1234", any(), any()) } returns mockk()
+        every { requireOperationalUseCase.execute(kkm) } throws ValidationException(
+            trilingualMessage = ErrorMessages.kkmInProgramming(),
+            code = "KKM_IN_PROGRAMMING"
+        )
 
         assertFailsWith<ValidationException> {
             executor.executeIdempotentFiscalOperation(

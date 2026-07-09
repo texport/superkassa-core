@@ -22,7 +22,10 @@ enum class OfdCommandType(val value: String) {
     REPORT("COMMAND_REPORT"),
 
     /** Закрытие смены с гашением (Z-отчет). */
-    CLOSE_SHIFT("COMMAND_CLOSE_SHIFT");
+    CLOSE_SHIFT("COMMAND_CLOSE_SHIFT"),
+
+    /** Запрос номенклатуры по коду/штрихкоду с серверов ОФД. */
+    NOMENCLATURE("COMMAND_NOMENCLATURE");
 
     companion object {
         /**

@@ -82,21 +82,16 @@ class ProcessQueueCommandUseCase(
         QueueCommandType.SYSTEM -> OfdCommandType.SYSTEM
     }
 
-    /**
-     * Обновляет статус локального документа в БД при успешной отправке в ОФД.
-     *
-     * Актуально только для чеков (TICKET) и операций с наличными (MONEY_PLACEMENT).
-     */
     private fun updateDocumentOnSuccess(command: QueueCommand, result: OfdCommandResult) {
         if (command.type != QueueCommandType.TICKET && command.type != QueueCommandType.MONEY_PLACEMENT) return
         val now = clock.now()
+        val doc = storage.findFiscalDocumentById(command.payloadRef)
         storage.updateReceiptStatus(
             documentId = command.payloadRef,
             fiscalSign = result.fiscalSign,
-            autonomousSign = result.autonomousSign,
+            autonomousSign = doc?.autonomousSign ?: result.autonomousSign,
             ofdStatus = "SENT",
-            deliveredAt = now,
-            isAutonomous = false
+            deliveredAt = now
         )
     }
 }

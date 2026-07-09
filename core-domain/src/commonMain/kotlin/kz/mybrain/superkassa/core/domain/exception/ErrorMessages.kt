@@ -257,4 +257,10 @@ object ErrorMessages {
         kk = "ЭҚЖЖ міндетті",
         en = "OKVED is required"
     )
+
+    fun nomenclatureNotFound(barcode: String): TrilingualMessage = TrilingualMessage(
+        ru = "Товар со штрихкодом $barcode не найден в Национальном каталоге товаров",
+        kk = "Штрихкоды $barcode тауар Ұлттық тауарлар каталогынан табылмады",
+        en = "Item with barcode $barcode not found in National Catalog of Goods"
+    )
 }

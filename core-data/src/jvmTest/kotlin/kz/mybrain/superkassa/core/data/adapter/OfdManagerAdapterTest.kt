@@ -384,7 +384,7 @@ class OfdManagerAdapterTest {
     @Test
     fun testDefaultRequestBuilders() {
         val builders = OfdManagerAdapter.defaultRequestBuilders()
-        assertEquals(2, builders.size)
+        assertEquals(3, builders.size)
     }
 
     @Test

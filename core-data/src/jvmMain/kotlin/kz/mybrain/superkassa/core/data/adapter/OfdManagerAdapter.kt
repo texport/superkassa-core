@@ -21,6 +21,7 @@ import kz.mybrain.superkassa.core.data.ofd.OfdResponseUtils
 import kz.mybrain.superkassa.core.data.ofd.builder.strategy.OfdRequestBuilderStrategy
 import kz.mybrain.superkassa.core.data.ofd.builder.strategy.ServiceRequestBuilderStrategy
 import kz.mybrain.superkassa.core.data.ofd.builder.strategy.TicketRequestBuilderStrategy
+import kz.mybrain.superkassa.core.data.ofd.builder.strategy.NomenclatureRequestBuilderStrategy
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandRequest
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandResult
 import kz.mybrain.superkassa.core.domain.model.ofd.OfdCommandStatus
@@ -46,6 +47,15 @@ class OfdManagerAdapter(
     private val reconnectIntervalSeconds: Long = 60L
 ) : OfdManagerPort {
     private val logger = LoggerFactory.getLogger(OfdManagerAdapter::class.java)
+    private val prettyJson = kotlinx.serialization.json.Json { prettyPrint = true }
+
+    private fun formatJson(json: kotlinx.serialization.json.JsonElement): String {
+        return if (config.prettyPrintJson) {
+            prettyJson.encodeToString(kotlinx.serialization.json.JsonElement.serializer(), json)
+        } else {
+            json.toString()
+        }
+    }
 
     private val reconnectIntervalMs: Long = reconnectIntervalSeconds.coerceAtLeast(MIN_RECONNECT_INTERVAL_SECONDS) * SECONDS_TO_MILLIS
 
@@ -62,7 +72,8 @@ class OfdManagerAdapter(
          */
         fun defaultRequestBuilders(): List<OfdRequestBuilderStrategy> = listOf(
             ServiceRequestBuilderStrategy(),
-            TicketRequestBuilderStrategy()
+            TicketRequestBuilderStrategy(),
+            NomenclatureRequestBuilderStrategy()
         )
     }
 
@@ -92,6 +103,10 @@ class OfdManagerAdapter(
                     errorMessage = DataErrorMessages.ofdRequestFailed("Missing required request parameters")
                 )
             logger.info(
+                "OFD SEND JSON: {}",
+                formatJson(json)
+            )
+            logger.info(
                 "OFD SEND: commandType={}, kkmId={}, reqNum={}, token={}",
                 command.commandType,
                 command.kkmId,
@@ -113,7 +128,10 @@ class OfdManagerAdapter(
             }
             if (response.isFailure) {
                 val error = response.exceptionOrNull()?.message ?: "unknown"
-                val isTimeout = error.contains("timeout", ignoreCase = true)
+                val isTimeout = error.contains("timeout", ignoreCase = true) ||
+                                error.contains("time out", ignoreCase = true) ||
+                                error.contains("Нет ответа", ignoreCase = true) ||
+                                error.contains("No response", ignoreCase = true)
                 lastNoConnectionMillis[throttleKey] = now
                 logger.warn(
                     "OFD SEND FAILED: commandType={}, kkmId={}, error={}",
@@ -129,7 +147,7 @@ class OfdManagerAdapter(
 
             val responseBytes = response.getOrThrow()
             val responseJson = codec.decode(responseBytes)
-            logger.debug("DEBUG_OFD_RESPONSE_JSON: {}", responseJson)
+            logger.info("DEBUG_OFD_RESPONSE_JSON: {}", formatJson(responseJson))
             val resultCode = extractResultCode(responseJson)
             val resultText = extractResultText(responseJson)
             val responseToken = extractHeaderToken(responseJson)

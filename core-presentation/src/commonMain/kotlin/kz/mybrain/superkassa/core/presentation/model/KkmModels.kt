@@ -59,7 +59,9 @@ data class ReceiptBrandingDto(
     val footerMsg: String? = null,
     val useForceDarkTheme: Boolean = false,
     val customBackgroundColorHex: String? = null,
-    val customCardTopBorderColorHex: String? = null
+    val customCardTopBorderColorHex: String? = null,
+    val ofdTicketAds: List<String> = emptyList(),
+    val printOfdTicketAds: Boolean = true
 )
 
 // Mapping helpers
@@ -101,7 +103,9 @@ fun kz.mybrain.superkassa.core.domain.model.receipt.ReceiptBranding.toDto(): Rec
     footerMsg = footerMsg,
     useForceDarkTheme = useForceDarkTheme,
     customBackgroundColorHex = customBackgroundColorHex,
-    customCardTopBorderColorHex = customCardTopBorderColorHex
+    customCardTopBorderColorHex = customCardTopBorderColorHex,
+    ofdTicketAds = ofdTicketAds,
+    printOfdTicketAds = printOfdTicketAds
 )
 
 fun ReceiptBrandingDto.toDomain(): kz.mybrain.superkassa.core.domain.model.receipt.ReceiptBranding = kz.mybrain.superkassa.core.domain.model.receipt.ReceiptBranding(
@@ -120,7 +124,9 @@ fun ReceiptBrandingDto.toDomain(): kz.mybrain.superkassa.core.domain.model.recei
     footerMsg = footerMsg,
     useForceDarkTheme = useForceDarkTheme,
     customBackgroundColorHex = customBackgroundColorHex,
-    customCardTopBorderColorHex = customCardTopBorderColorHex
+    customCardTopBorderColorHex = customCardTopBorderColorHex,
+    ofdTicketAds = ofdTicketAds,
+    printOfdTicketAds = printOfdTicketAds
 )
 
 /**

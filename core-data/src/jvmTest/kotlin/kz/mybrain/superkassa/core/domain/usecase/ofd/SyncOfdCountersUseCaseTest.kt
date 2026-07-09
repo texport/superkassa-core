@@ -26,6 +26,7 @@ import kz.mybrain.superkassa.core.domain.port.IdGeneratorPort
 import kz.mybrain.superkassa.core.domain.port.OfdManagerPort
 import kz.mybrain.superkassa.core.domain.port.OfflineQueuePort
 import kz.mybrain.superkassa.core.domain.helper.KkmCommonHelper
+import kz.mybrain.superkassa.core.domain.usecase.kkm.EnforceAutonomousLimitsUseCase
 import kz.mybrain.superkassa.core.support.TestStoragePort
 
 class SyncOfdCountersUseCaseTest {
@@ -47,6 +48,10 @@ class SyncOfdCountersUseCaseTest {
         assertEquals(2L, shiftCounters["operation.OPERATION_SELL.count"])
         assertEquals(1000L, shiftCounters["operation.OPERATION_SELL.sum"])
         assertEquals(5000L, globalCounters["non_nullable.OPERATION_SELL.sum"])
+
+        val updatedKkm = fixture.storage.findKkm(fixture.kkm.id)
+        assertNotNull(updatedKkm)
+        assertEquals(listOf("Ad Promo 1"), updatedKkm.branding.ofdTicketAds)
     }
 
     @Test
@@ -148,6 +153,8 @@ class SyncOfdCountersUseCaseTest {
                 ofd = ofd
             )
 
+            val enforceAutonomousLimitsUseCase = EnforceAutonomousLimitsUseCase(storage, queue, clock)
+
             useCase =
                 SyncOfdCountersUseCase(
                     storage = storage,
@@ -155,7 +162,8 @@ class SyncOfdCountersUseCaseTest {
                     clock = clock,
                     idGenerator = idGenerator,
                     authorizeUserUseCase = authorizeUserUseCase,
-                    kkmCommonHelper = kkmCommonHelper
+                    kkmCommonHelper = kkmCommonHelper,
+                    enforceAutonomousLimitsUseCase = enforceAutonomousLimitsUseCase
                 )
         }
     }
@@ -182,6 +190,11 @@ class SyncOfdCountersUseCaseTest {
             """
             {
               "payload": {
+                "service": {
+                  "ticketAds": [
+                    { "text": "Ad Promo 1" }
+                  ]
+                },
                 "report": {
                   "reportType": "REPORT_X",
                   "zxReport": {

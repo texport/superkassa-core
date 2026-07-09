@@ -28,6 +28,7 @@ import kz.mybrain.superkassa.core.domain.port.OfflineQueuePort
 import kz.mybrain.superkassa.core.domain.port.StoragePort
 import kz.mybrain.superkassa.core.domain.helper.common.IdempotentOperationExecutor
 import kz.mybrain.superkassa.core.domain.usecase.auth.AuthorizeUserUseCase
+import kz.mybrain.superkassa.core.domain.usecase.kkm.RequireOperationalUseCase
 import kz.mybrain.superkassa.core.domain.usecase.counter.UpdateCountersUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,7 +41,8 @@ class ReceiptUseCasesTest {
     private val clock = mockk<ClockPort>()
     private val idGenerator = mockk<IdGeneratorPort>()
     private val authorizeUserUseCase = mockk<AuthorizeUserUseCase>()
-    private val executor = IdempotentOperationExecutor(storage, idGenerator, clock, authorizeUserUseCase)
+    private val requireOperationalUseCase = mockk<RequireOperationalUseCase>(relaxed = true)
+    private val executor = IdempotentOperationExecutor(storage, idGenerator, clock, authorizeUserUseCase, requireOperationalUseCase)
     private val kkmCommonHelper = mockk<KkmCommonHelper>(relaxed = true)
     private val receiptDeliveryHelper = mockk<ReceiptDeliveryHelper>(relaxed = true)
     private val updateCountersUseCase = mockk<UpdateCountersUseCase>(relaxed = true)
@@ -53,7 +55,13 @@ class ReceiptUseCasesTest {
         storage, queue, executor, kkmCommonHelper, processOfdDocumentResult
     )
     private val processReceipt = ProcessReceiptUseCase(
-        storage, queue, executor, kkmCommonHelper, receiptDeliveryHelper,
+        storage = storage,
+        queue = queue,
+        fiscalOperationExecutor = executor,
+        kkmCommonHelper = kkmCommonHelper,
+        receiptDeliveryHelper = receiptDeliveryHelper,
+        authorizeUser = authorizeUserUseCase,
+        requireOperational = requireOperationalUseCase,
         processOfdDocumentResult = { a, b, c, d, e, f, g ->
             processOfdDocumentResult.execute(a, b, c, d, e, f, g)
         },
@@ -155,7 +163,7 @@ class ReceiptUseCasesTest {
             total = Money(0, 0)
         )
         assertFailsWith<ConflictException> {
-            processReceipt.execute(req, kkm)
+            processReceipt.execute(req)
         }
     }
 
@@ -179,7 +187,7 @@ class ReceiptUseCasesTest {
             payments = emptyList(),
             total = Money(0, 0)
         )
-        val res = processReceipt.execute(req, kkm)
+        val res = processReceipt.execute(req)
         assertEquals("doc-2", res.documentId)
         verify {
             queue.enqueueOffline(match { it.kkmId == "kkm-1" && it.type == OfdCommandType.TICKET.value && it.payloadRef == "doc-2" })
@@ -226,7 +234,7 @@ class ReceiptUseCasesTest {
             payments = emptyList(),
             total = Money(0, 0)
         )
-        val res = processReceipt.execute(req, kkm)
+        val res = processReceipt.execute(req)
         assertEquals("doc-2", res.documentId)
         verify {
             storage.saveReceipt(any(), "doc-2", "shift-1", 1000L)
@@ -257,7 +265,7 @@ class ReceiptUseCasesTest {
             payments = emptyList(),
             total = Money(0, 0)
         )
-        val res = processReceipt.execute(req, kkm)
+        val res = processReceipt.execute(req)
         assertEquals("doc-2", res.documentId)
         assertEquals("fs", res.fiscalSign)
         assertEquals("as", res.autonomousSign)

@@ -74,12 +74,8 @@ object OfdTicketRequestBuilder {
                             )
 
                             // Суммы скидки/наценки (для items и amounts)
-                            val totalItemDiscount =
-                                OfdCommonRequestHelper.sumMoney(request.items.mapNotNull { it.discount })
-                            val totalItemMarkup =
-                                OfdCommonRequestHelper.sumMoney(request.items.mapNotNull { it.markup })
-                            val discountMoney = request.discount ?: totalItemDiscount
-                            val markupMoney = request.markup ?: totalItemMarkup
+                            val discountMoney = request.discount
+                            val markupMoney = request.markup
 
                             put(
                                 "items",
@@ -100,7 +96,7 @@ object OfdTicketRequestBuilder {
                                                     buildJsonObject {
                                                         put("name", JsonPrimitive(item.name))
                                                         put("sectionCode", JsonPrimitive(item.sectionCode))
-                                                        put("quantity", JsonPrimitive(item.quantity * 1000L))
+                                                        put("quantity", JsonPrimitive(item.quantity))
                                                         put(
                                                             "price",
                                                             OfdCommonRequestHelper.moneyObject(
@@ -176,7 +172,7 @@ object OfdTicketRequestBuilder {
                                                                                 )
                                                                                 put(
                                                                                     "percent",
-                                                                                    JsonPrimitive(line.percent)
+                                                                                    JsonPrimitive(line.vatGroup.percentThousandths)
                                                                                 )
                                                                                 put(
                                                                                     "sum",
@@ -201,83 +197,7 @@ object OfdTicketRequestBuilder {
                                         )
                                     }
 
-                                    // Отдельные позиции скидки/наценки по протоколу
-                                    when (request.operation) {
-                                        ReceiptOperationType.SELL_RETURN,
-                                        ReceiptOperationType.BUY_RETURN -> {
-                                            discountMoney?.takeIf { m -> m.bills != 0L || m.coins != 0 }?.let { m ->
-                                                add(
-                                                    buildJsonObject {
-                                                        put("type", JsonPrimitive("ITEM_TYPE_STORNO_DISCOUNT"))
-                                                        put(
-                                                            "stornoDiscount",
-                                                            buildJsonObject {
-                                                                put("name", JsonPrimitive("Скидка"))
-                                                                put(
-                                                                    "sum",
-                                                                    OfdCommonRequestHelper.moneyObject(m.bills, m.coins)
-                                                                )
-                                                            }
-                                                        )
-                                                    }
-                                                )
-                                            }
-                                            markupMoney?.takeIf { m -> m.bills != 0L || m.coins != 0 }?.let { m ->
-                                                add(
-                                                    buildJsonObject {
-                                                        put("type", JsonPrimitive("ITEM_TYPE_STORNO_MARKUP"))
-                                                        put(
-                                                            "stornoMarkup",
-                                                            buildJsonObject {
-                                                                put("name", JsonPrimitive("Наценка"))
-                                                                put(
-                                                                    "sum",
-                                                                    OfdCommonRequestHelper.moneyObject(m.bills, m.coins)
-                                                                )
-                                                            }
-                                                        )
-                                                    }
-                                                )
-                                            }
-                                        }
-                                        ReceiptOperationType.SELL,
-                                        ReceiptOperationType.BUY -> {
-                                            discountMoney?.takeIf { m -> m.bills != 0L || m.coins != 0 }?.let { m ->
-                                                add(
-                                                    buildJsonObject {
-                                                        put("type", JsonPrimitive("ITEM_TYPE_DISCOUNT"))
-                                                        put(
-                                                            "discount",
-                                                            buildJsonObject {
-                                                                put("name", JsonPrimitive("Скидка"))
-                                                                put(
-                                                                    "sum",
-                                                                    OfdCommonRequestHelper.moneyObject(m.bills, m.coins)
-                                                                )
-                                                            }
-                                                        )
-                                                    }
-                                                )
-                                            }
-                                            markupMoney?.takeIf { m -> m.bills != 0L || m.coins != 0 }?.let { m ->
-                                                add(
-                                                    buildJsonObject {
-                                                        put("type", JsonPrimitive("ITEM_TYPE_MARKUP"))
-                                                        put(
-                                                            "markup",
-                                                            buildJsonObject {
-                                                                put("name", JsonPrimitive("Наценка"))
-                                                                put(
-                                                                    "sum",
-                                                                    OfdCommonRequestHelper.moneyObject(m.bills, m.coins)
-                                                                )
-                                                            }
-                                                        )
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
+
                                 }
                             )
                             put(
@@ -340,13 +260,19 @@ object OfdTicketRequestBuilder {
                                     discountMoney?.let { m ->
                                         put(
                                             "discount",
-                                            OfdCommonRequestHelper.moneyObject(m.bills, m.coins)
+                                            buildJsonObject {
+                                                put("name", JsonPrimitive("Скидка"))
+                                                put("sum", OfdCommonRequestHelper.moneyObject(m.bills, m.coins))
+                                            }
                                         )
                                     }
                                     markupMoney?.let { m ->
                                         put(
                                             "markup",
-                                            OfdCommonRequestHelper.moneyObject(m.bills, m.coins)
+                                            buildJsonObject {
+                                                put("name", JsonPrimitive("Наценка"))
+                                                put("sum", OfdCommonRequestHelper.moneyObject(m.bills, m.coins))
+                                            }
                                         )
                                     }
                                 }

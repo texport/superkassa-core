@@ -14,6 +14,7 @@ import kz.mybrain.superkassa.core.domain.port.ClockPort
 import kz.mybrain.superkassa.core.domain.port.OfflineQueuePort
 import kz.mybrain.superkassa.core.domain.port.StoragePort
 import kz.mybrain.superkassa.core.domain.usecase.counter.UpdateCountersUseCase
+import kz.mybrain.superkassa.core.domain.helper.OfdResponseParser
 
 /**
  * Сценарий обработки результатов ответа ОФД по фискальным документам.
@@ -106,6 +107,21 @@ class ProcessOfdDocumentResultUseCase(
             deliveredAt = if (success) now else null,
             isAutonomous = false
         )
+
+        if (success) {
+            val ticketAds = OfdResponseParser.extractTicketAds(ofdResult.responseJson)
+            if (ticketAds.isNotEmpty()) {
+                val freshKkm = storage.findKkmForUpdate(kkmId)
+                if (freshKkm != null) {
+                    storage.updateKkm(
+                        freshKkm.copy(
+                            updatedAt = now,
+                            branding = freshKkm.branding.copy(ofdTicketAds = ticketAds)
+                        )
+                    )
+                }
+            }
+        }
 
         if (!success) return
 

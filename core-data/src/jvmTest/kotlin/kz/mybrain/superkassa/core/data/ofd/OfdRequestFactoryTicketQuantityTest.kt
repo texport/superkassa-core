@@ -27,7 +27,7 @@ class OfdRequestFactoryTicketQuantityTest {
                 kkmId = "kkm-1",
                 pin = "1111",
                 operation = ReceiptOperationType.SELL,
-                items = listOf(ReceiptItem("Item", "001", 2, Money(1000, 0), Money(2000, 0))),
+                items = listOf(ReceiptItem("Item", "001", 2000, Money(1000, 0), Money(2000, 0))),
                 payments = listOf(ReceiptPayment(PaymentType.CASH, Money(2000, 0))),
                 total = Money(2000, 0),
                 idempotencyKey = "idem-1"
@@ -62,7 +62,7 @@ class OfdRequestFactoryTicketQuantityTest {
                 kkmId = "kkm-1",
                 pin = "1111",
                 operation = ReceiptOperationType.SELL_RETURN,
-                items = listOf(ReceiptItem("Item", "001", 5, Money(1000, 0), Money(5000, 0), isStorno = true)),
+                items = listOf(ReceiptItem("Item", "001", 5000, Money(1000, 0), Money(5000, 0), isStorno = true)),
                 payments = listOf(ReceiptPayment(PaymentType.CASH, Money(5000, 0))),
                 total = Money(5000, 0),
                 idempotencyKey = "idem-2"
@@ -101,7 +101,7 @@ class OfdRequestFactoryTicketQuantityTest {
                     ReceiptItem(
                         name = "Item",
                         sectionCode = "001",
-                        quantity = 1,
+                        quantity = 1000,
                         price = Money(1000, 0),
                         sum = Money(1000, 0),
                         listExciseStamp = listOf("STAMP-1", "STAMP-2")

@@ -57,7 +57,7 @@ object OfdResponseUtils {
             val fiscalSign = ticket["fiscalSign"]?.jsonPrimitive?.content
             if (fiscalSign != null) return fiscalSign
 
-            val ticketNumber = ticket["ticket_number"]?.jsonPrimitive?.content
+            val ticketNumber = (ticket["ticket_number"] ?: ticket["ticketNumber"])?.jsonPrimitive?.content
             if (ticketNumber != null) return ticketNumber
         }
 

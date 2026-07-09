@@ -625,7 +625,7 @@ class SuperkassaApiImplTest {
         every { storage.findFiscalDocumentById("doc-new") } returns mockSnapshot
 
         val sellReq = ReceiptSellRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1L, vatGroup = "VAT_16", measureUnitCode = "796")),
+            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
             payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
             idempotencyKey = "sell-key"
         )
@@ -641,7 +641,7 @@ class SuperkassaApiImplTest {
         )
 
         val sellRetReq = ReceiptSellReturnRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1L, vatGroup = "VAT_16", measureUnitCode = "796")),
+            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
             payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
             idempotencyKey = "sell-ret-key",
             parentTicket = parentTicket
@@ -650,7 +650,7 @@ class SuperkassaApiImplTest {
         assertEquals("doc-new", resSellRet.documentId)
 
         val buyReq = ReceiptBuyRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1L, vatGroup = "VAT_16", measureUnitCode = "796")),
+            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
             payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
             idempotencyKey = "buy-key"
         )
@@ -658,7 +658,7 @@ class SuperkassaApiImplTest {
         assertEquals("doc-new", resBuy.documentId)
 
         val buyRetReq = ReceiptBuyReturnRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1L, vatGroup = "VAT_16", measureUnitCode = "796")),
+            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
             payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
             idempotencyKey = "buy-ret-key",
             parentTicket = parentTicket
@@ -843,7 +843,7 @@ class SuperkassaApiImplTest {
         every { queue.canSendDirectly("kkm-1") } returns false
 
         val sellReq = ReceiptSellRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1L, vatGroup = "VAT_16", measureUnitCode = "796")),
+            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
             payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
             idempotencyKey = "sell-key-offline"
         )
@@ -870,7 +870,7 @@ class SuperkassaApiImplTest {
         // 1. Closed shift check
         every { storage.findOpenShift("kkm-1") } returns null
         val sellReq = ReceiptSellRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1L, vatGroup = "VAT_16", measureUnitCode = "796")),
+            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
             payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
             idempotencyKey = "sell-key-closed"
         )

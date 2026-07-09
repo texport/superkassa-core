@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class OfdResponseParserTest {
 
@@ -345,5 +346,31 @@ class OfdResponseParserTest {
         assertFailsWith<IllegalArgumentException> {
             OfdResponseParser.extractZxReport(corruptJson)
         }
+    }
+
+    @Test
+    fun testExtractTicketAds() {
+        val json = buildJsonObject {
+            put("payload", buildJsonObject {
+                put("service", buildJsonObject {
+                    put("ticketAds", buildJsonArray {
+                        add(buildJsonObject {
+                            put("text", "Ad Text 1")
+                        })
+                        add(buildJsonObject {
+                            put("text", "Ad Text 2")
+                        })
+                    })
+                })
+            })
+        }
+        val ads = OfdResponseParser.extractTicketAds(json)
+        assertEquals(2, ads.size)
+        assertEquals("Ad Text 1", ads[0])
+        assertEquals("Ad Text 2", ads[1])
+
+        // Empty/Null cases
+        assertTrue(OfdResponseParser.extractTicketAds(null).isEmpty())
+        assertTrue(OfdResponseParser.extractTicketAds(buildJsonObject {}).isEmpty())
     }
 }

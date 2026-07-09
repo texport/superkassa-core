@@ -98,12 +98,13 @@ class QueueUseCasesTest {
             resultCode = 0
         )
         every { sendFiscalCommand.execute("kkm-1", any(), "payload-1") } returns ofdResult
+        every { storage.findFiscalDocumentById("payload-1") } returns null
         every { clock.now() } returns 2000L
 
         val res = processQueueCommand.execute(mockCommand)
         assertEquals(QueueStatus.SENT, res.status)
         verify {
-            storage.updateReceiptStatus("payload-1", "fs-123", "as-123", "SENT", 2000L, false)
+            storage.updateReceiptStatus("payload-1", "fs-123", "as-123", "SENT", 2000L, null)
         }
     }
 

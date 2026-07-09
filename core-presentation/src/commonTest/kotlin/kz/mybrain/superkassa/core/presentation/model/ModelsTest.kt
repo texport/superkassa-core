@@ -219,7 +219,7 @@ class ModelsTest {
         val item = ReceiptItemDto(
             name = "Item 1",
             price = 10.0,
-            quantity = 2L,
+            quantity = 2.0,
             vatGroup = "VAT_16",
             measureUnitCode = "796"
         )

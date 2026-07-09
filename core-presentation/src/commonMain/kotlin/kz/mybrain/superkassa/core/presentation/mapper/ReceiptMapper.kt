@@ -16,6 +16,7 @@ import kz.mybrain.superkassa.core.presentation.model.ParentTicketDto
 import kz.mybrain.superkassa.core.presentation.model.ReceiptItemDto
 import kz.mybrain.superkassa.core.presentation.model.ReceiptPaymentDto
 import kotlinx.datetime.toInstant
+import kotlin.math.roundToLong
 
 /**
  * Маппер для преобразования HTTP DTO в domain модели для чеков.
@@ -57,7 +58,7 @@ object ReceiptMapper {
         return ReceiptItem(
             name = dto.name,
             sectionCode = DEFAULT_SECTION_CODE,
-            quantity = dto.quantity,
+            quantity = (dto.quantity * 1000).roundToLong(),
             price = Money.fromTenge(dto.price),
             sum = Money.fromTenge(itemSumTenge),
             barcode = dto.barcode?.takeIf { it.isNotBlank() },
@@ -165,7 +166,10 @@ object ReceiptMapper {
                 "RECEIPT_DISCOUNT_SCOPES_CONFLICT"
             )
         }
-        val itemsTotalTenge = receiptItems.sumOf { it.sum.bills + it.sum.coins / 100.0 }
+        val itemsTotalTenge = receiptItems.sumOf { item ->
+            val sign = if (item.isStorno) -1.0 else 1.0
+            (item.sum.bills + item.sum.coins / 100.0) * sign
+        }
         val receiptDiscountTenge = when {
             discountPercent != null -> itemsTotalTenge * discountPercent / 100.0
             discountSum != null -> discountSum

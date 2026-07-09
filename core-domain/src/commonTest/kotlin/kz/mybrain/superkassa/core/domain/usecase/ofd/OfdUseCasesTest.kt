@@ -19,6 +19,7 @@ import kz.mybrain.superkassa.core.domain.port.OfflineQueuePort
 import kz.mybrain.superkassa.core.domain.port.StoragePort
 import kz.mybrain.superkassa.core.domain.port.TokenCodecPort
 import kz.mybrain.superkassa.core.domain.usecase.auth.AuthorizeUserUseCase
+import kz.mybrain.superkassa.core.domain.usecase.kkm.EnforceAutonomousLimitsUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -26,11 +27,11 @@ import kotlin.test.assertFailsWith
 class OfdUseCasesTest {
 
     private val storage = mockk<StoragePort>(relaxed = true)
-    private val clock = mockk<ClockPort>()
-    private val idGenerator = mockk<IdGeneratorPort>()
-    private val queue = mockk<OfflineQueuePort>()
-    private val authorizeUserUseCase = mockk<AuthorizeUserUseCase>()
-    private val tokenCodec = mockk<TokenCodecPort>()
+    private val clock = mockk<ClockPort>(relaxed = true)
+    private val idGenerator = mockk<IdGeneratorPort>(relaxed = true)
+    private val queue = mockk<OfflineQueuePort>(relaxed = true)
+    private val authorizeUserUseCase = mockk<AuthorizeUserUseCase>(relaxed = true)
+    private val tokenCodec = mockk<TokenCodecPort>(relaxed = true)
     private val kkmCommonHelper = mockk<KkmCommonHelper>(relaxed = true)
     private val generateRequestNumber = GenerateRequestNumberUseCase(storage)
 
@@ -39,8 +40,9 @@ class OfdUseCasesTest {
     private val getOfdInfo = GetOfdInfoUseCase(authorizeUserUseCase, kkmCommonHelper)
     private val checkOfdConnection = CheckOfdConnectionUseCase(authorizeUserUseCase, kkmCommonHelper)
     private val sendFiscalCommand = SendFiscalCommandUseCase(authorizeUserUseCase, kkmCommonHelper)
+    private val enforceAutonomousLimitsUseCase = EnforceAutonomousLimitsUseCase(storage, queue, clock)
     private val syncOfdServiceInfo = SyncOfdServiceInfoUseCase(storage, queue, clock, idGenerator, authorizeUserUseCase, kkmCommonHelper)
-    private val syncOfdCounters = SyncOfdCountersUseCase(storage, queue, clock, idGenerator, authorizeUserUseCase, kkmCommonHelper)
+    private val syncOfdCounters = SyncOfdCountersUseCase(storage, queue, clock, idGenerator, authorizeUserUseCase, kkmCommonHelper, enforceAutonomousLimitsUseCase)
 
     private val kkm = KkmInfo(
         id = "kkm-1",

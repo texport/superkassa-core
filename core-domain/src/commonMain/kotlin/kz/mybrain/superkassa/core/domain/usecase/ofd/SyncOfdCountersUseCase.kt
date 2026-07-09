@@ -11,9 +11,11 @@ import kz.mybrain.superkassa.core.domain.port.IdGeneratorPort
 import kz.mybrain.superkassa.core.domain.port.OfflineQueuePort
 import kz.mybrain.superkassa.core.domain.port.StoragePort
 import kz.mybrain.superkassa.core.domain.usecase.auth.AuthorizeUserUseCase
+import kz.mybrain.superkassa.core.domain.usecase.kkm.EnforceAutonomousLimitsUseCase
 import kz.mybrain.superkassa.core.domain.exception.ValidationException
 import kz.mybrain.superkassa.core.domain.helper.KkmCommonHelper
 import kz.mybrain.superkassa.core.domain.helper.OfdInfoCountersSnapshotParser
+import kz.mybrain.superkassa.core.domain.helper.OfdResponseParser
 
 /**
  * Сценарий (Use Case) синхронизации счетчиков ККМ с данными ОФД.
@@ -28,6 +30,7 @@ import kz.mybrain.superkassa.core.domain.helper.OfdInfoCountersSnapshotParser
  * @property idGenerator Порт для генерации уникальных идентификаторов.
  * @property authorizeUserUseCase Сценарий проверки прав доступа и состояния ККМ.
  * @property kkmCommonHelper Вспомогательный класс общего функционала работы с ККМ.
+ * @property enforceAutonomousLimitsUseCase Сценарий проверки и сброса лимитов автономной работы.
  */
 class SyncOfdCountersUseCase(
     private val storage: StoragePort,
@@ -35,7 +38,8 @@ class SyncOfdCountersUseCase(
     private val clock: ClockPort,
     private val idGenerator: IdGeneratorPort,
     private val authorizeUserUseCase: AuthorizeUserUseCase,
-    private val kkmCommonHelper: KkmCommonHelper
+    private val kkmCommonHelper: KkmCommonHelper,
+    private val enforceAutonomousLimitsUseCase: EnforceAutonomousLimitsUseCase
 ) {
     /**
      * Выполняет синхронизацию счетчиков с ОФД.
@@ -114,15 +118,17 @@ class SyncOfdCountersUseCase(
                 }
 
                 // Сбрасываем флаг автономного режима и обновляем номер последней смены у ККМ
+                val ticketAds = OfdResponseParser.extractTicketAds(result.responseJson)
                 val freshKkm = storage.findKkmForUpdate(kkmId)
                 if (freshKkm != null) {
-                    storage.updateKkm(
-                        freshKkm.copy(
-                            updatedAt = now,
-                            lastShiftNo = shiftNo,
-                            autonomousSince = null
-                        )
+                    val updatedKkm = freshKkm.copy(
+                        updatedAt = now,
+                        lastShiftNo = shiftNo,
+                        autonomousSince = null,
+                        branding = freshKkm.branding.copy(ofdTicketAds = ticketAds)
                     )
+                    storage.updateKkm(updatedKkm)
+                    enforceAutonomousLimitsUseCase.execute(updatedKkm)
                 }
             }
         }

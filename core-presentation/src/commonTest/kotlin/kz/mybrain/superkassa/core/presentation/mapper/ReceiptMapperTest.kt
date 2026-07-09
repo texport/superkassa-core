@@ -21,7 +21,7 @@ class ReceiptMapperTest {
         val dto = ReceiptItemDto(
             name = "Test Item",
             price = 150.0,
-            quantity = 2,
+            quantity = 2.0,
             barcode = "12345678",
             vatGroup = "VAT_16",
             measureUnitCode = "796"
@@ -29,7 +29,7 @@ class ReceiptMapperTest {
         val item = ReceiptMapper.toReceiptItem(dto)
         assertEquals("Test Item", item.name)
         assertEquals(Money.fromTenge(150.0), item.price)
-        assertEquals(2L, item.quantity)
+        assertEquals(2000L, item.quantity)
         assertEquals(Money.fromTenge(300.0), item.sum)
         assertEquals("12345678", item.barcode)
         assertEquals(VatGroup.VAT_16, item.vatGroup)
@@ -43,7 +43,7 @@ class ReceiptMapperTest {
         val discountDto = ReceiptItemDto(
             name = "Discount Item",
             price = 100.0,
-            quantity = 2,
+            quantity = 2.0,
             discountPercent = 10.0
         )
         val discountItem = ReceiptMapper.toReceiptItem(discountDto)
@@ -53,7 +53,7 @@ class ReceiptMapperTest {
         val markupDto = ReceiptItemDto(
             name = "Markup Item",
             price = 100.0,
-            quantity = 2,
+            quantity = 2.0,
             markupSum = 15.0
         )
         val markupItem = ReceiptMapper.toReceiptItem(markupDto)
@@ -66,7 +66,7 @@ class ReceiptMapperTest {
         val dto = ReceiptItemDto(
             name = "Bad Item",
             price = 10.0,
-            quantity = 1,
+            quantity = 1.0,
             measureUnitCode = "INVALID_CODE"
         )
         assertFailsWith<ValidationException> {
@@ -79,7 +79,7 @@ class ReceiptMapperTest {
         val dto = ReceiptItemDto(
             name = "Bad Vat Item",
             price = 10.0,
-            quantity = 1,
+            quantity = 1.0,
             vatGroup = "INVALID_VAT"
         )
         assertFailsWith<IllegalArgumentException> {
@@ -101,7 +101,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toReceiptRequest maps full sell request correctly`() {
-        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 2)
+        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 2.0)
         val paymentDto = ReceiptPaymentDto(type = "CASH", sum = 200.0)
 
         val request = ReceiptMapper.toReceiptRequest(
@@ -131,7 +131,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toReceiptRequest requires parentTicket for returns`() {
-        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1)
+        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1.0)
         val paymentDto = ReceiptPaymentDto(type = "CASH", sum = 100.0)
 
         assertFailsWith<ValidationException> {
@@ -154,7 +154,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toReceiptRequest parses parent ticket successfully`() {
-        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1)
+        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1.0)
         val paymentDto = ReceiptPaymentDto(type = "CASH", sum = 100.0)
         val parentTicketDto = ParentTicketDto(
             parentTicketNumber = 12345,
@@ -189,7 +189,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toReceiptRequest checks discount conflict`() {
-        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1, discountPercent = 5.0)
+        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1.0, discountPercent = 5.0)
         val paymentDto = ReceiptPaymentDto(type = "CASH", sum = 95.0)
 
         assertFailsWith<ValidationException> {
@@ -211,7 +211,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toReceiptRequest throws when taken is less than cashSumTenge`() {
-        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1)
+        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1.0)
         val paymentDto = ReceiptPaymentDto(type = "CASH", sum = 100.0)
 
         assertFailsWith<IllegalArgumentException> {
@@ -233,7 +233,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toReceiptRequest throws on invalid defaultVatGroup`() {
-        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1)
+        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1.0)
         val paymentDto = ReceiptPaymentDto(type = "CASH", sum = 100.0)
 
         assertFailsWith<IllegalArgumentException> {
@@ -259,7 +259,7 @@ class ReceiptMapperTest {
         val dto = ReceiptItemDto(
             name = "Storno Item",
             price = 500.0,
-            quantity = 1,
+            quantity = 1.0,
             isStorno = true,
             listExciseStamp = listOf("ES-0001", "ES-0002"),
             ntin = "NTIN-9999"
@@ -272,7 +272,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toReceiptRequest parses parent ticket without Z suffix successfully`() {
-        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1)
+        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 1.0)
         val paymentDto = ReceiptPaymentDto(type = "CASH", sum = 100.0)
         val parentTicketDto = ParentTicketDto(
             parentTicketNumber = 12345,
@@ -300,5 +300,31 @@ class ReceiptMapperTest {
         assertNotNull(request.parentTicket)
         assertEquals(12345L, request.parentTicket!!.parentTicketNumber)
         assertEquals(1782554400000L, request.parentTicket!!.parentTicketDateTimeMillis)
+    }
+
+    @Test
+    fun `toReceiptRequest maps multiple payments and change correctly`() {
+        val itemDto = ReceiptItemDto(name = "Item 1", price = 3960.0, quantity = 1.0)
+        val payments = listOf(
+            ReceiptPaymentDto(type = "CASH", sum = 1000.0),
+            ReceiptPaymentDto(type = "CARD", sum = 1500.0),
+            ReceiptPaymentDto(type = "ELECTRONIC", sum = 1000.0),
+            ReceiptPaymentDto(type = "MOBILE", sum = 460.0)
+        )
+        val request = ReceiptMapper.toReceiptRequest(
+            kkmId = "kkm-1",
+            pin = "1234",
+            operation = ReceiptOperationType.SELL,
+            idempotencyKey = "key-1",
+            items = listOf(itemDto),
+            discountPercent = null,
+            discountSum = null,
+            markupPercent = null,
+            markupSum = null,
+            payments = payments,
+            taken = 4460.0
+        )
+        assertEquals(Money.fromTenge(4460.0), request.taken)
+        assertEquals(Money.fromTenge(500.0), request.change)
     }
 }

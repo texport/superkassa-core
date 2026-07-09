@@ -1,6 +1,7 @@
 package kz.mybrain.superkassa.core.domain.helper.common
 
 import kz.mybrain.superkassa.core.domain.usecase.auth.AuthorizeUserUseCase
+import kz.mybrain.superkassa.core.domain.usecase.kkm.RequireOperationalUseCase
 import kz.mybrain.superkassa.core.domain.exception.ErrorMessages
 import kz.mybrain.superkassa.core.domain.exception.ValidationException
 import kz.mybrain.superkassa.core.domain.model.auth.UserRole
@@ -26,12 +27,14 @@ import kz.mybrain.superkassa.core.domain.logging.getLogger
  * @property idGenerator Генератор уникальных идентификаторов документов.
  * @property clock Порт для работы с системным временем.
  * @property authorizeUserUseCase Сценарий для проверки прав доступа пользователей.
+ * @property requireOperationalUseCase Сценарий для проверки состояния ККМ перед операциями.
  */
 class IdempotentOperationExecutor(
     private val storage: StoragePort,
     private val idGenerator: IdGeneratorPort,
     private val clock: ClockPort,
-    private val authorizeUserUseCase: AuthorizeUserUseCase
+    private val authorizeUserUseCase: AuthorizeUserUseCase,
+    private val requireOperationalUseCase: RequireOperationalUseCase
 ) {
     private val logger = getLogger(IdempotentOperationExecutor::class)
 
@@ -81,7 +84,7 @@ class IdempotentOperationExecutor(
     ): T {
         return storage.inTransaction {
             val kkm = authorizeUserUseCase.requireKkm(kkmId, forUpdate = true)
-            requireOperational(kkm)
+            requireOperationalUseCase.execute(kkm)
             authorizeUserUseCase.requireRole(kkm.id, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
 
             // Проверка идемпотентности
@@ -146,21 +149,6 @@ class IdempotentOperationExecutor(
 
             // Построение результата
             buildResult(documentId, ofdResult, deliveryStatus)
-        }
-    }
-
-    /**
-     * Проверяет, находится ли ККМ в рабочем состоянии.
-     * Если ККМ находится в состоянии программирования, выбрасывает исключение.
-     *
-     * @throws ValidationException если ККМ в состоянии программирования.
-     */
-    private fun requireOperational(kkm: KkmInfo) {
-        if (kkm.state == KkmState.PROGRAMMING.name) {
-            throw ValidationException(
-                trilingualMessage = ErrorMessages.kkmInProgramming(),
-                code = "KKM_IN_PROGRAMMING"
-            )
         }
     }
 }

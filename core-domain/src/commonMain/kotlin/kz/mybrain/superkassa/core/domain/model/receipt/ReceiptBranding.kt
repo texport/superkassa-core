@@ -36,5 +36,7 @@ data class ReceiptBranding(
     val footerMsg: String? = null,
     val useForceDarkTheme: Boolean = false,
     val customBackgroundColorHex: String? = null,
-    val customCardTopBorderColorHex: String? = null
+    val customCardTopBorderColorHex: String? = null,
+    val ofdTicketAds: List<String> = emptyList(),
+    val printOfdTicketAds: Boolean = true
 )

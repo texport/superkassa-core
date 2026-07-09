@@ -15,6 +15,7 @@ import kz.mybrain.superkassa.core.presentation.model.KkmInitSimpleRequest
 import kz.mybrain.superkassa.core.presentation.model.KkmListParams
 import kz.mybrain.superkassa.core.presentation.model.KkmListResult
 import kz.mybrain.superkassa.core.presentation.model.OfdAuthInfoResponse
+import kz.mybrain.superkassa.core.presentation.model.NomenclatureLookupResponse
 import kz.mybrain.superkassa.core.presentation.model.ReceiptBuyRequest
 import kz.mybrain.superkassa.core.presentation.model.ReceiptBuyReturnRequest
 import kz.mybrain.superkassa.core.presentation.model.ReceiptSellRequest
@@ -454,4 +455,14 @@ interface SuperkassaApi {
      * @return Сведения об отправке/формировании отчета.
      */
     fun createReport(kkmId: String, pin: String): ReportResult
+
+    /**
+     * Запросить номенклатурную позицию по штрихкоду напрямую из ОФД.
+     *
+     * @param kkmId ID кассы.
+     * @param pin ПИН-код оператора.
+     * @param barcode Штрихкод товара.
+     * @return Результат поиска номенклатуры.
+     */
+    fun lookupNomenclature(kkmId: String, pin: String, barcode: String): NomenclatureLookupResponse
 }

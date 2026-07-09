@@ -16,6 +16,8 @@ import kz.mybrain.superkassa.core.domain.port.OfflineQueuePort
 import kz.mybrain.superkassa.core.domain.port.StoragePort
 import kz.mybrain.superkassa.core.domain.helper.common.IdempotentOperationExecutor
 import kz.mybrain.superkassa.core.domain.helper.KkmCommonHelper
+import kz.mybrain.superkassa.core.domain.usecase.auth.AuthorizeUserUseCase
+import kz.mybrain.superkassa.core.domain.usecase.kkm.RequireOperationalUseCase
 
 /**
  * Сценарий обработки чека продажи или возврата на ККМ.
@@ -29,6 +31,8 @@ import kz.mybrain.superkassa.core.domain.helper.KkmCommonHelper
  * @property fiscalOperationExecutor Компонент обеспечения идемпотентности фискальных операций.
  * @property kkmCommonHelper Вспомогательный класс для выполнения общих операций ККМ.
  * @property receiptDeliveryHelper Помощник для форматирования и отправки фискальных чеков.
+ * @property authorizeUser Сценарий авторизации и загрузки ККМ.
+ * @property requireOperational Сценарий проверки работоспособности ККМ.
  * @property processOfdDocumentResult Лямбда-функция для обработки результатов фискализации документов в ОФД.
  * @property ofdResultQueuedOffline Лямбда-функция для создания фиктивного успешного ответа при офлайн-очереди.
  */
@@ -38,6 +42,8 @@ class ProcessReceiptUseCase(
     private val fiscalOperationExecutor: IdempotentOperationExecutor,
     private val kkmCommonHelper: KkmCommonHelper,
     private val receiptDeliveryHelper: ReceiptDeliveryHelper,
+    private val authorizeUser: AuthorizeUserUseCase,
+    private val requireOperational: RequireOperationalUseCase,
     private val processOfdDocumentResult:
     (KkmInfo, String, String, OfdCommandResult, OfdCommandType, Long, Pair<ReceiptRequest, String>?) -> Unit,
     private val ofdResultQueuedOffline: () -> OfdCommandResult
@@ -55,7 +61,10 @@ class ProcessReceiptUseCase(
      * @return Объект результата обработки чека с фискальными признаками.
      * @throws ConflictException если смена на ККМ закрыта.
      */
-    fun execute(request: ReceiptRequest, kkm: KkmInfo): ReceiptResult {
+    fun execute(request: ReceiptRequest): ReceiptResult {
+        val kkm = authorizeUser.requireKkm(request.kkmId)
+        requireOperational.execute(kkm)
+
         // Подготовка запроса чека с заполнением налогового режима и НДС по умолчанию из настроек ККМ
         val requestWithTaxSettings = request.copy(
             taxRegime = kkm.taxRegime,

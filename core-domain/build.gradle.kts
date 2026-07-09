@@ -70,6 +70,7 @@ kotlin {
                 implementation(libs.slf4j.api)
                 implementation(libs.jakarta.validation)
                 implementation(files(cleanOfflineQueueJar))
+                compileOnly(libs.superkassa.offline.queue)
             }
         }
         jvmTest {

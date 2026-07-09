@@ -335,7 +335,7 @@ data class ReceiptItemDto(
     @field:NotNull
     @field:Positive(message = "Количество должно быть больше 0")
     @field:Max(999_999_999)
-    val quantity: Long,
+    val quantity: Double,
     @Schema(
         description = "Группа НДС для позиции. Допустимые значения: NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16. Если не указана — используется defaultVatGroup кассы.",
         allowableValues = ["NO_VAT", "VAT_0", "VAT_5", "VAT_10", "VAT_16"],

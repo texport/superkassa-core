@@ -32,6 +32,8 @@ import kz.mybrain.superkassa.core.domain.port.ClockPort
 import kz.mybrain.superkassa.core.domain.port.DeliveryPort
 import kz.mybrain.superkassa.core.domain.port.DocumentConvertPort
 import kz.mybrain.superkassa.core.domain.port.IdGeneratorPort
+import kz.mybrain.superkassa.core.presentation.model.NomenclatureLookupResponse
+import kz.mybrain.superkassa.core.presentation.mapper.NomenclatureMapper
 import kz.mybrain.superkassa.core.domain.port.OfdConfigPort
 import kz.mybrain.superkassa.core.domain.port.OfdManagerPort
 import kz.mybrain.superkassa.core.domain.port.OfflineQueuePort
@@ -52,7 +54,9 @@ import kz.mybrain.superkassa.core.domain.usecase.kkm.EnterProgrammingUseCase
 import kz.mybrain.superkassa.core.domain.usecase.kkm.ExitProgrammingUseCase
 import kz.mybrain.superkassa.core.domain.usecase.kkm.InitializeKkmRegistrationUseCase
 import kz.mybrain.superkassa.core.domain.usecase.kkm.RegisterKkmUseCase
+import kz.mybrain.superkassa.core.domain.usecase.kkm.RequireOperationalUseCase
 import kz.mybrain.superkassa.core.domain.usecase.kkm.UpdateKkmSettingsUseCase
+import kz.mybrain.superkassa.core.domain.usecase.report.ProcessReportUseCase
 import kz.mybrain.superkassa.core.domain.usecase.ofd.CheckOfdConnectionUseCase
 import kz.mybrain.superkassa.core.domain.usecase.ofd.GenerateRequestNumberUseCase
 import kz.mybrain.superkassa.core.domain.usecase.ofd.GetOfdAuthInfoUseCase
@@ -61,6 +65,7 @@ import kz.mybrain.superkassa.core.domain.usecase.ofd.SendFiscalCommandUseCase
 import kz.mybrain.superkassa.core.domain.usecase.ofd.SyncOfdCountersUseCase
 import kz.mybrain.superkassa.core.domain.usecase.ofd.SyncOfdServiceInfoUseCase
 import kz.mybrain.superkassa.core.domain.usecase.ofd.UpdateOfdTokenUseCase
+import kz.mybrain.superkassa.core.domain.usecase.ofd.LookupNomenclatureUseCase
 import kz.mybrain.superkassa.core.domain.usecase.print.GetPrintHtmlUseCase
 import kz.mybrain.superkassa.core.domain.usecase.print.GetPrintPdfUseCase
 import kz.mybrain.superkassa.core.domain.usecase.print.GetReceiptHtmlUseCase
@@ -166,16 +171,19 @@ class SuperkassaApiImpl(
     private val getPrintPdfUseCase = GetPrintPdfUseCase(getPrintHtmlUseCase, documentConvertPort)
 
     // OFD Sync Use Cases
+    private val enforceAutonomousLimitsUseCase = EnforceAutonomousLimitsUseCase(storage, queue, clock)
     private val sendFiscalCommandUseCase = SendFiscalCommandUseCase(authorization, kkmCommonHelper)
     private val checkOfdConnectionUseCase = CheckOfdConnectionUseCase(authorization, kkmCommonHelper)
     private val getOfdInfoUseCase = GetOfdInfoUseCase(authorization, kkmCommonHelper)
+    private val lookupNomenclatureUseCase = LookupNomenclatureUseCase(authorization, kkmCommonHelper)
     private val syncOfdCountersUseCase = SyncOfdCountersUseCase(
         storage = storage,
         queue = queue,
         clock = clock,
         idGenerator = idGenerator,
         authorizeUserUseCase = authorization,
-        kkmCommonHelper = kkmCommonHelper
+        kkmCommonHelper = kkmCommonHelper,
+        enforceAutonomousLimitsUseCase = enforceAutonomousLimitsUseCase
     )
     private val syncOfdServiceInfoUseCase = SyncOfdServiceInfoUseCase(
         storage = storage,
@@ -197,7 +205,15 @@ class SuperkassaApiImpl(
     private val updateSettingsUseCase = UpdateKkmSettingsUseCase(storage, queue, clock)
     private val enterProgrammingUseCase = EnterProgrammingUseCase(storage, clock)
     private val exitProgrammingUseCase = ExitProgrammingUseCase(storage, clock)
-    private val enforceAutonomousLimitsUseCase = EnforceAutonomousLimitsUseCase(storage, queue, clock)
+    private val requireOperationalUseCase = RequireOperationalUseCase(kkmCommonHelper, enforceAutonomousLimitsUseCase)
+    private val processReportUseCase = ProcessReportUseCase(
+        storage = storage,
+        queue = queue,
+        sendFiscalCommandUseCase = sendFiscalCommandUseCase,
+        idGenerator = idGenerator,
+        authorizeUser = authorization,
+        requireOperational = requireOperationalUseCase
+    )
 
     // Registration Use Cases
     private val initializeKkmRegistrationUseCase = InitializeKkmRegistrationUseCase(
@@ -250,10 +266,13 @@ class SuperkassaApiImpl(
             storage = storage,
             idGenerator = idGenerator,
             clock = clock,
-            authorizeUserUseCase = authorization
+            authorizeUserUseCase = authorization,
+            requireOperationalUseCase = requireOperationalUseCase
         ),
         kkmCommonHelper = kkmCommonHelper,
         receiptDeliveryHelper = receiptDeliveryHelper,
+        authorizeUser = authorization,
+        requireOperational = requireOperationalUseCase,
         processOfdDocumentResult = { kkm: KkmInfo,
                                      docId: String,
                                      currentKkmId: String,
@@ -274,7 +293,8 @@ class SuperkassaApiImpl(
             storage = storage,
             idGenerator = idGenerator,
             clock = clock,
-            authorizeUserUseCase = authorization
+            authorizeUserUseCase = authorization,
+            requireOperationalUseCase = requireOperationalUseCase
         ),
         kkmCommonHelper = kkmCommonHelper,
         processOfdDocumentResult = processOfdDocumentResultUseCase
@@ -459,16 +479,8 @@ class SuperkassaApiImpl(
     override fun syncOfdServiceInfo(kkmId: String, pin: String): OfdCommandResult =
         syncOfdServiceInfoUseCase.execute(kkmId, pin)
 
-    override fun syncOfdCounters(kkmId: String, pin: String): OfdCommandResult {
-        val result = syncOfdCountersUseCase.execute(kkmId, pin)
-        if (result.status == OfdCommandStatus.OK) {
-            val kkm = storage.findKkm(kkmId)
-            if (kkm != null) {
-                enforceAutonomousLimitsUseCase.execute(kkm)
-            }
-        }
-        return result
-    }
+    override fun syncOfdCounters(kkmId: String, pin: String): OfdCommandResult =
+        syncOfdCountersUseCase.execute(kkmId, pin)
 
     // Print & HTML & PDF delegates
     override fun getReceiptHtml(kkmId: String, documentId: String, pin: String, layout: ReceiptLayoutType?): String =
@@ -495,11 +507,8 @@ class SuperkassaApiImpl(
         getPrintPdfUseCase.execute(kkmId, type, documentId, shiftId, pin, layout)
 
     // Fiscal Operations / Receipt and Cash processing delegates
-    override fun createReceipt(request: ReceiptRequest): ReceiptResult {
-        val kkm = authorization.requireKkm(request.kkmId)
-        requireOperational(kkm)
-        return processReceiptUseCase.execute(request, kkm)
-    }
+    override fun createReceipt(request: ReceiptRequest): ReceiptResult =
+        processReceiptUseCase.execute(request)
 
     override fun createSellReceipt(kkmId: String, pin: String, request: ReceiptSellRequest): ReceiptResult {
         val receiptRequest = ReceiptMapper.toReceiptRequest(
@@ -579,17 +588,11 @@ class SuperkassaApiImpl(
         return createReceipt(receiptRequest)
     }
 
-    override fun cashIn(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult {
-        val kkm = authorization.requireKkm(kkmId)
-        requireOperational(kkm)
-        return createCashOperationUseCase.execute(kkmId, request.copy(pin = pin), CashOperationType.CASH_IN)
-    }
+    override fun cashIn(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult =
+        createCashOperationUseCase.execute(kkmId, request.copy(pin = pin), CashOperationType.CASH_IN)
 
-    override fun cashOut(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult {
-        val kkm = authorization.requireKkm(kkmId)
-        requireOperational(kkm)
-        return createCashOperationUseCase.execute(kkmId, request.copy(pin = pin), CashOperationType.CASH_OUT)
-    }
+    override fun cashOut(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult =
+        createCashOperationUseCase.execute(kkmId, request.copy(pin = pin), CashOperationType.CASH_OUT)
 
     override fun retryReceiptDelivery(kkmId: String, documentId: String, pin: String): List<Pair<String, Boolean>> =
         retryReceiptDeliveryUseCase.execute(kkmId, documentId, pin)
@@ -654,48 +657,18 @@ class SuperkassaApiImpl(
     }
 
     override fun createReport(kkmId: String, pin: String): ReportResult {
-        return storage.inTransaction {
-            val kkm = authorization.requireKkm(kkmId)
-            requireOperational(kkm)
-            authorization.requireRole(kkm.id, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
-
-            val documentId = idGenerator.nextId()
-            val hasQueue = !queue.canSendDirectly(kkmId)
-            if (hasQueue) {
-                val command = OfflineQueueCommandRequest(
-                    kkmId = kkmId,
-                    type = OfdCommandType.REPORT.value,
-                    payloadRef = documentId
-                )
-                queue.enqueueOffline(command)
-                ReportResult(
-                    documentId = documentId,
-                    deliveryStatus = DeliveryStatus.OFFLINE_QUEUED
-                )
-            } else {
-                val result = sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.REPORT, documentId)
-                val (status, error) = when (result.status) {
-                    OfdCommandStatus.OK -> DeliveryStatus.ONLINE_OK to null
-                    OfdCommandStatus.TIMEOUT -> DeliveryStatus.OFFLINE_QUEUED to result.errorMessage
-                    OfdCommandStatus.FAILED -> DeliveryStatus.ONLINE_ERROR to result.errorMessage
-                }
-                ReportResult(
-                    documentId = documentId,
-                    deliveryStatus = status,
-                    deliveryError = error
-                )
-            }
-        }
+        return processReportUseCase.execute(kkmId, pin)
     }
 
     private fun requireOperational(kkm: KkmInfo) {
-        kkmCommonHelper.ensureSystemTimeValid()
-        if (kkm.state == KkmState.BLOCKED.name) {
-            throw ValidationException(ErrorMessages.kkmBlocked(), "KKM_BLOCKED")
-        }
-        if (kkm.state == KkmState.PROGRAMMING.name) {
-            throw ValidationException(ErrorMessages.kkmInProgramming(), "KKM_IN_PROGRAMMING")
-        }
-        enforceAutonomousLimitsUseCase.execute(kkm)
+        requireOperationalUseCase.execute(kkm)
+    }
+
+    override fun lookupNomenclature(kkmId: String, pin: String, barcode: String): NomenclatureLookupResponse {
+        val kkm = authorization.requireKkm(kkmId)
+        authorization.requireRole(kkm.id, pin, setOf(UserRole.CASHIER, UserRole.ADMIN))
+
+        val result = lookupNomenclatureUseCase.execute(kkmId, barcode)
+        return NomenclatureMapper.toDto(result)
     }
 }
