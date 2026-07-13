@@ -19,7 +19,7 @@ plugins {
 }
 
 group = "io.github.texport"
-version = "1.1.1"
+version = "1.1.0"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
@@ -54,9 +54,7 @@ allprojects {
     plugins.withType<MavenPublishPlugin> {
         configure<PublishingExtension> {
             publications.withType<MavenPublication>().configureEach {
-                if (project != rootProject) {
-                    artifactId = artifactId.replace(project.name, "superkassa-${project.name}")
-                }
+                artifactId = artifactId.replace(project.name, "superkassa-${project.name}")
                 val javadocJarTask = tasks.register<Jar>("${name}JavadocJar") {
                     description = "Generates Javadoc jar for publication ${this@configureEach.name}"
                     archiveClassifier.set("javadoc")
