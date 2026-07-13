@@ -2,36 +2,44 @@ package io.github.texport.superkassa.core.presentation.impl
 
 import io.mockk.every
 import io.mockk.mockk
-import io.github.texport.superkassa.core.domain.exception.NotFoundException
-import io.github.texport.superkassa.core.domain.exception.ValidationException
-import io.github.texport.superkassa.core.domain.exception.ConflictException
-import io.github.texport.superkassa.core.domain.model.delivery.DeliveryStatus
-import io.github.texport.superkassa.core.domain.model.common.CounterSnapshot
-import io.github.texport.superkassa.core.domain.model.common.TaxRegime
-import io.github.texport.superkassa.core.domain.model.common.VatGroup
-import io.github.texport.superkassa.core.domain.model.common.TimeValidationResult
-import io.github.texport.superkassa.core.domain.model.kkm.CashOperationRequest
-import io.github.texport.superkassa.core.domain.model.kkm.FiscalDocumentSnapshot
-import io.github.texport.superkassa.core.domain.model.kkm.KkmInfo
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandResult
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandStatus
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandRequest
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptBranding
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptRequest
-import io.github.texport.superkassa.core.domain.model.report.PrintDocumentType
-import io.github.texport.superkassa.core.domain.model.settings.CoreSettings
-import io.github.texport.superkassa.core.domain.model.shift.ShiftInfo
-import io.github.texport.superkassa.core.domain.model.shift.ShiftStatus
-import io.github.texport.superkassa.core.domain.model.auth.UserRole
-import io.github.texport.superkassa.core.domain.model.auth.KkmUser
-import io.github.texport.superkassa.core.domain.port.*
+import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
+import io.github.texport.superkassa.core.domain.api.exception.ValidationException
+import io.github.texport.superkassa.core.domain.api.exception.ConflictException
+import io.github.texport.superkassa.core.domain.api.model.common.CounterSnapshot
+import io.github.texport.superkassa.core.domain.api.model.common.TimeValidationResult
+import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationRequest as DomainCashOperationRequest
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus as DomainOfdCommandStatus
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandRequest
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBranding
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
+import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
+import io.github.texport.superkassa.core.domain.api.model.auth.UserRole as DomainUserRole
+import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
+import io.github.texport.superkassa.core.domain.api.port.integration.*
+import io.github.texport.superkassa.core.domain.api.port.internal.*
 import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
 import io.github.texport.superkassa.core.presentation.api.PrintApi
 import io.github.texport.superkassa.core.presentation.api.OfflineQueueApi
-import io.github.texport.superkassa.core.domain.usecase.queue.GetQueueStatusUseCase
-import io.github.texport.superkassa.core.domain.usecase.receipt.CreateReceiptCommand
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptOperationType
+import io.github.texport.superkassa.core.domain.impl.usecase.queue.GetQueueStatusUseCase
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
 import io.github.texport.superkassa.core.presentation.api.model.*
+import io.github.texport.superkassa.core.presentation.api.model.auth.*
+import io.github.texport.superkassa.core.presentation.api.model.common.*
+import io.github.texport.superkassa.core.presentation.api.model.kkm.*
+import io.github.texport.superkassa.core.presentation.api.model.ofd.*
+import io.github.texport.superkassa.core.presentation.api.model.queue.*
+import io.github.texport.superkassa.core.presentation.api.model.receipt.*
+import io.github.texport.superkassa.core.presentation.api.model.shift.*
+import io.github.texport.superkassa.core.presentation.api.model.user.*
+import io.github.texport.superkassa.core.presentation.api.model.ofd.*
+import io.github.texport.superkassa.core.presentation.api.model.queue.*
+import io.github.texport.superkassa.core.domain.impl.usecase.queue.ListQueueItemsUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.queue.RetryFailedQueueItemsUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -97,7 +105,7 @@ class SuperkassaApiImplTest {
         every { queue.canSendDirectly(any()) } returns true
         every { storage.findKkmByRegistrationNumber(any()) } returns null
         every { storage.findKkmBySystemId(any()) } returns null
-        every { ofd.send(any()) } returns OfdCommandResult(status = OfdCommandStatus.OK)
+        every { ofd.send(any()) } returns OfdCommandResult(status = DomainOfdCommandStatus.OK)
     }
 
     private val testKkmInfo = KkmInfo(
@@ -115,7 +123,7 @@ class SuperkassaApiImplTest {
     private val testUser = KkmUser(
         id = "user-1",
         name = "Cashier 1",
-        role = UserRole.CASHIER,
+        role = DomainUserRole.CASHIER,
         pin = "hash-1",
         createdAt = 1000L
     )
@@ -123,7 +131,7 @@ class SuperkassaApiImplTest {
     private val adminUser = KkmUser(
         id = "admin-1",
         name = "Admin 1",
-        role = UserRole.ADMIN,
+        role = DomainUserRole.ADMIN,
         pin = "hash-admin",
         createdAt = 1000L
     )
@@ -131,7 +139,7 @@ class SuperkassaApiImplTest {
     @Test
     fun `listVatRates returns all vat rates`() {
         val rates = api.listVatRates()
-        assertEquals(VatGroup.entries.size, rates.size)
+        assertEquals(io.github.texport.superkassa.core.domain.api.model.common.VatGroup.entries.size, rates.size)
         assertEquals("NO_VAT", rates.first().code)
     }
 
@@ -157,7 +165,7 @@ class SuperkassaApiImplTest {
     fun `getKkm returns KKM when exists`() {
         every { storage.findKkm("kkm-1") } returns testKkmInfo
         val result = api.getKkm("kkm-1")
-        assertEquals(testKkmInfo, result)
+        assertEquals(io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(testKkmInfo), result)
     }
 
     @Test
@@ -169,7 +177,7 @@ class SuperkassaApiImplTest {
         val result = api.listKkms(params)
         assertEquals(1, result.total)
         assertEquals(1, result.items.size)
-        assertEquals(testKkmInfo, result.items.first())
+        assertEquals(io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(testKkmInfo), result.items.first())
     }
 
     @Test
@@ -231,11 +239,11 @@ class SuperkassaApiImplTest {
         every { pinHasher.hash("4321") } returns "hash-4321"
         every { storage.createUser(any(), any(), any(), any(), any(), any(), any()) } returns true
 
-        val request = UserCreateRequest(name = "New User", role = UserRoleDto.CASHIER, userPin = "4321")
+        val request = UserCreateRequest(name = "New User", role = UserRole.CASHIER, userPin = "4321")
         val created = api.createUser("kkm-1", "1234", request)
         assertEquals("user-new", created.userId)
         assertEquals("New User", created.name)
-        assertEquals(UserRoleDto.CASHIER, created.role)
+        assertEquals(UserRole.CASHIER, created.role)
     }
 
     @Test
@@ -302,7 +310,7 @@ class SuperkassaApiImplTest {
     fun `checkOfdConnection executes check connection command`() {
         every { storage.findKkm("kkm-1") } returns testKkmInfo
         every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
-        val mockResult = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        val mockResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofdConfig.parseTag("telecom_prod") } returns ("telecom" to "prod")
         every { ofdConfig.validateAndFormatTag("telecom", "prod") } returns "telecom_prod"
         every { ofd.send(any()) } returns mockResult
@@ -315,7 +323,7 @@ class SuperkassaApiImplTest {
     fun `getOfdInfo executes get ofd info command`() {
         every { storage.findKkm("kkm-1") } returns testKkmInfo
         every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
-        val mockResult = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        val mockResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofdConfig.parseTag("telecom_prod") } returns ("telecom" to "prod")
         every { ofdConfig.validateAndFormatTag("telecom", "prod") } returns "telecom_prod"
         every { ofd.send(any()) } returns mockResult
@@ -380,12 +388,11 @@ class SuperkassaApiImplTest {
         every { ofdConfig.validateAndFormatTag("telecom", "prod") } returns "telecom_prod"
 
         val request = CashOperationRequest(
-            pin = "1234",
             idempotencyKey = "key-cash-in",
             amount = 500.0
         )
         every { storage.findOpenShift("kkm-1") } returns ShiftInfo("shift-1", "kkm-1", 1L, ShiftStatus.OPEN, 1000L)
-        val ofdCommandResult = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
         every { storage.findFiscalDocumentById(any()) } returns FiscalDocumentSnapshot(
             id = "cashop-1",
@@ -437,7 +444,7 @@ class SuperkassaApiImplTest {
             okved = "47110"
         )
         val kkm = api.initKkm("0000", request)
-        assertEquals("kkm-new", kkm.id)
+        assertEquals("kkm-new", kkm.kkmId)
     }
 
     @Test
@@ -460,7 +467,7 @@ class SuperkassaApiImplTest {
             okved = "47110"
         )
         val kkm = api.initKkmSimple("0000", request)
-        assertEquals("kkm-simple", kkm.id)
+        assertEquals("kkm-simple", kkm.kkmId)
     }
 
     @Test
@@ -473,8 +480,8 @@ class SuperkassaApiImplTest {
         every { storage.updateKkm(any()) } returns true
 
         val result = api.updateTaxSettings("kkm-1", "1234", TaxRegime.MIXED, VatGroup.VAT_16)
-        assertEquals(TaxRegime.MIXED, result.taxRegime)
-        assertEquals(VatGroup.VAT_16, result.defaultVatGroup)
+        assertEquals("MIXED", result.taxRegime)
+        assertEquals("VAT_16", result.defaultVatGroup)
     }
 
     @Test
@@ -486,9 +493,9 @@ class SuperkassaApiImplTest {
         every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
         every { storage.updateKkm(any()) } returns true
 
-        val branding = ReceiptBranding(headerMsg = "Super Title")
+        val branding = ReceiptBrandingRequest(headerMsg = "Super Title")
         val result = api.updateBrandingSettings("kkm-1", "1234", branding)
-        assertEquals(branding, result.branding)
+        assertEquals(branding.headerMsg, result.branding?.headerMsg)
     }
 
     @Test
@@ -530,7 +537,7 @@ class SuperkassaApiImplTest {
             val block = firstArg<() -> Any?>()
             block()
         }
-        val ofdCommandResult = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
 
         val result = api.syncOfdServiceInfo("kkm-1", "1234")
@@ -550,7 +557,7 @@ class SuperkassaApiImplTest {
             val block = firstArg<() -> Any?>()
             block()
         }
-        val ofdCommandResult = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
 
         val result = api.syncOfdCounters("kkm-1", "1234")
@@ -570,7 +577,7 @@ class SuperkassaApiImplTest {
             val block = firstArg<() -> Any?>()
             block()
         }
-        val ofdCommandResult = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
         val mockSnapshot = FiscalDocumentSnapshot(
             id = "doc-new",
@@ -591,8 +598,8 @@ class SuperkassaApiImplTest {
         every { storage.findFiscalDocumentById("doc-new") } returns mockSnapshot
 
         val sellReq = ReceiptSellRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
             idempotencyKey = "sell-key"
         )
         val resSell = api.createSellReceipt("kkm-1", "1234", sellReq)
@@ -601,10 +608,10 @@ class SuperkassaApiImplTest {
         val testCommand = CreateReceiptCommand(
             kkmId = "kkm-1",
             pin = "1234",
-            operation = ReceiptOperationType.SELL,
+            operation = "SELL",
             idempotencyKey = "direct-key",
-            items = listOf(CreateReceiptCommand.ItemInput(name = "Item 1", price = 10.0, quantity = 1.0)),
-            payments = listOf(CreateReceiptCommand.PaymentInput("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0)),
+            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
             discountPercent = null,
             discountSum = null,
             markupPercent = null,
@@ -614,7 +621,7 @@ class SuperkassaApiImplTest {
         val resDirect = api.createReceipt(testCommand)
         assertEquals("doc-new", resDirect.documentId)
 
-        val parentTicket = ParentTicketDto(
+        val parentTicket = ParentTicketRequest(
             parentTicketNumber = 123L,
             parentTicketDateTime = "2026-06-27T16:00:00Z",
             kgdKkmId = "kgd-1",
@@ -623,8 +630,8 @@ class SuperkassaApiImplTest {
         )
 
         val sellRetReq = ReceiptSellReturnRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
             idempotencyKey = "sell-ret-key",
             parentTicket = parentTicket
         )
@@ -632,16 +639,16 @@ class SuperkassaApiImplTest {
         assertEquals("doc-new", resSellRet.documentId)
 
         val buyReq = ReceiptBuyRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
             idempotencyKey = "buy-key"
         )
         val resBuy = api.createBuyReceipt("kkm-1", "1234", buyReq)
         assertEquals("doc-new", resBuy.documentId)
 
         val buyRetReq = ReceiptBuyReturnRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
             idempotencyKey = "buy-ret-key",
             parentTicket = parentTicket
         )
@@ -661,12 +668,11 @@ class SuperkassaApiImplTest {
         every { ofdConfig.validateAndFormatTag("telecom", "prod") } returns "telecom_prod"
 
         val request = CashOperationRequest(
-            pin = "1234",
             idempotencyKey = "key-cash-out",
             amount = 100.0
         )
         every { storage.findOpenShift("kkm-1") } returns ShiftInfo("shift-1", "kkm-1", 1L, ShiftStatus.OPEN, 1000L)
-        val ofdCommandResult = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
         every { storage.findFiscalDocumentById(any()) } returns FiscalDocumentSnapshot(
             id = "cashop-2",
@@ -706,7 +712,7 @@ class SuperkassaApiImplTest {
             val block = firstArg<() -> Any?>()
             block()
         }
-        val ofdCommandResult = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
 
         every { storage.findOpenShift("kkm-1") } returns null
@@ -729,7 +735,8 @@ class SuperkassaApiImplTest {
         }
 
         // List shifts
-        every { storage.listShifts("kkm-1", 10, 0) } returns listOf(openShift)
+        val domainShift = ShiftInfo("shift-new", "kkm-1", 1L, io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus.OPEN, 1000L)
+        every { storage.listShifts("kkm-1", 10, 0) } returns listOf(domainShift)
         val listShifts = api.listShifts("kkm-1", 10, 0, "1234")
         assertEquals(1, listShifts.size)
 
@@ -797,8 +804,8 @@ class SuperkassaApiImplTest {
         every { queue.canSendDirectly("kkm-1") } returns false
 
         val sellReq = ReceiptSellRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
             idempotencyKey = "sell-key-offline"
         )
         val resSell = api.createSellReceipt("kkm-1", "1234", sellReq)
@@ -824,8 +831,8 @@ class SuperkassaApiImplTest {
         // 1. Closed shift check
         every { storage.findOpenShift("kkm-1") } returns null
         val sellReq = ReceiptSellRequest(
-            items = listOf(ReceiptItemDto(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentDto("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
             idempotencyKey = "sell-key-closed"
         )
         assertFailsWith<ConflictException> {
@@ -837,13 +844,13 @@ class SuperkassaApiImplTest {
         every { storage.findUserByPin("kkm-1", "hash-admin") } returns adminUser
         
         // Timeout check
-        every { ofd.send(any()) } returns OfdCommandResult(status = OfdCommandStatus.TIMEOUT, errorMessage = "Timeout")
+        every { ofd.send(any()) } returns OfdCommandResult(status = DomainOfdCommandStatus.TIMEOUT, errorMessage = "Timeout")
         val resTimeout = api.createReport("kkm-1", "1234")
         assertEquals(DeliveryStatus.OFFLINE_QUEUED, resTimeout.deliveryStatus)
         assertEquals("Timeout", resTimeout.deliveryError)
 
         // Failed check
-        every { ofd.send(any()) } returns OfdCommandResult(status = OfdCommandStatus.FAILED, errorMessage = "Failed")
+        every { ofd.send(any()) } returns OfdCommandResult(status = DomainOfdCommandStatus.FAILED, errorMessage = "Failed")
         val resFailed = api.createReport("kkm-1", "1234")
         assertEquals(DeliveryStatus.ONLINE_ERROR, resFailed.deliveryStatus)
         assertEquals("Failed", resFailed.deliveryError)
@@ -888,7 +895,7 @@ class SuperkassaApiImplTest {
         ) as kotlinx.serialization.json.JsonObject
 
         val ofdCommandResult = OfdCommandResult(
-            status = OfdCommandStatus.OK,
+            status = DomainOfdCommandStatus.OK,
             resultCode = 0,
             responseJson = responseJson
         )
@@ -915,21 +922,35 @@ class SuperkassaApiImplTest {
         every { queue.processOfflineBatch("kkm-1", 10) } returns 5
 
         every { storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", limit = 500) } returns listOf(
-            io.github.texport.superkassa.core.domain.model.queue.QueueTask(
+            io.github.texport.superkassa.core.domain.api.model.queue.QueueTask(
                 id = "1", cashboxId = "kkm-1", lane = "OFFLINE", type = "TICKET", payloadRef = "ref-1",
                 createdAt = 1000L, status = "PENDING", attempt = 0, nextAttemptAt = null, lastError = null
             ),
-            io.github.texport.superkassa.core.domain.model.queue.QueueTask(
+            io.github.texport.superkassa.core.domain.api.model.queue.QueueTask(
                 id = "2", cashboxId = "kkm-1", lane = "OFFLINE", type = "TICKET", payloadRef = "ref-2",
                 createdAt = 2000L, status = "FAILED", attempt = 1, nextAttemptAt = null, lastError = null
             ),
-            io.github.texport.superkassa.core.domain.model.queue.QueueTask(
+            io.github.texport.superkassa.core.domain.api.model.queue.QueueTask(
                 id = "3", cashboxId = "kkm-1", lane = "OFFLINE", type = "TICKET", payloadRef = "ref-3",
                 createdAt = 3000L, status = "SENT", attempt = 1, nextAttemptAt = null, lastError = null
             )
         )
 
-        val queueApi: OfflineQueueApi = OfflineQueueApiImpl(queue, GetQueueStatusUseCase(storage))
+                val listQueueItemsUseCase = mockk<ListQueueItemsUseCase>()
+        val retryFailedQueueItemsUseCase = mockk<RetryFailedQueueItemsUseCase>()
+        val queueApi: OfflineQueueApi = OfflineQueueApiImpl(
+            queue,
+            GetQueueStatusUseCase(storage),
+            listQueueItemsUseCase,
+            retryFailedQueueItemsUseCase
+        )
+
+        every { listQueueItemsUseCase.execute("kkm-1", "1234") } returns listOf(
+            ListQueueItemsUseCase.QueueItemView(
+                id = "1", lane = "OFFLINE", type = "TICKET", status = "PENDING", attempt = 0, nextAttemptAt = null, lastError = null
+            )
+        )
+        every { retryFailedQueueItemsUseCase.execute("kkm-1", "1234") } returns 1
 
         assertTrue(queueApi.canSendDirectly("kkm-1"))
         assertEquals(5, queueApi.processOfflineBatch("kkm-1"))
@@ -937,6 +958,13 @@ class SuperkassaApiImplTest {
         val status = queueApi.getQueueStatus(QueueStatusRequest("kkm-1"))
         assertTrue(status.hasPendingItems)
         assertEquals(2, status.pendingCount)
+
+        val queueList = queueApi.listQueue("kkm-1", "1234")
+        assertEquals(1, queueList.size)
+        assertEquals("1", queueList.first().id)
+
+        val retryCount = queueApi.retryFailed("kkm-1", "1234")
+        assertEquals(1, retryCount)
 
         val json = kotlinx.serialization.json.Json.encodeToString(QueueStatusResponse.serializer(), status)
         val decoded = kotlinx.serialization.json.Json.decodeFromString(QueueStatusResponse.serializer(), json)

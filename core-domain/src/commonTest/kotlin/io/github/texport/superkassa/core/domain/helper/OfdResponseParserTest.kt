@@ -1,7 +1,7 @@
-package io.github.texport.superkassa.core.domain.helper
+package io.github.texport.superkassa.core.domain.impl.helper
 
 import kotlinx.serialization.json.*
-import io.github.texport.superkassa.core.domain.model.ofd.OfdServiceInfo
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

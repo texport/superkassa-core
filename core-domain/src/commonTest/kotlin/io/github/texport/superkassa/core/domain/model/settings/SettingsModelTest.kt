@@ -1,4 +1,4 @@
-package io.github.texport.superkassa.core.domain.model.settings
+package io.github.texport.superkassa.core.domain.api.model.settings
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

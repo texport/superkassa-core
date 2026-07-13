@@ -32,6 +32,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":core-domain"))
+                implementation(project(":core-presentation"))
                 implementation(project(":core-string"))
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines.core)
@@ -85,8 +86,9 @@ kover {
     reports {
         filters {
             excludes {
-                classes("io.github.texport.superkassa.core.data.ofd.*")
-                classes("io.github.texport.superkassa.core.data.util.*")
+                classes("io.github.texport.superkassa.core.data.impl.ofd.*")
+                classes("io.github.texport.superkassa.core.data.impl.util.*")
+                classes("io.github.texport.superkassa.core.data.api.*")
             }
         }
         verify {

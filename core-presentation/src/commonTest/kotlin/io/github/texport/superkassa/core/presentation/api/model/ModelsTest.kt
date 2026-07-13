@@ -1,12 +1,17 @@
 package io.github.texport.superkassa.core.presentation.api.model
 
 import kotlinx.serialization.json.Json
-import io.github.texport.superkassa.core.domain.model.common.UnitOfMeasurement
-import io.github.texport.superkassa.core.domain.model.common.VatGroup
-import io.github.texport.superkassa.core.domain.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.model.common.UnitOfMeasurement
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.presentation.impl.mapper.ReceiptMapper
-import io.github.texport.superkassa.core.presentation.api.model.toDto
-import io.github.texport.superkassa.core.presentation.api.model.toDomain
+import io.github.texport.superkassa.core.presentation.api.model.auth.*
+import io.github.texport.superkassa.core.presentation.api.model.common.*
+import io.github.texport.superkassa.core.presentation.api.model.kkm.*
+import io.github.texport.superkassa.core.presentation.api.model.ofd.*
+import io.github.texport.superkassa.core.presentation.api.model.queue.*
+import io.github.texport.superkassa.core.presentation.api.model.receipt.*
+import io.github.texport.superkassa.core.presentation.api.model.shift.*
+import io.github.texport.superkassa.core.presentation.api.model.user.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -46,13 +51,13 @@ class ModelsTest {
         val factoryInfoDec = json.decodeFromString<FactoryNumberResponse>(factoryInfoStr)
         assertEquals(factoryInfo.factoryNumber, factoryInfoDec.factoryNumber)
 
-        val uom = UnitOfMeasurement.PIECE
-        val uomResponse = UnitOfMeasurementResponse.from(uom)
+        val uom = io.github.texport.superkassa.core.domain.api.model.common.UnitOfMeasurement.PIECE
+        val uomResponse = io.github.texport.superkassa.core.presentation.impl.mapper.CommonMapper.toResponse(uom)
         val uomStr = json.encodeToString(uomResponse)
         val uomDec = json.decodeFromString<UnitOfMeasurementResponse>(uomStr)
         assertEquals(uomResponse.code, uomDec.code)
 
-        val vatRate = VatRateResponse.from(VatGroup.VAT_10)
+        val vatRate = io.github.texport.superkassa.core.presentation.impl.mapper.CommonMapper.toResponse(io.github.texport.superkassa.core.domain.api.model.common.VatGroup.VAT_10)
         val vatRateStr = json.encodeToString(vatRate)
         val vatRateDec = json.decodeFromString<VatRateResponse>(vatRateStr)
         assertEquals(vatRate.code, vatRateDec.code)
@@ -62,7 +67,7 @@ class ModelsTest {
     fun testUserModelsSerialization() {
         val createReq = UserCreateRequest(
             name = "Test User",
-            role = UserRoleDto.CASHIER,
+            role = UserRole.CASHIER,
             userPin = "1234"
         )
         val createStr = json.encodeToString(createReq)
@@ -71,7 +76,7 @@ class ModelsTest {
 
         val updateReq = UserUpdateRequest(
             name = "Updated Name",
-            role = UserRoleDto.ADMIN,
+            role = UserRole.ADMIN,
             userPin = "4321"
         )
         val updateStr = json.encodeToString(updateReq)
@@ -86,7 +91,7 @@ class ModelsTest {
         val response = UserResponse(
             userId = "user-1",
             name = "User One",
-            role = UserRoleDto.CASHIER,
+            role = UserRole.CASHIER,
             pin = "1234"
         )
         val responseStr = json.encodeToString(response)
@@ -125,12 +130,12 @@ class ModelsTest {
             systemId = "12345"
         )
 
-        val listResult = KkmListResult(
-            items = listOf(kkmInfo),
+        val listResult = KkmListResponse(
+            items = listOf(io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(kkmInfo)),
             total = 1
         )
         assertEquals(listResult.total, 1)
-        assertEquals(listResult.items.first().id, "kkm-1")
+        assertEquals(listResult.items.first().kkmId, "kkm-1")
 
         val listParams = KkmListParams(
             limit = 10,
@@ -157,8 +162,8 @@ class ModelsTest {
         assertEquals(draftUpdate.ofdId, draftUpdateDec.ofdId)
 
         val taxUpdate = KkmTaxSettingsUpdateRequest(
-            taxRegime = TaxRegimeDto.MIXED,
-            defaultVatGroup = VatGroupDto.VAT_16
+            taxRegime = TaxRegime.MIXED,
+            defaultVatGroup = VatGroup.VAT_16
         )
         val taxUpdateStr = json.encodeToString(taxUpdate)
         val taxUpdateDec = json.decodeFromString<KkmTaxSettingsUpdateRequest>(taxUpdateStr)
@@ -187,41 +192,11 @@ class ModelsTest {
         val initDirectStr = json.encodeToString(initDirect)
         val initDirectDec = json.decodeFromString<KkmInitDirectRequest>(initDirectStr)
         assertEquals(initDirect.factoryNumber, initDirectDec.factoryNumber)
-
-        val initDraft = KkmInitDraftRequest(
-            kkmId = "draft-1",
-            ofdSystemId = "system-id-123",
-            ofdToken = "token-123",
-            kkmKgdId = "kgd-123"
-        )
-        val initDraftStr = json.encodeToString(initDraft)
-        val initDraftDec = json.decodeFromString<KkmInitDraftRequest>(initDraftStr)
-        assertEquals(initDraft.kkmId, initDraftDec.kkmId)
-    }
-
-    @Test
-    fun testDraftKkmModelsSerialization() {
-        val request = DraftKkmRequest(
-            ofdId = "kazakhtelecom",
-            ofdEnvironment = "test"
-        )
-        val requestStr = json.encodeToString(request)
-        val requestDec = json.decodeFromString<DraftKkmRequest>(requestStr)
-        assertEquals(request.ofdId, requestDec.ofdId)
-
-        val response = DraftKkmResponse(
-            kkmId = "kkm-1",
-            factoryNumber = "SWK-0001",
-            manufactureYear = 2024
-        )
-        val responseStr = json.encodeToString(response)
-        val responseDec = json.decodeFromString<DraftKkmResponse>(responseStr)
-        assertEquals(response.kkmId, responseDec.kkmId)
     }
 
     @Test
     fun testReceiptModelsSerialization() {
-        val item = ReceiptItemDto(
+        val item = ReceiptItemRequest(
             name = "Item 1",
             price = 10.0,
             quantity = 2.0,
@@ -229,18 +204,18 @@ class ModelsTest {
             measureUnitCode = "796"
         )
         val itemStr = json.encodeToString(item)
-        val itemDec = json.decodeFromString<ReceiptItemDto>(itemStr)
+        val itemDec = json.decodeFromString<ReceiptItemRequest>(itemStr)
         assertEquals(item.price, itemDec.price)
 
-        val payment = ReceiptPaymentDto(
+        val payment = ReceiptPaymentRequest(
             type = "CASH",
             sum = 20.0
         )
         val paymentStr = json.encodeToString(payment)
-        val paymentDec = json.decodeFromString<ReceiptPaymentDto>(paymentStr)
+        val paymentDec = json.decodeFromString<ReceiptPaymentRequest>(paymentStr)
         assertEquals(payment.type, paymentDec.type)
 
-        val parent = ParentTicketDto(
+        val parent = ParentTicketRequest(
             parentTicketNumber = 123L,
             parentTicketDateTime = "2026-06-27T16:00:00Z",
             kgdKkmId = "kgd-123",
@@ -248,7 +223,7 @@ class ModelsTest {
             parentTicketIsOffline = false
         )
         val parentStr = json.encodeToString(parent)
-        val parentDec = json.decodeFromString<ParentTicketDto>(parentStr)
+        val parentDec = json.decodeFromString<ParentTicketRequest>(parentStr)
         assertEquals(parent.parentTicketNumber, parentDec.parentTicketNumber)
 
         val sell = ReceiptSellRequest(
@@ -382,19 +357,14 @@ class ModelsTest {
         assertEquals("Det", apiErr.details)
 
         // 2. UserResponse
-        val userResp = UserResponse(userId = "u1", name = "N1", role = UserRoleDto.CASHIER, pin = "1234")
+        val userResp = UserResponse(userId = "u1", name = "N1", role = UserRole.CASHIER, pin = "1234")
         assertEquals("u1", userResp.userId)
         assertEquals("N1", userResp.name)
-        assertEquals(UserRoleDto.CASHIER, userResp.role)
+        assertEquals(UserRole.CASHIER, userResp.role)
         assertEquals("1234", userResp.pin)
 
-        // 3. DraftKkmRequest & Response
-        val draftReq = DraftKkmRequest(ofdId = "ofd", ofdEnvironment = "env")
-        assertEquals("ofd", draftReq.ofdId)
-        assertEquals("env", draftReq.ofdEnvironment)
-
         // 4. OfdServiceInfo mapping
-        val domainOfd = io.github.texport.superkassa.core.domain.model.ofd.OfdServiceInfo(
+        val domainOfd = io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo(
             orgTitle = "T1",
             orgAddress = "A1",
             orgAddressKz = "AK1",
@@ -404,7 +374,7 @@ class ModelsTest {
             geoLongitude = 20,
             geoSource = "S1"
         )
-        val dtoOfd = domainOfd.toDto()
+        val dtoOfd = io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(domainOfd)
         assertEquals("T1", dtoOfd.orgTitle)
         assertEquals("A1", dtoOfd.orgAddress)
         assertEquals("AK1", dtoOfd.orgAddressKz)
@@ -414,12 +384,12 @@ class ModelsTest {
         assertEquals(20, dtoOfd.geoLongitude)
         assertEquals("S1", dtoOfd.geoSource)
 
-        val domainOfd2 = dtoOfd.toDomain()
+        val domainOfd2 = io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toDomain(dtoOfd)
         assertEquals(domainOfd, domainOfd2)
 
         // 5. ReceiptBranding mapping
-        val domainBranding = io.github.texport.superkassa.core.domain.model.receipt.ReceiptBranding(
-            language = io.github.texport.superkassa.core.domain.model.receipt.ReceiptLanguage.MIXED,
+        val domainBranding = io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBranding(
+            language = io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLanguage.MIXED,
             headerLogoUrl = "logo",
             paperWidthMm = 58,
             themeColor = "red",
@@ -438,8 +408,8 @@ class ModelsTest {
             ofdTicketAds = listOf("ad1"),
             printOfdTicketAds = false
         )
-        val dtoBranding = domainBranding.toDto()
-        assertEquals(ReceiptLanguageDto.MIXED, dtoBranding.language)
+        val dtoBranding = io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(domainBranding)
+        assertEquals(ReceiptLanguage.MIXED, dtoBranding.language)
         assertEquals("logo", dtoBranding.headerLogoUrl)
         assertEquals(58, dtoBranding.paperWidthMm)
         assertEquals("red", dtoBranding.themeColor)
@@ -458,11 +428,11 @@ class ModelsTest {
         assertEquals(listOf("ad1"), dtoBranding.ofdTicketAds)
         assertTrue(!dtoBranding.printOfdTicketAds)
 
-        val domainBranding2 = dtoBranding.toDomain()
+        val domainBranding2 = dtoBranding.toDomainLocal()
         assertEquals(domainBranding, domainBranding2)
 
-        // 6. Additional Receipt mapping using ReceiptMapper (ReceiptItemDto to ItemInput)
-        val itemDto = ReceiptItemDto(
+        // 6. Additional Receipt mapping using ReceiptMapper (ReceiptItemRequest to ItemInput)
+        val itemDto = ReceiptItemRequest(
             name = "Item",
             price = 100.0,
             quantity = 2.0,
@@ -476,14 +446,14 @@ class ModelsTest {
         assertEquals("VAT_16", itemInput.vatGroup)
         assertEquals("796", itemInput.measureUnitCode)
 
-        // 7. ReceiptPaymentDto using ReceiptMapper (ReceiptPaymentDto to PaymentInput)
-        val paymentDto = ReceiptPaymentDto(type = "CASH", sum = 150.0)
+        // 7. ReceiptPaymentRequest using ReceiptMapper (ReceiptPaymentRequest to PaymentInput)
+        val paymentDto = ReceiptPaymentRequest(type = "CASH", sum = 150.0)
         val paymentInput = ReceiptMapper.toPaymentInput(paymentDto)
         assertEquals("CASH", paymentInput.type)
         assertEquals(150.0, paymentInput.sum)
 
-        // 8. ParentTicketDto using ReceiptMapper (ParentTicketDto to ParentTicket)
-        val parentDto = ParentTicketDto(
+        // 8. ParentTicketRequest using ReceiptMapper (ParentTicketRequest to ParentTicket)
+        val parentDto = ParentTicketRequest(
             parentTicketNumber = 12L,
             parentTicketDateTime = "2026-06-27T16:00:00Z",
             kgdKkmId = "kgd-12",
@@ -553,23 +523,34 @@ class ModelsTest {
             assertTrue(e.message!!.contains("наценку"))
         }
 
-        // Validation tests for ReceiptItemDto
+        // Validation tests for ReceiptItemRequest
         try {
-            ReceiptItemDto(name = "Item", price = 10.0, quantity = 1.0, discountPercent = 10.0, discountSum = 100.0)
+            ReceiptItemRequest(name = "Item", price = 10.0, quantity = 1.0, discountPercent = 10.0, discountSum = 100.0)
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("discount"))
         }
         try {
-            ReceiptItemDto(name = "Item", price = 10.0, quantity = 1.0, markupPercent = 10.0, markupSum = 100.0)
+            ReceiptItemRequest(name = "Item", price = 10.0, quantity = 1.0, markupPercent = 10.0, markupSum = 100.0)
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("наценку"))
         }
 
-        // Access properties of KkmInitDraftRequest
-        val initDraft = KkmInitDraftRequest(kkmId = "draft-1", ofdSystemId = "sys-1", ofdToken = "token-1", kkmKgdId = "kgd-1")
-        assertEquals("sys-1", initDraft.ofdSystemId)
-        assertEquals("token-1", initDraft.ofdToken)
-        assertEquals("kgd-1", initDraft.kkmKgdId)
+        // Test mapping for VAT_5 and VAT_PAYER
+        assertEquals(
+            io.github.texport.superkassa.core.presentation.api.model.kkm.VatGroup.VAT_5,
+            io.github.texport.superkassa.core.presentation.api.model.kkm.VatGroup.valueOf(io.github.texport.superkassa.core.domain.api.model.common.VatGroup.VAT_5.name)
+        )
+        assertEquals(
+            io.github.texport.superkassa.core.presentation.api.model.kkm.TaxRegime.VAT_PAYER,
+            io.github.texport.superkassa.core.presentation.api.model.kkm.TaxRegime.valueOf(io.github.texport.superkassa.core.domain.api.model.common.TaxRegime.VAT_PAYER.name)
+        )
+        // Ensure all other VatGroups and TaxRegimes map perfectly by name
+        for (g in io.github.texport.superkassa.core.domain.api.model.common.VatGroup.entries) {
+            kotlin.test.assertNotNull(io.github.texport.superkassa.core.presentation.api.model.kkm.VatGroup.valueOf(g.name))
+        }
+        for (r in io.github.texport.superkassa.core.domain.api.model.common.TaxRegime.entries) {
+            kotlin.test.assertNotNull(io.github.texport.superkassa.core.presentation.api.model.kkm.TaxRegime.valueOf(r.name))
+        }
 
         // Access properties of KkmResponse
         val kkmResp = KkmResponse(
@@ -589,5 +570,28 @@ class ModelsTest {
         assertEquals("kgd-1", kkmResp.kkmKgdId)
         assertEquals("FN", kkmResp.factoryNumber)
         assertEquals("sys", kkmResp.ofdSystemId)
+    }
+
+    private fun ReceiptBrandingResponse.toDomainLocal(): io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBranding {
+        return io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBranding(
+            language = io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLanguage.valueOf(language.name),
+            headerLogoUrl = headerLogoUrl,
+            paperWidthMm = paperWidthMm,
+            themeColor = themeColor,
+            beforeHeaderMsg = beforeHeaderMsg,
+            headerMsg = headerMsg,
+            afterHeaderMsg = afterHeaderMsg,
+            beforeItemsMsg = beforeItemsMsg,
+            afterItemsMsg = afterItemsMsg,
+            beforeTotalsMsg = beforeTotalsMsg,
+            afterTotalsMsg = afterTotalsMsg,
+            beforeQrMsg = beforeQrMsg,
+            footerMsg = footerMsg,
+            useForceDarkTheme = useForceDarkTheme,
+            customBackgroundColorHex = customBackgroundColorHex,
+            customCardTopBorderColorHex = customCardTopBorderColorHex,
+            ofdTicketAds = ofdTicketAds,
+            printOfdTicketAds = printOfdTicketAds
+        )
     }
 }

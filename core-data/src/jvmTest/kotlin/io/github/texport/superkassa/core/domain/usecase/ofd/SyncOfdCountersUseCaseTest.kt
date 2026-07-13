@@ -1,4 +1,4 @@
-package io.github.texport.superkassa.core.domain.usecase.ofd
+package io.github.texport.superkassa.core.domain.impl.usecase.ofd
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -7,26 +7,27 @@ import kotlin.test.assertNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
-import io.github.texport.superkassa.core.data.adapter.security.Base64TokenCodecAdapter
-import io.github.texport.superkassa.core.data.adapter.ofd.OfdConfigAdapter
-import io.github.texport.superkassa.core.data.adapter.security.Sha256PinHasherAdapter
-import io.github.texport.superkassa.core.domain.model.auth.UserRole
-import io.github.texport.superkassa.core.domain.model.common.TimeValidationResult
-import io.github.texport.superkassa.core.domain.model.kkm.KkmInfo
-import io.github.texport.superkassa.core.domain.model.kkm.KkmMode
-import io.github.texport.superkassa.core.domain.model.kkm.KkmState
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandRequest
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandResult
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandStatus
-import io.github.texport.superkassa.core.domain.model.ofd.OfdServiceInfo
-import io.github.texport.superkassa.core.domain.model.queue.OfflineQueueCommandRequest
-import io.github.texport.superkassa.core.domain.model.shift.ShiftStatus
-import io.github.texport.superkassa.core.domain.port.ClockPort
-import io.github.texport.superkassa.core.domain.port.IdGeneratorPort
-import io.github.texport.superkassa.core.domain.port.OfdManagerPort
-import io.github.texport.superkassa.core.domain.port.OfflineQueuePort
-import io.github.texport.superkassa.core.domain.helper.KkmCommonHelper
-import io.github.texport.superkassa.core.domain.usecase.kkm.EnforceAutonomousLimitsUseCase
+import io.github.texport.superkassa.core.data.impl.adapter.security.Base64TokenCodecAdapter
+import io.github.texport.superkassa.core.data.impl.adapter.ofd.OfdConfigAdapter
+import io.github.texport.superkassa.core.data.impl.adapter.security.Sha256PinHasherAdapter
+import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
+import io.github.texport.superkassa.core.domain.api.model.common.TimeValidationResult
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmMode
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandRequest
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
+import io.github.texport.superkassa.core.domain.api.model.queue.OfflineQueueCommandRequest
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
+import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
+import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidatorPort
+import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
+import io.github.texport.superkassa.core.domain.api.port.internal.OfdManagerPort
+import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
+import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
+import io.github.texport.superkassa.core.domain.impl.usecase.kkm.EnforceAutonomousLimitsUseCase
 import io.github.texport.superkassa.core.support.TestStoragePort
 
 class SyncOfdCountersUseCaseTest {
@@ -136,10 +137,10 @@ class SyncOfdCountersUseCaseTest {
                 createdAt = clock.now()
             )
 
-            val authorizeUserUseCase = io.github.texport.superkassa.core.domain.usecase.auth.AuthorizeUserUseCase(storage, pinHasher)
-            val generateRequestNumberUseCase = io.github.texport.superkassa.core.domain.usecase.ofd.GenerateRequestNumberUseCase(storage)
-            val ofdCommandRequestFactory = io.github.texport.superkassa.core.domain.helper.ofd.OfdCommandRequestFactory(OfdConfigAdapter())
-            val testTimeValidator = object : io.github.texport.superkassa.core.domain.port.TimeValidatorPort {
+            val authorizeUserUseCase = io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase(storage, pinHasher)
+            val generateRequestNumberUseCase = io.github.texport.superkassa.core.domain.impl.usecase.ofd.GenerateRequestNumberUseCase(storage)
+            val ofdCommandRequestFactory = io.github.texport.superkassa.core.domain.impl.helper.ofd.OfdCommandRequestFactory(OfdConfigAdapter())
+            val testTimeValidator = object : TimeValidatorPort {
                 override fun validate(clock: ClockPort) = TimeValidationResult(true)
             }
 

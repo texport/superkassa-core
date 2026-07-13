@@ -1,7 +1,7 @@
 package io.github.texport.superkassa.receiptrenderer.impl.renderer.base
 
-import io.github.texport.superkassa.core.domain.model.common.*
-import io.github.texport.superkassa.core.domain.model.receipt.*
+import io.github.texport.superkassa.core.domain.api.model.common.*
+import io.github.texport.superkassa.core.domain.api.model.receipt.*
 
 val VatGroup.translationKey: String
     get() = when (this) {

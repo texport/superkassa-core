@@ -1,4 +1,4 @@
-package io.github.texport.superkassa.core.domain.model.ofd
+package io.github.texport.superkassa.core.domain.api.model.ofd
 
 import kotlinx.serialization.json.JsonObject
 import kotlin.test.Test

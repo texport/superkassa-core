@@ -1,16 +1,16 @@
-package io.github.texport.superkassa.core.domain.helper
+package io.github.texport.superkassa.core.domain.impl.helper
 
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.github.texport.superkassa.core.domain.model.kkm.FiscalDocumentSnapshot
-import io.github.texport.superkassa.core.domain.model.kkm.KkmInfo
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptRequest
-import io.github.texport.superkassa.core.domain.model.settings.*
-import io.github.texport.superkassa.core.domain.port.DeliveryPort
-import io.github.texport.superkassa.core.domain.port.DocumentConvertPort
-import io.github.texport.superkassa.core.domain.port.ReceiptRenderPort
-import io.github.texport.superkassa.core.domain.port.StoragePort
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
+import io.github.texport.superkassa.core.domain.api.model.settings.*
+import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryPort
+import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
+import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderPort
+import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

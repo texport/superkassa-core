@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 
 plugins {
@@ -43,14 +42,10 @@ kotlin {
 
         withHostTest {}
     }
-    
-    val xcf = XCFramework("SuperkassaReceiptRenderer")
-    listOf(iosArm64(), iosX64(), iosSimulatorArm64()).forEach { target ->
-        target.binaries.framework {
-            baseName = "SuperkassaReceiptRenderer"
-            xcf.add(this)
-        }
-    }
+    iosArm64()
+    iosX64()
+    iosSimulatorArm64()
+
 
     sourceSets {
         commonMain {

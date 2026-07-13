@@ -1,6 +1,6 @@
-package io.github.texport.superkassa.core.domain.model.report
+package io.github.texport.superkassa.core.domain.api.model.report
 
-import io.github.texport.superkassa.core.domain.model.delivery.DeliveryStatus
+import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

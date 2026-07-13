@@ -1,16 +1,16 @@
 package io.github.texport.superkassa.core.support
 
-import io.github.texport.superkassa.core.domain.model.auth.KkmUser
-import io.github.texport.superkassa.core.domain.model.auth.UserRole
-import io.github.texport.superkassa.core.domain.model.common.CounterSnapshot
-import io.github.texport.superkassa.core.domain.model.common.Money
-import io.github.texport.superkassa.core.domain.model.kkm.FiscalDocumentSnapshot
-import io.github.texport.superkassa.core.domain.model.kkm.KkmInfo
-import io.github.texport.superkassa.core.domain.model.queue.QueueTask
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptRequest
-import io.github.texport.superkassa.core.domain.model.shift.ShiftInfo
-import io.github.texport.superkassa.core.domain.model.shift.ShiftStatus
-import io.github.texport.superkassa.core.domain.port.StoragePort
+import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
+import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
+import io.github.texport.superkassa.core.domain.api.model.common.CounterSnapshot
+import io.github.texport.superkassa.core.domain.api.model.common.Money
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
+import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 
 /**
  * Простая in-memory реализация StoragePort для unit/integration тестов core-слоя.

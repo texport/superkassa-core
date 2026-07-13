@@ -1,7 +1,7 @@
 package io.github.texport.superkassa.core.presentation.api
 
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptLayoutType
-import io.github.texport.superkassa.core.domain.model.report.PrintDocumentType
+import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptLayoutType
+import io.github.texport.superkassa.core.presentation.api.model.receipt.PrintDocumentType
 
 /**
  * Презентационное API для операций печати и генерации печатных форм документов/отчетов.
@@ -56,6 +56,26 @@ interface PrintApi {
      * @return PDF файл в виде ByteArray.
      */
     fun getPrintPdf(
+        kkmId: String,
+        type: PrintDocumentType,
+        documentId: String?,
+        shiftId: String?,
+        pin: String,
+        layout: ReceiptLayoutType? = null
+    ): ByteArray
+
+    /**
+     * Сгенерировать PNG-изображение (в виде байтового массива) для печати/отображения.
+     *
+     * @param kkmId ID ККМ.
+     * @param type Тип печатного документа.
+     * @param documentId ID документа.
+     * @param shiftId ID смены.
+     * @param pin ПИН-код пользователя.
+     * @param layout Шаблон визуализации.
+     * @return PNG файл в виде ByteArray.
+     */
+    fun getPrintPng(
         kkmId: String,
         type: PrintDocumentType,
         documentId: String?,

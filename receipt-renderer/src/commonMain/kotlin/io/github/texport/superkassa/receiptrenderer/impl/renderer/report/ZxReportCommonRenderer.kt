@@ -1,9 +1,9 @@
 package io.github.texport.superkassa.receiptrenderer.impl.renderer.report
 
-import io.github.texport.superkassa.core.domain.model.kkm.*
-import io.github.texport.superkassa.core.domain.model.shift.*
+import io.github.texport.superkassa.core.domain.api.model.kkm.*
+import io.github.texport.superkassa.core.domain.api.model.shift.*
 
-import io.github.texport.superkassa.core.domain.helper.zxreport.ZxReportBuilder
+import io.github.texport.superkassa.core.domain.impl.helper.zxreport.ZxReportBuilder
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.BaseDocumentRenderer
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.component.report.ReportCashOpsComponent
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.component.report.ReportCashOpsInput

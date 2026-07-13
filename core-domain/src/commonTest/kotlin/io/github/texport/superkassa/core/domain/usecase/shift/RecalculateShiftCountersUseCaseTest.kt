@@ -1,21 +1,21 @@
-package io.github.texport.superkassa.core.domain.usecase.shift
+package io.github.texport.superkassa.core.domain.impl.usecase.shift
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import io.github.texport.superkassa.core.domain.model.common.CounterKeyFormats
-import io.github.texport.superkassa.core.domain.model.common.CounterScopes
-import io.github.texport.superkassa.core.domain.model.common.Money
-import io.github.texport.superkassa.core.domain.model.common.TaxRegime
-import io.github.texport.superkassa.core.domain.model.common.VatGroup
-import io.github.texport.superkassa.core.domain.model.receipt.PaymentType
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptItem
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptOperationType
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptPayment
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptRequest
-import io.github.texport.superkassa.core.domain.model.shift.ShiftInfo
-import io.github.texport.superkassa.core.domain.model.shift.ShiftStatus
-import io.github.texport.superkassa.core.domain.usecase.counter.UpdateCountersUseCase
+import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
+import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
+import io.github.texport.superkassa.core.domain.api.model.common.Money
+import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
+import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
+import io.github.texport.superkassa.core.domain.api.model.receipt.PaymentType
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptPayment
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
+import io.github.texport.superkassa.core.domain.impl.usecase.counter.UpdateCountersUseCase
 import io.github.texport.superkassa.core.support.TestStoragePort
 
 class RecalculateShiftCountersUseCaseTest {

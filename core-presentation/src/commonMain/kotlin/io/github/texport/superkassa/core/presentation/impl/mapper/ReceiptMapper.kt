@@ -1,12 +1,12 @@
 package io.github.texport.superkassa.core.presentation.impl.mapper
 
-import io.github.texport.superkassa.core.domain.model.common.Money
-import io.github.texport.superkassa.core.domain.model.receipt.ParentTicket
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptOperationType
-import io.github.texport.superkassa.core.domain.usecase.receipt.CreateReceiptCommand
-import io.github.texport.superkassa.core.presentation.api.model.ParentTicketDto
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptItemDto
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptPaymentDto
+import io.github.texport.superkassa.core.domain.api.model.common.Money
+import io.github.texport.superkassa.core.domain.api.model.receipt.ParentTicket
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
+import io.github.texport.superkassa.core.domain.impl.usecase.receipt.CreateReceiptCommand
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptResult
+import io.github.texport.superkassa.core.presentation.api.model.ofd.DeliveryStatus
+import io.github.texport.superkassa.core.presentation.api.model.receipt.*
 import kotlinx.datetime.toInstant
 
 /**
@@ -15,9 +15,9 @@ import kotlinx.datetime.toInstant
 object ReceiptMapper {
 
     /**
-     * Преобразовать DTO товарной позиции [ReceiptItemDto] во входные данные для команды [CreateReceiptCommand.ItemInput].
+     * Преобразовать DTO товарной позиции [ReceiptItemRequest] во входные данные для команды [CreateReceiptCommand.ItemInput].
      */
-    fun toItemInput(dto: ReceiptItemDto): CreateReceiptCommand.ItemInput {
+    fun toItemInput(dto: ReceiptItemRequest): CreateReceiptCommand.ItemInput {
         return CreateReceiptCommand.ItemInput(
             name = dto.name,
             price = dto.price,
@@ -36,9 +36,9 @@ object ReceiptMapper {
     }
 
     /**
-     * Преобразовать DTO оплаты [ReceiptPaymentDto] во входные данные для команды [CreateReceiptCommand.PaymentInput].
+     * Преобразовать DTO оплаты [ReceiptPaymentRequest] во входные данные для команды [CreateReceiptCommand.PaymentInput].
      */
-    fun toPaymentInput(dto: ReceiptPaymentDto): CreateReceiptCommand.PaymentInput {
+    fun toPaymentInput(dto: ReceiptPaymentRequest): CreateReceiptCommand.PaymentInput {
         return CreateReceiptCommand.PaymentInput(
             type = dto.type,
             sum = dto.sum
@@ -46,9 +46,9 @@ object ReceiptMapper {
     }
 
     /**
-     * Преобразовать DTO чека-основания [ParentTicketDto] в доменную модель [ParentTicket].
+     * Преобразовать DTO чека-основания [ParentTicketRequest] в доменную модель [ParentTicket].
      */
-    fun toParentTicket(dto: ParentTicketDto?): ParentTicket? {
+    fun toParentTicket(dto: ParentTicketRequest?): ParentTicket? {
         if (dto == null) return null
         val dateTimeStr = dto.parentTicketDateTime
         val cleanDateTimeStr = if (dateTimeStr.endsWith("Z")) {
@@ -77,14 +77,14 @@ object ReceiptMapper {
         pin: String,
         operation: ReceiptOperationType,
         idempotencyKey: String,
-        items: List<ReceiptItemDto>,
+        items: List<ReceiptItemRequest>,
         discountPercent: Double?,
         discountSum: Double?,
         markupPercent: Double?,
         markupSum: Double?,
-        payments: List<ReceiptPaymentDto>,
+        payments: List<ReceiptPaymentRequest>,
         taken: Double?,
-        parentTicket: ParentTicketDto? = null,
+        parentTicket: ParentTicketRequest? = null,
         defaultVatGroup: String? = null,
         customerBin: String? = null
     ): CreateReceiptCommand {
@@ -105,4 +105,37 @@ object ReceiptMapper {
             customerBin = customerBin
         )
     }
+
+    fun toResponse(result: ReceiptResult): ReceiptResponse = ReceiptResponse(
+        documentId = result.documentId,
+        fiscalSign = result.fiscalSign,
+        autonomousSign = result.autonomousSign,
+        deliveryPayload = result.deliveryPayload,
+        deliveryStatus = DeliveryStatus.valueOf(result.deliveryStatus.name),
+        deliveryError = result.deliveryError
+    )
+
+    fun toDomain(dto: io.github.texport.superkassa.core.presentation.api.model.receipt.CreateReceiptCommand): io.github.texport.superkassa.core.domain.impl.usecase.receipt.CreateReceiptCommand =
+        io.github.texport.superkassa.core.domain.impl.usecase.receipt.CreateReceiptCommand(
+            kkmId = dto.kkmId,
+            pin = dto.pin,
+            operation = io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType.valueOf(dto.operation),
+            idempotencyKey = dto.idempotencyKey,
+            items = dto.items.map { toItemInput(it) },
+            discountPercent = dto.discountPercent,
+            discountSum = dto.discountSum,
+            markupPercent = dto.markupPercent,
+            markupSum = dto.markupSum,
+            payments = dto.payments.map { toPaymentInput(it) },
+            taken = dto.taken,
+            parentTicket = toParentTicket(dto.parentTicket),
+            defaultVatGroup = dto.defaultVatGroup,
+            customerBin = dto.customerBin
+        )
+
+    fun toDomain(layout: ReceiptLayoutType): io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLayoutType =
+        io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLayoutType.valueOf(layout.name)
+
+    fun toDomain(type: PrintDocumentType): io.github.texport.superkassa.core.domain.api.model.report.PrintDocumentType =
+        io.github.texport.superkassa.core.domain.api.model.report.PrintDocumentType.valueOf(type.name)
 }

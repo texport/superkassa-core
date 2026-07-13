@@ -1,6 +1,6 @@
 package io.github.texport.superkassa.receiptrenderer.impl.renderer.base
 
-import io.github.texport.superkassa.core.domain.model.common.*
+import io.github.texport.superkassa.core.domain.api.model.common.*
 import io.github.texport.superkassa.receiptrenderer.impl.ReceiptFormatter
 
 fun Money.formatted(): String {

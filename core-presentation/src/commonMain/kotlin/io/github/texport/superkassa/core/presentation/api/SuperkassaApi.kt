@@ -1,35 +1,23 @@
 package io.github.texport.superkassa.core.presentation.api
 
-import io.github.texport.superkassa.core.domain.model.common.*
-import io.github.texport.superkassa.core.domain.model.kkm.*
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandResult
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptBranding
-import io.github.texport.superkassa.core.domain.usecase.receipt.CreateReceiptCommand
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptResult
-import io.github.texport.superkassa.core.domain.model.report.*
-import io.github.texport.superkassa.core.domain.model.shift.*
-import io.github.texport.superkassa.core.presentation.api.model.FactoryNumberResponse
-import io.github.texport.superkassa.core.presentation.api.model.KkmInitDirectRequest
-import io.github.texport.superkassa.core.presentation.api.model.KkmInitSimpleRequest
-import io.github.texport.superkassa.core.presentation.api.model.KkmListParams
-import io.github.texport.superkassa.core.presentation.api.model.KkmListResult
-import io.github.texport.superkassa.core.presentation.api.model.OfdAuthInfoRequest
-import io.github.texport.superkassa.core.presentation.api.model.OfdAuthInfoResponse
-import io.github.texport.superkassa.core.presentation.api.model.NomenclatureLookupRequest
-import io.github.texport.superkassa.core.presentation.api.model.NomenclatureLookupResponse
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptBuyRequest
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptBuyReturnRequest
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptSellRequest
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptSellReturnRequest
-import io.github.texport.superkassa.core.presentation.api.model.UserCreateRequest
-import io.github.texport.superkassa.core.presentation.api.model.UserResponse
-import io.github.texport.superkassa.core.presentation.api.model.UserUpdateRequest
-import io.github.texport.superkassa.core.presentation.api.model.VatRateResponse
+import io.github.texport.superkassa.core.presentation.api.model.auth.*
+import io.github.texport.superkassa.core.presentation.api.model.common.*
+import io.github.texport.superkassa.core.presentation.api.model.kkm.*
+import io.github.texport.superkassa.core.presentation.api.model.ofd.*
+import io.github.texport.superkassa.core.presentation.api.model.queue.*
+import io.github.texport.superkassa.core.presentation.api.model.receipt.*
+import io.github.texport.superkassa.core.presentation.api.model.shift.*
+import io.github.texport.superkassa.core.presentation.api.model.user.*
 
 /**
  * Интерфейс API Superkassa для взаимодействия презентационного слоя с бизнес-логикой.
  */
 interface SuperkassaApi : PrintApi {
+    /**
+     * Фасад управления офлайн-очередью команд ОФД.
+     */
+    val queue: OfflineQueueApi
+
     /**
      * Получить список доступных ставок НДС.
      *
@@ -44,7 +32,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Параметры инициализации ККМ.
      * @return Сведения об инициализированной ККМ.
      */
-    fun initKkm(pin: String, request: KkmInitDirectRequest): KkmInfo
+    fun initKkm(pin: String, request: KkmInitDirectRequest): KkmResponse
 
     /**
      * Упрощенная инициализация ККМ с автоматическим получением данных из ОФД.
@@ -53,7 +41,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Упрощенный запрос на инициализацию.
      * @return Сведения об инициализированной ККМ.
      */
-    fun initKkmSimple(pin: String, request: KkmInitSimpleRequest): KkmInfo
+    fun initKkmSimple(pin: String, request: KkmInitSimpleRequest): KkmResponse
 
     /**
      * Сгенерировать заводской номер и год выпуска для новой ККМ.
@@ -68,7 +56,7 @@ interface SuperkassaApi : PrintApi {
      * @param id ID ККМ.
      * @return Сведения о ККМ.
      */
-    fun getKkm(id: String): KkmInfo
+    fun getKkm(id: String): KkmResponse
 
     /**
      * Получить список ККМ по параметрам фильтрации.
@@ -76,7 +64,7 @@ interface SuperkassaApi : PrintApi {
      * @param params Параметры пагинации, сортировки и поиска.
      * @return Результат поиска ККМ.
      */
-    fun listKkms(params: KkmListParams): KkmListResult
+    fun listKkms(params: KkmListParams): KkmListResponse
 
     /**
      * Снять ККМ с учета (удалить).
@@ -94,7 +82,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Список денежных счетчиков.
      */
-    fun listCounters(kkmId: String, pin: String): List<CounterSnapshot>
+    fun listCounters(kkmId: String, pin: String): List<CounterSnapshotResponse>
 
     /**
      * Обновить общие настройки ККМ (например, автозакрытие смены).
@@ -104,7 +92,7 @@ interface SuperkassaApi : PrintApi {
      * @param autoCloseShift Флаг автоматического закрытия смены.
      * @return Сведения об обновленной ККМ.
      */
-    fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean): KkmInfo
+    fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean): KkmResponse
 
     /**
      * Обновить налоговый режим и группу НДС по умолчанию.
@@ -115,7 +103,7 @@ interface SuperkassaApi : PrintApi {
      * @param defaultVatGroup Новая группа НДС по умолчанию.
      * @return Сведения об обновленной ККМ.
      */
-    fun updateTaxSettings(kkmId: String, pin: String, taxRegime: TaxRegime, defaultVatGroup: VatGroup): KkmInfo
+    fun updateTaxSettings(kkmId: String, pin: String, taxRegime: TaxRegime, defaultVatGroup: VatGroup): KkmResponse
 
     /**
      * Обновить параметры брендирования (шапки/подвала чеков).
@@ -125,7 +113,7 @@ interface SuperkassaApi : PrintApi {
      * @param branding Настройки брендирования чеков.
      * @return Сведения об обновленной ККМ.
      */
-    fun updateBrandingSettings(kkmId: String, pin: String, branding: ReceiptBranding): KkmInfo
+    fun updateBrandingSettings(kkmId: String, pin: String, branding: ReceiptBrandingRequest): KkmResponse
 
     /**
      * Войти в режим программирования параметров ККМ.
@@ -134,7 +122,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Сведения о ККМ в состоянии программирования.
      */
-    fun enterProgramming(kkmId: String, pin: String): KkmInfo
+    fun enterProgramming(kkmId: String, pin: String): KkmResponse
 
     /**
      * Выйти из режима программирования параметров ККМ.
@@ -143,7 +131,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Сведения об обновленной ККМ.
      */
-    fun exitProgramming(kkmId: String, pin: String): KkmInfo
+    fun exitProgramming(kkmId: String, pin: String): KkmResponse
 
     /**
      * Получить список пользователей ККМ (кассиров и администраторов).
@@ -210,7 +198,7 @@ interface SuperkassaApi : PrintApi {
      * @param kkmId ID ККМ.
      * @return Результат выполнения команды.
      */
-    fun checkOfdConnection(kkmId: String): OfdCommandResult
+    fun checkOfdConnection(kkmId: String): OfdCommandResponse
 
     /**
      * Получить общую информацию от ОФД о статусе подключения ККМ.
@@ -218,7 +206,7 @@ interface SuperkassaApi : PrintApi {
      * @param kkmId ID ККМ.
      * @return Результат выполнения команды.
      */
-    fun getOfdInfo(kkmId: String): OfdCommandResult
+    fun getOfdInfo(kkmId: String): OfdCommandResponse
 
     /**
      * Синхронизировать сервисную информацию с ОФД.
@@ -227,7 +215,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Результат выполнения команды ОФД.
      */
-    fun syncOfdServiceInfo(kkmId: String, pin: String): OfdCommandResult
+    fun syncOfdServiceInfo(kkmId: String, pin: String): OfdCommandResponse
 
     /**
      * Синхронизировать накопленные счетчики и состояние смены с ОФД.
@@ -236,7 +224,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Результат выполнения команды ОФД.
      */
-    fun syncOfdCounters(kkmId: String, pin: String): OfdCommandResult
+    fun syncOfdCounters(kkmId: String, pin: String): OfdCommandResponse
 
     /**
      * Создать фискальный чек общего формата.
@@ -244,7 +232,7 @@ interface SuperkassaApi : PrintApi {
      * @param command Команда создания чека.
      * @return Результат выполнения фискальной операции.
      */
-    fun createReceipt(command: CreateReceiptCommand): ReceiptResult
+    fun createReceipt(command: CreateReceiptCommand): ReceiptResponse
 
     /**
      * Создать чек продажи (SELL).
@@ -254,7 +242,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Запрос продажи.
      * @return Результат создания чека.
      */
-    fun createSellReceipt(kkmId: String, pin: String, request: ReceiptSellRequest): ReceiptResult
+    fun createSellReceipt(kkmId: String, pin: String, request: ReceiptSellRequest): ReceiptResponse
 
     /**
      * Создать чек возврата продажи (SELL_RETURN).
@@ -264,7 +252,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Запрос возврата продажи.
      * @return Результат создания чека.
      */
-    fun createSellReturnReceipt(kkmId: String, pin: String, request: ReceiptSellReturnRequest): ReceiptResult
+    fun createSellReturnReceipt(kkmId: String, pin: String, request: ReceiptSellReturnRequest): ReceiptResponse
 
     /**
      * Создать чек покупки (BUY).
@@ -274,7 +262,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Запрос покупки.
      * @return Результат создания чека.
      */
-    fun createBuyReceipt(kkmId: String, pin: String, request: ReceiptBuyRequest): ReceiptResult
+    fun createBuyReceipt(kkmId: String, pin: String, request: ReceiptBuyRequest): ReceiptResponse
 
     /**
      * Создать чек возврата покупки (BUY_RETURN).
@@ -284,7 +272,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Запрос возврата покупки.
      * @return Результат создания чека.
      */
-    fun createBuyReturnReceipt(kkmId: String, pin: String, request: ReceiptBuyReturnRequest): ReceiptResult
+    fun createBuyReturnReceipt(kkmId: String, pin: String, request: ReceiptBuyReturnRequest): ReceiptResponse
 
     /**
      * Произвести операцию внесения наличных (Cash In) в кассу.
@@ -294,7 +282,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Данные операции.
      * @return Результат проведения операции.
      */
-    fun cashIn(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult
+    fun cashIn(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResponse
 
     /**
      * Произвести операцию изъятия наличных (Cash Out) из кассы.
@@ -304,7 +292,9 @@ interface SuperkassaApi : PrintApi {
      * @param request Данные операции.
      * @return Результат проведения операции.
      */
-    fun cashOut(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResult
+    fun cashOut(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResponse
+
+    // Вспомогательные комментарии для смен
 
     /**
      * Открыть кассовую смену.
@@ -313,7 +303,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код кассира.
      * @return Информация по открытой смене.
      */
-    fun openShift(kkmId: String, pin: String): ShiftInfo
+    fun openShift(kkmId: String, pin: String): ShiftResponse
 
     /**
      * Закрыть кассовую смену с печатью Z-отчета и передачей данных в ОФД.
@@ -322,7 +312,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код кассира.
      * @return Результат генерации сменного Z-отчета.
      */
-    fun closeShift(kkmId: String, pin: String): ReportResult
+    fun closeShift(kkmId: String, pin: String): ReportResponse
 
     /**
      * Получить информацию о текущей открытой смене ККМ.
@@ -331,7 +321,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код пользователя.
      * @return Информация об открытой смене.
      */
-    fun getOpenShift(kkmId: String, pin: String): ShiftInfo
+    fun getOpenShift(kkmId: String, pin: String): ShiftResponse
 
     /**
      * Получить историю смен для ККМ с пагинацией.
@@ -342,7 +332,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код пользователя.
      * @return Список смен.
      */
-    fun listShifts(kkmId: String, limit: Int, offset: Int, pin: String): List<ShiftInfo>
+    fun listShifts(kkmId: String, limit: Int, offset: Int, pin: String): List<ShiftResponse>
 
     /**
      * Получить список фискальных документов для конкретной смены.
@@ -360,7 +350,7 @@ interface SuperkassaApi : PrintApi {
         limit: Int,
         offset: Int,
         pin: String
-    ): List<FiscalDocumentSnapshot>
+    ): List<FiscalDocumentResponse>
 
     /**
      * Получить фискальные документы за определенный период времени.
@@ -380,7 +370,7 @@ interface SuperkassaApi : PrintApi {
         limit: Int,
         offset: Int,
         pin: String
-    ): List<FiscalDocumentSnapshot>
+    ): List<FiscalDocumentResponse>
 
     /**
      * Сгенерировать X-отчет (сменный отчет без гашения).
@@ -389,7 +379,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код кассира/администратора.
      * @return Сведения об отправке/формировании отчета.
      */
-    fun createReport(kkmId: String, pin: String): ReportResult
+    fun createReport(kkmId: String, pin: String): ReportResponse
 
     /**
      * Запросить номенклатурную позицию по штрихкоду напрямую из ОФД.

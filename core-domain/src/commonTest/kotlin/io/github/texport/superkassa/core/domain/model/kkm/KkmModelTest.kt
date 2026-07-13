@@ -1,10 +1,10 @@
-package io.github.texport.superkassa.core.domain.model.kkm
+package io.github.texport.superkassa.core.domain.api.model.kkm
 
-import io.github.texport.superkassa.core.domain.model.common.TaxRegime
-import io.github.texport.superkassa.core.domain.model.common.VatGroup
-import io.github.texport.superkassa.core.domain.model.delivery.DeliveryStatus
-import io.github.texport.superkassa.core.domain.model.ofd.OfdServiceInfo
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptBranding
+import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
+import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
+import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryStatus
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBranding
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

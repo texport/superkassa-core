@@ -1,6 +1,6 @@
 package io.github.texport.superkassa.receiptrenderer.impl.renderer.base
 
-import io.github.texport.superkassa.core.domain.model.receipt.*
+import io.github.texport.superkassa.core.domain.api.model.receipt.*
 
 internal class HtmlBrandingAdapter(private val branding: ReceiptBranding) {
     val beforeHeaderHtml: String get() = wrap(branding.beforeHeaderMsg, "custom-before-header-container")

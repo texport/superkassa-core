@@ -1,6 +1,6 @@
 package io.github.texport.superkassa.receiptrenderer.impl
 
-import io.github.texport.superkassa.core.domain.model.common.Money
+import io.github.texport.superkassa.core.domain.api.model.common.Money
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -50,11 +50,12 @@ internal object ReceiptFormatter {
      * @param epochMillis метка времени в миллисекундах
      * @return форматированная строка даты и времени в текущей системной таймзоне
      */
+    @Suppress("DEPRECATION")
     fun formatDate(epochMillis: Long): String {
         val instant = Instant.fromEpochMilliseconds(epochMillis)
         val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-        val day = localDateTime.dayOfMonth.toString().padStart(2, '0')
-        val month = localDateTime.monthNumber.toString().padStart(2, '0')
+        val day = localDateTime.day.toString().padStart(2, '0')
+        val month = (localDateTime.month.ordinal + 1).toString().padStart(2, '0')
         val year = localDateTime.year
         val hour = localDateTime.hour.toString().padStart(2, '0')
         val minute = localDateTime.minute.toString().padStart(2, '0')

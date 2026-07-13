@@ -1,11 +1,11 @@
-package io.github.texport.superkassa.core.domain.helper.tax
+package io.github.texport.superkassa.core.domain.impl.helper.tax
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import io.github.texport.superkassa.core.domain.model.common.Money
-import io.github.texport.superkassa.core.domain.model.common.TaxRegime
-import io.github.texport.superkassa.core.domain.model.common.VatGroup
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptItem
+import io.github.texport.superkassa.core.domain.api.model.common.Money
+import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
+import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem
 
 class TaxCalculatorTest {
 

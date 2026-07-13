@@ -1,7 +1,7 @@
 package io.github.texport.superkassa.receiptrenderer.impl.renderer.base
 
-import io.github.texport.superkassa.core.domain.model.kkm.*
-import io.github.texport.superkassa.core.domain.model.receipt.*
+import io.github.texport.superkassa.core.domain.api.model.kkm.*
+import io.github.texport.superkassa.core.domain.api.model.receipt.*
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.style.MetaDocumentStyles
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.style.SharedStyles
 import io.github.texport.superkassa.core.string.api.CoreStrings

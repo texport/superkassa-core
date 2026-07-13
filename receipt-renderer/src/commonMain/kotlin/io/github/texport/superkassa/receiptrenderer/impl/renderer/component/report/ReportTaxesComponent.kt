@@ -1,6 +1,6 @@
 package io.github.texport.superkassa.receiptrenderer.impl.renderer.component.report
 
-import io.github.texport.superkassa.core.domain.model.zxreport.TaxAggregate
+import io.github.texport.superkassa.core.domain.api.model.zxreport.TaxAggregate
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.toOperationKey
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.toTaxKey
 

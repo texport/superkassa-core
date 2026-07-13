@@ -1,10 +1,10 @@
 package io.github.texport.superkassa.core.presentation.impl.mapper
 
-import io.github.texport.superkassa.core.domain.model.common.Money
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptOperationType
-import io.github.texport.superkassa.core.presentation.api.model.ParentTicketDto
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptItemDto
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptPaymentDto
+import io.github.texport.superkassa.core.domain.api.model.common.Money
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
+import io.github.texport.superkassa.core.presentation.api.model.receipt.ParentTicketRequest
+import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptItemRequest
+import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptPaymentRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -14,7 +14,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toItemInput maps basic fields correctly`() {
-        val dto = ReceiptItemDto(
+        val dto = ReceiptItemRequest(
             name = "Test Item",
             price = 150.0,
             quantity = 2.0,
@@ -35,7 +35,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toPaymentInput maps payment types correctly`() {
-        val dto = ReceiptPaymentDto(type = "CASH", sum = 500.0)
+        val dto = ReceiptPaymentRequest(type = "CASH", sum = 500.0)
         val payment = ReceiptMapper.toPaymentInput(dto)
         assertEquals("CASH", payment.type)
         assertEquals(500.0, payment.sum)
@@ -43,8 +43,8 @@ class ReceiptMapperTest {
 
     @Test
     fun `toCreateReceiptCommand maps full sell command correctly`() {
-        val itemDto = ReceiptItemDto(name = "Item 1", price = 100.0, quantity = 2.0)
-        val paymentDto = ReceiptPaymentDto(type = "CASH", sum = 200.0)
+        val itemDto = ReceiptItemRequest(name = "Item 1", price = 100.0, quantity = 2.0)
+        val paymentDto = ReceiptPaymentRequest(type = "CASH", sum = 200.0)
 
         val command = ReceiptMapper.toCreateReceiptCommand(
             kkmId = "kkm-1",
@@ -73,7 +73,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toParentTicket parses parent ticket successfully`() {
-        val parentTicketDto = ParentTicketDto(
+        val parentTicketDto = ParentTicketRequest(
             parentTicketNumber = 12345,
             parentTicketDateTime = "2026-06-27T10:00:00Z",
             kgdKkmId = "kgd-1",
@@ -98,7 +98,7 @@ class ReceiptMapperTest {
 
     @Test
     fun `toParentTicket parses parent ticket without Z suffix successfully`() {
-        val parentTicketDto = ParentTicketDto(
+        val parentTicketDto = ParentTicketRequest(
             parentTicketNumber = 12345,
             parentTicketDateTime = "2026-06-27T10:00:00",
             kgdKkmId = "kgd-1",

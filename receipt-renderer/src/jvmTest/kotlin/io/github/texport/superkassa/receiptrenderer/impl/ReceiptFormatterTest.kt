@@ -1,6 +1,6 @@
 package io.github.texport.superkassa.receiptrenderer.impl
 
-import io.github.texport.superkassa.core.domain.model.common.*
+import io.github.texport.superkassa.core.domain.api.model.common.*
 
 
 

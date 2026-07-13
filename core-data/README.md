@@ -1,10 +1,8 @@
 # superkassa-core-data
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.texport/superkassa-core-data.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.texport/superkassa-core-data)
 [![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/texport/superkassa-core/releases)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](https://github.com/texport/superkassa-core/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![CI Build](https://img.shields.io/github/actions/workflow/status/texport/superkassa-core/ci.yml?branch=main&label=CI%20Build)](https://github.com/texport/superkassa-core/actions)
 
 ---
 

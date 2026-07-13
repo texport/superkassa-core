@@ -1,6 +1,6 @@
-package io.github.texport.superkassa.core.domain.validation
+package io.github.texport.superkassa.core.domain.api.validation
 
-import io.github.texport.superkassa.core.domain.exception.ValidationException
+import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

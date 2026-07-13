@@ -1,6 +1,6 @@
-package io.github.texport.superkassa.core.domain.helper.zxreport
+package io.github.texport.superkassa.core.domain.impl.helper.zxreport
 
-import io.github.texport.superkassa.core.domain.model.common.CounterKeyFormats
+import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

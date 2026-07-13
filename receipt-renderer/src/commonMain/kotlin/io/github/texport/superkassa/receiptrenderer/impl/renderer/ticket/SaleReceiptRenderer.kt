@@ -11,11 +11,11 @@ import io.github.texport.superkassa.receiptrenderer.impl.renderer.component.tick
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.component.ticket.PaymentsListComponent
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.component.ticket.SaleItemsComponent
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.component.ticket.TaxesSectionComponent
-import io.github.texport.superkassa.core.domain.model.kkm.*
-import io.github.texport.superkassa.core.domain.model.ofd.*
-import io.github.texport.superkassa.core.domain.model.common.*
-import io.github.texport.superkassa.core.domain.model.receipt.*
-import io.github.texport.superkassa.core.domain.port.QrCodeGeneratorPort
+import io.github.texport.superkassa.core.domain.api.model.kkm.*
+import io.github.texport.superkassa.core.domain.api.model.ofd.*
+import io.github.texport.superkassa.core.domain.api.model.common.*
+import io.github.texport.superkassa.core.domain.api.model.receipt.*
+import io.github.texport.superkassa.core.domain.api.port.integration.QrCodeGeneratorPort
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.MetadataBuilder
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.StandardDocumentInput
 

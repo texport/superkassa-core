@@ -1,7 +1,7 @@
 package io.github.texport.superkassa.receiptrenderer.api
 
-import io.github.texport.superkassa.core.domain.port.QrCodeGeneratorPort
-import io.github.texport.superkassa.core.domain.port.ReceiptRenderPort
+import io.github.texport.superkassa.core.domain.api.port.integration.QrCodeGeneratorPort
+import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderPort
 
 /**
  * Публичный интерфейс API для рендеринга чеков и отчетов Superkassa.

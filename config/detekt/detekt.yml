@@ -38,7 +38,7 @@ style:
     ignoreEnums: true
   WildcardImport:
     active: true
-    excludeImports: ['kotlin.test.*', 'kotlinx.serialization.json.*', 'java.util.*', 'io.github.texport.superkassa.core.domain.model.*', 'io.github.texport.superkassa.core.domain.port.*', 'org.springframework.web.bind.annotation.*', 'io.github.texport.superkassa.core.presentation.api.model.*', 'androidx.room.*']
+    excludeImports: ['kotlin.test.*', 'kotlinx.serialization.json.*', 'java.util.*', 'io.github.texport.superkassa.core.domain.api.model.*', 'io.github.texport.superkassa.core.domain.api.port.integration.*', 'io.github.texport.superkassa.core.domain.api.port.internal.*', 'io.github.texport.superkassa.core.domain.model.*', 'io.github.texport.superkassa.core.domain.port.*', 'org.springframework.web.bind.annotation.*', 'io.github.texport.superkassa.core.presentation.api.model.*', 'androidx.room.*']
   MaxLineLength:
     active: true
     maxLineLength: 180

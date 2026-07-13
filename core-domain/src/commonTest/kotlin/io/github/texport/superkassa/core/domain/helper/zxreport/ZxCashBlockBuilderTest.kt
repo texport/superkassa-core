@@ -1,9 +1,9 @@
-package io.github.texport.superkassa.core.domain.helper.zxreport
+package io.github.texport.superkassa.core.domain.impl.helper.zxreport
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import io.github.texport.superkassa.core.domain.model.common.CounterKeyFormats
-import io.github.texport.superkassa.core.domain.model.common.format
+import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
+import io.github.texport.superkassa.core.domain.api.model.common.format
 
 class ZxCashBlockBuilderTest {
 

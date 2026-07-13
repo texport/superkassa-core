@@ -2,16 +2,16 @@ package io.github.texport.superkassa.core.presentation.impl
 
 import io.mockk.every
 import io.mockk.mockk
-import io.github.texport.superkassa.core.domain.model.auth.KkmUser
-import io.github.texport.superkassa.core.domain.model.auth.UserRole
-import io.github.texport.superkassa.core.domain.model.kkm.FiscalDocumentSnapshot
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptRequest
-import io.github.texport.superkassa.core.domain.model.settings.CoreSettings
-import io.github.texport.superkassa.core.domain.port.StoragePort
-import io.github.texport.superkassa.core.domain.port.PinHasherPort
-import io.github.texport.superkassa.core.domain.port.DeliveryPort
-import io.github.texport.superkassa.core.domain.port.DocumentConvertPort
-import io.github.texport.superkassa.core.domain.port.ReceiptRenderPort
+import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
+import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
+import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
+import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.internal.PinHasherPort
+import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryPort
+import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
+import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderPort
 import io.github.texport.superkassa.core.presentation.api.DeliveryApi
 import kotlin.test.Test
 import kotlin.test.assertTrue

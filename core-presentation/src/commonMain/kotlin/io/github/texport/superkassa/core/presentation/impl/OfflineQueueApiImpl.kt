@@ -1,20 +1,25 @@
 package io.github.texport.superkassa.core.presentation.impl
 
-import io.github.texport.superkassa.core.domain.port.OfflineQueuePort
-import io.github.texport.superkassa.core.domain.usecase.queue.GetQueueStatusUseCase
+import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
+import io.github.texport.superkassa.core.domain.impl.usecase.queue.GetQueueStatusUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.queue.ListQueueItemsUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.queue.RetryFailedQueueItemsUseCase
 import io.github.texport.superkassa.core.presentation.api.OfflineQueueApi
-import io.github.texport.superkassa.core.presentation.api.model.QueueStatusRequest
-import io.github.texport.superkassa.core.presentation.api.model.QueueStatusResponse
+import io.github.texport.superkassa.core.presentation.api.model.queue.*
 
 /**
  * Внутренняя реализация API управления оффлайн-очередью [OfflineQueueApi].
  *
  * @param queuePort Порт управления фоновыми задачами оффлайн-очереди.
  * @param getQueueStatusUseCase Сценарий получения статуса очереди.
+ * @param listQueueItemsUseCase Сценарий получения списка элементов очереди.
+ * @param retryFailedQueueItemsUseCase Сценарий повторной отправки неудавшихся задач.
  */
 internal class OfflineQueueApiImpl(
     private val queuePort: OfflineQueuePort,
-    private val getQueueStatusUseCase: GetQueueStatusUseCase
+    private val getQueueStatusUseCase: GetQueueStatusUseCase,
+    private val listQueueItemsUseCase: ListQueueItemsUseCase,
+    private val retryFailedQueueItemsUseCase: RetryFailedQueueItemsUseCase
 ) : OfflineQueueApi {
 
     override fun canSendDirectly(kkmId: String): Boolean {
@@ -31,5 +36,26 @@ internal class OfflineQueueApiImpl(
 
     override fun processOfflineBatch(kkmId: String, limit: Int): Int {
         return queuePort.processOfflineBatch(kkmId, limit)
+    }
+
+    override fun listQueue(kkmId: String, pin: String): List<QueueItemResponse> {
+        return listQueueItemsUseCase.execute(kkmId, pin).map {
+            QueueItemResponse(
+                id = it.id,
+                lane = it.lane,
+                type = it.type,
+                status = it.status,
+                attempt = it.attempt,
+                nextAttemptAt = it.nextAttemptAt,
+                lastError = it.lastError,
+                errorRu = it.errorRu,
+                errorKk = it.errorKk,
+                errorEn = it.errorEn
+            )
+        }
+    }
+
+    override fun retryFailed(kkmId: String, pin: String): Int {
+        return retryFailedQueueItemsUseCase.execute(kkmId, pin)
     }
 }

@@ -1,4 +1,4 @@
-package io.github.texport.superkassa.core.domain.helper
+package io.github.texport.superkassa.core.domain.impl.helper
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 import kotlin.test.assertFailsWith
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import io.github.texport.superkassa.core.domain.model.common.CounterKeyFormats
+import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 
 class OfdInfoCountersSnapshotParserTest {
 

@@ -1,12 +1,12 @@
-package io.github.texport.superkassa.core.domain.helper.ofd
+package io.github.texport.superkassa.core.domain.impl.helper.ofd
 
 import io.mockk.every
 import io.mockk.mockk
-import io.github.texport.superkassa.core.domain.exception.ValidationException
-import io.github.texport.superkassa.core.domain.model.kkm.KkmInfo
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandType
-import io.github.texport.superkassa.core.domain.model.ofd.OfdServiceInfo
-import io.github.texport.superkassa.core.domain.port.OfdConfigPort
+import io.github.texport.superkassa.core.domain.api.exception.ValidationException
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
+import io.github.texport.superkassa.core.domain.api.port.internal.OfdConfigPort
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

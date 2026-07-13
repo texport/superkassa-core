@@ -1,7 +1,7 @@
 package io.github.texport.superkassa.receiptrenderer.impl.renderer.report
 
-import io.github.texport.superkassa.core.domain.model.kkm.*
-import io.github.texport.superkassa.core.domain.model.shift.*
+import io.github.texport.superkassa.core.domain.api.model.kkm.*
+import io.github.texport.superkassa.core.domain.api.model.shift.*
 
 internal class XReportRenderer : ZxReportCommonRenderer() {
 

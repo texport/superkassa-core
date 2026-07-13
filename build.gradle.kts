@@ -141,6 +141,7 @@ kotlin {
             xcf.add(this)
             export(project(":core-domain"))
             export(project(":core-presentation"))
+            export(project(":core-data"))
             export(project(":offline-queue"))
         }
     }
@@ -150,6 +151,7 @@ kotlin {
             dependencies {
                 api(project(":core-domain"))
                 api(project(":core-presentation"))
+                api(project(":core-data"))
                 api(project(":offline-queue"))
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
@@ -157,7 +159,6 @@ kotlin {
         }
         jvmMain {
             dependencies {
-                api(project(":core-data"))
                 api(libs.slf4j.api)
                 api(libs.jakarta.validation)
                 api(libs.swagger.annotations)
@@ -273,6 +274,6 @@ nmcpAggregation {
     centralPortal {
         username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
         password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
-        publishingType.set("AUTOMATIC")
+        publishingType.set("USER_MANAGED")
     }
 }

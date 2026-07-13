@@ -1,4 +1,4 @@
-package io.github.texport.superkassa.core.domain.usecase.ofd
+package io.github.texport.superkassa.core.domain.impl.usecase.ofd
 
 import io.mockk.every
 import io.mockk.mockk
@@ -6,20 +6,20 @@ import io.mockk.verify
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import io.github.texport.superkassa.core.string.api.CoreStrings
-import io.github.texport.superkassa.core.domain.exception.ValidationException
-import io.github.texport.superkassa.core.domain.helper.KkmCommonHelper
-import io.github.texport.superkassa.core.domain.model.kkm.KkmInfo
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandResult
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandStatus
-import io.github.texport.superkassa.core.domain.model.ofd.OfdCommandType
-import io.github.texport.superkassa.core.domain.model.shift.ShiftStatus
-import io.github.texport.superkassa.core.domain.port.ClockPort
-import io.github.texport.superkassa.core.domain.port.IdGeneratorPort
-import io.github.texport.superkassa.core.domain.port.OfflineQueuePort
-import io.github.texport.superkassa.core.domain.port.StoragePort
-import io.github.texport.superkassa.core.domain.port.TokenCodecPort
-import io.github.texport.superkassa.core.domain.usecase.auth.AuthorizeUserUseCase
-import io.github.texport.superkassa.core.domain.usecase.kkm.EnforceAutonomousLimitsUseCase
+import io.github.texport.superkassa.core.domain.api.exception.ValidationException
+import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
+import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
+import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
+import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
+import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.internal.TokenCodecPort
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.kkm.EnforceAutonomousLimitsUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -253,7 +253,7 @@ class OfdUseCasesTest {
         )
         every { kkmCommonHelper.sendOfdCommand(kkm, OfdCommandType.INFO, "req-id-1") } returns expectedResult
         every { clock.now() } returns 1000L
-        val localOpenShift = io.github.texport.superkassa.core.domain.model.shift.ShiftInfo(
+        val localOpenShift = io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo(
             id = "shift-1", kkmId = "kkm-1", shiftNo = 5L, status = ShiftStatus.OPEN, openedAt = 500L, closedAt = null
         )
         every { storage.findOpenShift("kkm-1") } returns localOpenShift
@@ -302,7 +302,7 @@ class OfdUseCasesTest {
         )
         every { kkmCommonHelper.sendOfdCommand(kkm, OfdCommandType.INFO, "req-id-1") } returns expectedResult
         every { clock.now() } returns 1000L
-        val localOpenShift = io.github.texport.superkassa.core.domain.model.shift.ShiftInfo(
+        val localOpenShift = io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo(
             id = "shift-1", kkmId = "kkm-1", shiftNo = 5L, status = ShiftStatus.OPEN, openedAt = 500L, closedAt = null
         )
         every { storage.findOpenShift("kkm-1") } returns localOpenShift
@@ -435,7 +435,7 @@ class OfdUseCasesTest {
         )
         every { kkmCommonHelper.sendOfdCommand(kkm, OfdCommandType.INFO, "req-id-1") } returns expectedResult
         every { clock.now() } returns 1000L
-        val localOpenShift = io.github.texport.superkassa.core.domain.model.shift.ShiftInfo(
+        val localOpenShift = io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo(
             id = "shift-1", kkmId = "kkm-1", shiftNo = 5L, status = ShiftStatus.OPEN, openedAt = 500L, closedAt = null
         )
         every { storage.findOpenShift("kkm-1") } returns localOpenShift

@@ -1,25 +1,25 @@
-package io.github.texport.superkassa.core.domain.usecase.counter
+package io.github.texport.superkassa.core.domain.impl.usecase.counter
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import io.github.texport.superkassa.core.domain.model.auth.KkmUser
-import io.github.texport.superkassa.core.domain.model.auth.UserRole
-import io.github.texport.superkassa.core.domain.model.common.CounterScopes
-import io.github.texport.superkassa.core.domain.model.common.CounterSnapshot
-import io.github.texport.superkassa.core.domain.model.common.Money
-import io.github.texport.superkassa.core.domain.model.common.TaxRegime
-import io.github.texport.superkassa.core.domain.model.common.VatGroup
-import io.github.texport.superkassa.core.domain.model.kkm.FiscalDocumentSnapshot
-import io.github.texport.superkassa.core.domain.model.kkm.KkmInfo
-import io.github.texport.superkassa.core.domain.model.queue.QueueTask
-import io.github.texport.superkassa.core.domain.model.receipt.PaymentType
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptItem
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptOperationType
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptPayment
-import io.github.texport.superkassa.core.domain.model.receipt.ReceiptRequest
-import io.github.texport.superkassa.core.domain.model.shift.ShiftInfo
-import io.github.texport.superkassa.core.domain.model.shift.ShiftStatus
-import io.github.texport.superkassa.core.domain.port.StoragePort
+import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
+import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
+import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
+import io.github.texport.superkassa.core.domain.api.model.common.CounterSnapshot
+import io.github.texport.superkassa.core.domain.api.model.common.Money
+import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
+import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
+import io.github.texport.superkassa.core.domain.api.model.receipt.PaymentType
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptPayment
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
+import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 
 
 class UpdateCountersUseCaseTest {
@@ -158,7 +158,7 @@ class UpdateCountersUseCaseTest {
             change = Money(500, 0), // 500 change
             discount = Money(100, 0),
             markup = Money(50, 0),
-            taxRegime = io.github.texport.superkassa.core.domain.model.common.TaxRegime.MIXED
+            taxRegime = io.github.texport.superkassa.core.domain.api.model.common.TaxRegime.MIXED
         )
 
         updater.execute("kkm-1", "shift-1", request, isOffline = true)

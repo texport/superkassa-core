@@ -82,10 +82,10 @@ Here is a quick example of how to initialize and interact with `SuperkassaApi` i
 
 ```kotlin
 import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
-import io.github.texport.superkassa.core.presentation.api.model.KkmInitDirectRequest
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptSellRequest
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptItemDto
-import io.github.texport.superkassa.core.presentation.api.model.ReceiptPaymentDto
+import io.github.texport.superkassa.core.presentation.api.model.kkm.KkmInitDirectRequest
+import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptSellRequest
+import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptItemRequest
+import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptPaymentRequest
 
 // Retrieve the API implementation (e.g., via dependency injection)
 val api: SuperkassaApi = ... 
@@ -110,7 +110,7 @@ val sellResult = api.createSellReceipt(
     pin = "1111",
     request = ReceiptSellRequest(
         items = listOf(
-            ReceiptItemDto(
+            ReceiptItemRequest(
                 name = "Фискальный товар",
                 price = 1500.0,
                 quantity = 1L,
@@ -119,7 +119,7 @@ val sellResult = api.createSellReceipt(
             )
         ),
         payments = listOf(
-            ReceiptPaymentDto(type = "CASH", sum = 1500.0)
+            ReceiptPaymentRequest(type = "CASH", sum = 1500.0)
         ),
         idempotencyKey = "unique-receipt-key-1"
     )
@@ -134,4 +134,32 @@ The project follows a strict Clean Architecture boundary design:
 
 - **core-domain (Entities & Use Cases):** Contains the core business models and interfaces. There is absolutely no external dependency on presentation logic, and all domain models are completely decoupled from serialization logic (e.g. no `@Serializable` annotations).
 - **core-data (Adapters & Infrastructure):** Implements ports for storage, OFD network connections, and offline queuing. It relies only on `core-domain`.
-- **core-presentation (API & DTOs):** Exposes a clean facade layer via `SuperkassaApi`. All serialization logic and API request/response structures are declared here as decoupled DTOs (e.g. `UserRoleDto`, `TaxRegimeDto`), preventing serialization libraries or annotations from leaking into the domain layer.
+- **core-presentation (API & Requests/Responses):** Exposes a clean facade layer via `SuperkassaApi`. All serialization logic and API request/response structures are declared here as decoupled structures (e.g. `UserRole`, `TaxRegime`, `ReceiptSellRequest`), preventing serialization libraries or annotations from leaking into the domain layer.
+
+---
+
+### Required Ports for Platform Integration / Обязательные порты для платформенной интеграции
+
+To integrate `superkassa-core` into your host platform (JVM Server, Android App, iOS App), the developer must provide implementation adapters for the following core domain ports:
+
+Для интеграции `superkassa-core` в целевую платформу (JVM Сервер, Android, iOS) разработчик должен предоставить реализации следующих портов:
+
+- **`StoragePort`**: 
+  - *EN*: Interface to manage persistence of KKM models, users, active shifts, counters, and document history.
+  - *RU*: Интерфейс для сохранения и поиска данных ККМ, пользователей, смен, счетчиков и фискальных документов.
+- **`CoreSettingsRepositoryPort`**:
+  - *EN*: Interface to load and save system-wide core configurations (`CoreSettings`).
+  - *RU*: Интерфейс для чтения и записи системных настроек (`CoreSettings`).
+- **`DeliveryPort`**:
+  - *EN*: Handles delivering generated receipts/tickets via external communication channels (SMS, Email).
+  - *RU*: Обрабатывает отправку чеков через внешние каналы связи (SMS, Email).
+- **`ReceiptRenderPort` & `DocumentConvertPort`**:
+  - *EN*: Responsible for layout rendering of receipts (e.g. into HTML) and converting them into PDF format.
+  - *RU*: Отвечают за визуализацию чеков (например, в HTML) и их конвертацию в PDF.
+- **`OfdConnectionPort` / `OfdManagerPort`**:
+  - *EN*: Handles establishing physical connections and raw socket payload transfer to and from OFD hosts.
+  - *RU*: Отвечают за низкоуровневые TCP/HTTP соединения и обмен пакетами с серверами ОФД.
+- **`ClockPort` / `IdGeneratorPort` / `PinHasherPort`**:
+  - *EN*: Platform helpers for system time, UUID generation, and secure hashing (PBKDF2/SHA256).
+  - *RU*: Системные помощники для времени, генерации UUID и безопасного хеширования ПИН-кодов.
+

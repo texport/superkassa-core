@@ -1,15 +1,15 @@
-package io.github.texport.superkassa.core.domain.usecase.auth
+package io.github.texport.superkassa.core.domain.impl.usecase.auth
 
 import io.mockk.every
 import io.mockk.mockk
-import io.github.texport.superkassa.core.domain.exception.ForbiddenException
-import io.github.texport.superkassa.core.domain.exception.NotFoundException
-import io.github.texport.superkassa.core.domain.exception.ValidationException
-import io.github.texport.superkassa.core.domain.model.auth.KkmUser
-import io.github.texport.superkassa.core.domain.model.auth.UserRole
-import io.github.texport.superkassa.core.domain.model.kkm.KkmInfo
-import io.github.texport.superkassa.core.domain.port.PinHasherPort
-import io.github.texport.superkassa.core.domain.port.StoragePort
+import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
+import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
+import io.github.texport.superkassa.core.domain.api.exception.ValidationException
+import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
+import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.port.internal.PinHasherPort
+import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

@@ -1,4 +1,4 @@
-package io.github.texport.superkassa.core.domain.helper.zxreport
+package io.github.texport.superkassa.core.domain.impl.helper.zxreport
 
 import java.time.Instant
 import java.time.ZoneId
@@ -11,10 +11,10 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
-import io.github.texport.superkassa.core.data.ofd.OfdRequestFactory
-import io.github.texport.superkassa.core.domain.model.common.CounterKeyFormats
-import io.github.texport.superkassa.core.domain.model.common.VatGroup
-import io.github.texport.superkassa.core.domain.model.ofd.OfdServiceInfo
+import io.github.texport.superkassa.core.data.impl.ofd.OfdRequestFactory
+import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
+import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
 
 /**
  * Интеграционные тесты zxReport против внешнего ZXReportBuilder из ofd-proto-codec.
@@ -29,7 +29,7 @@ class ZxReportBuilderIntegrationTest {
     )
 
     private fun buildServicePayload(now: Long): kotlinx.serialization.json.JsonObject {
-        val serviceInfo = io.github.texport.superkassa.core.domain.model.ofd.OfdServiceInfo(
+        val serviceInfo = io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo(
             orgTitle = "Test Org",
             orgAddress = "Test Address",
             orgAddressKz = "Test Address KZ",

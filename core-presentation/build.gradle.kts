@@ -74,7 +74,7 @@ kover {
         filters {
             excludes {
                 classes(
-                    "io.github.texport.superkassa.core.presentation.model.*",
+                    "io.github.texport.superkassa.core.presentation.api.model.*",
                     "io.github.texport.superkassa.core.presentation.api.annotations.*"
                 )
             }

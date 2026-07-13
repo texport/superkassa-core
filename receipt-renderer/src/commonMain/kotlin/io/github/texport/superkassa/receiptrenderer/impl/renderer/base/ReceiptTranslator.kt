@@ -1,6 +1,6 @@
 package io.github.texport.superkassa.receiptrenderer.impl.renderer.base
 
-import io.github.texport.superkassa.core.domain.model.receipt.*
+import io.github.texport.superkassa.core.domain.api.model.receipt.*
 import kotlinx.serialization.json.Json
 
 /**

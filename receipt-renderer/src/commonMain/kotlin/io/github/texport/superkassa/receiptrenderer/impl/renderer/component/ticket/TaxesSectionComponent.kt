@@ -2,8 +2,8 @@ package io.github.texport.superkassa.receiptrenderer.impl.renderer.component.tic
 
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.formatted
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.translationKey
-import io.github.texport.superkassa.core.domain.model.receipt.TaxLine
-import io.github.texport.superkassa.core.domain.model.common.VatGroup
+import io.github.texport.superkassa.core.domain.api.model.receipt.TaxLine
+import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 
 internal object TaxesSectionComponent {
     fun render(

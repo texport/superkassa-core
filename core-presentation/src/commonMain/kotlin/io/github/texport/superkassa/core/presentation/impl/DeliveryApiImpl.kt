@@ -1,14 +1,14 @@
 package io.github.texport.superkassa.core.presentation.impl
 
-import io.github.texport.superkassa.core.domain.port.StoragePort
-import io.github.texport.superkassa.core.domain.port.PinHasherPort
-import io.github.texport.superkassa.core.domain.port.DeliveryPort
-import io.github.texport.superkassa.core.domain.port.DocumentConvertPort
-import io.github.texport.superkassa.core.domain.port.ReceiptRenderPort
-import io.github.texport.superkassa.core.domain.model.settings.CoreSettings
-import io.github.texport.superkassa.core.domain.usecase.auth.AuthorizeUserUseCase
-import io.github.texport.superkassa.core.domain.helper.ReceiptDeliveryHelper
-import io.github.texport.superkassa.core.domain.usecase.receipt.RetryReceiptDeliveryUseCase
+import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.internal.PinHasherPort
+import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryPort
+import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
+import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderPort
+import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
+import io.github.texport.superkassa.core.domain.impl.helper.ReceiptDeliveryHelper
+import io.github.texport.superkassa.core.domain.impl.usecase.receipt.RetryReceiptDeliveryUseCase
 import io.github.texport.superkassa.core.presentation.api.DeliveryApi
 
 /**

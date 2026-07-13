@@ -1,16 +1,17 @@
 package io.github.texport.superkassa.core.domain.service
 
 import kotlin.test.*
-import io.github.texport.superkassa.core.data.adapter.security.Base64TokenCodecAdapter
-import io.github.texport.superkassa.core.data.adapter.ofd.OfdConfigAdapter
-import io.github.texport.superkassa.core.data.adapter.security.Sha256PinHasherAdapter
-import io.github.texport.superkassa.core.domain.exception.ValidationException
-import io.github.texport.superkassa.core.domain.model.common.*
-import io.github.texport.superkassa.core.domain.model.ofd.*
-import io.github.texport.superkassa.core.domain.port.ClockPort
-import io.github.texport.superkassa.core.domain.port.IdGeneratorPort
-import io.github.texport.superkassa.core.domain.port.OfdManagerPort
-import io.github.texport.superkassa.core.domain.usecase.kkm.RegisterKkmUseCase
+import io.github.texport.superkassa.core.data.impl.adapter.security.Base64TokenCodecAdapter
+import io.github.texport.superkassa.core.data.impl.adapter.ofd.OfdConfigAdapter
+import io.github.texport.superkassa.core.data.impl.adapter.security.Sha256PinHasherAdapter
+import io.github.texport.superkassa.core.domain.api.exception.ValidationException
+import io.github.texport.superkassa.core.domain.api.model.common.*
+import io.github.texport.superkassa.core.domain.api.model.ofd.*
+import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
+import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidatorPort
+import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
+import io.github.texport.superkassa.core.domain.api.port.internal.OfdManagerPort
+import io.github.texport.superkassa.core.domain.impl.usecase.kkm.RegisterKkmUseCase
 import io.github.texport.superkassa.core.support.TestStoragePort
 
 class TimeValidationTest {
@@ -20,8 +21,8 @@ class TimeValidationTest {
     private val tokenCodec = Base64TokenCodecAdapter()
     private val pinHasher = Sha256PinHasherAdapter()
 
-    private val ofdCommandRequestFactory = io.github.texport.superkassa.core.domain.helper.ofd.OfdCommandRequestFactory(ofdConfigPort)
-    private val generateRequestNumberUseCase = io.github.texport.superkassa.core.domain.usecase.ofd.GenerateRequestNumberUseCase(storage)
+    private val ofdCommandRequestFactory = io.github.texport.superkassa.core.domain.impl.helper.ofd.OfdCommandRequestFactory(ofdConfigPort)
+    private val generateRequestNumberUseCase = io.github.texport.superkassa.core.domain.impl.usecase.ofd.GenerateRequestNumberUseCase(storage)
 
     private val testClock = object : ClockPort {
         override fun now(): Long = System.currentTimeMillis()
@@ -48,11 +49,11 @@ class TimeValidationTest {
 
     @Test
     fun `initKkmSimple throws SYSTEM_TIME_INVALID when system time is invalid`() {
-        val badTimeValidator = object : io.github.texport.superkassa.core.domain.port.TimeValidatorPort {
+        val badTimeValidator = object : TimeValidatorPort {
             override fun validate(clock: ClockPort) = TimeValidationResult(false, "RANGE")
         }
 
-        val kkmCommonHelper = io.github.texport.superkassa.core.domain.helper.KkmCommonHelper(
+        val kkmCommonHelper = io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper(
             storage = storage,
             clock = testClock,
             timeValidator = badTimeValidator,
@@ -62,7 +63,7 @@ class TimeValidationTest {
             ofd = ofdManager
         )
 
-        val initializeKkmRegistrationUseCase = io.github.texport.superkassa.core.domain.usecase.kkm.InitializeKkmRegistrationUseCase(
+        val initializeKkmRegistrationUseCase = io.github.texport.superkassa.core.domain.impl.usecase.kkm.InitializeKkmRegistrationUseCase(
             storage = storage,
             clock = testClock,
             idGenerator = testIdGenerator,

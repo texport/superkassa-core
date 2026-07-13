@@ -1,7 +1,9 @@
 package io.github.texport.superkassa.core.presentation.impl.mapper
 
-import io.github.texport.superkassa.core.domain.model.ofd.OfdNomenclatureItem
-import io.github.texport.superkassa.core.domain.model.ofd.OfdNomenclatureLookupResult
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdNomenclatureItem
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdNomenclatureLookupResult
+import io.github.texport.superkassa.core.presentation.api.model.ofd.NomenclatureItemResponse
+import io.github.texport.superkassa.core.presentation.api.model.ofd.NomenclatureLookupResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -10,14 +12,14 @@ import kotlin.test.assertNotNull
 class NomenclatureMapperTest {
 
     @Test
-    fun testToDtoNotFound() {
+    fun testToResponseNotFound() {
         val result = OfdNomenclatureLookupResult(
             found = false,
             item = null,
             resultCode = 1,
             resultText = "Not Found"
         )
-        val response = NomenclatureMapper.toDto(result)
+        val response = OfdMapper.toResponse(result)
         assertEquals(false, response.found)
         assertNull(response.item)
         assertEquals(1, response.resultCode)
@@ -25,7 +27,7 @@ class NomenclatureMapperTest {
     }
 
     @Test
-    fun testToDtoFound() {
+    fun testToResponseFound() {
         val item = OfdNomenclatureItem(
             id = 1L,
             barcode = "12345",
@@ -42,20 +44,20 @@ class NomenclatureMapperTest {
             resultCode = 0,
             resultText = "OK"
         )
-        val response = NomenclatureMapper.toDto(result)
+        val response = OfdMapper.toResponse(result)
         assertEquals(true, response.found)
         assertEquals(0, response.resultCode)
         assertEquals("OK", response.resultText)
         
-        val dto = response.item
-        assertNotNull(dto)
-        assertEquals(1L, dto.id)
-        assertEquals("12345", dto.barcode)
-        assertEquals("Test Item", dto.name)
-        assertEquals("Test Item Kk", dto.nameKk)
-        assertEquals("ntin-123", dto.ntin)
-        assertEquals(1000.0, dto.price)
-        assertEquals("163", dto.measureUnitCode)
-        assertEquals("VAT_16", dto.vatGroup)
+        val itemResponse = response.item
+        assertNotNull(itemResponse)
+        assertEquals(1L, itemResponse.id)
+        assertEquals("12345", itemResponse.barcode)
+        assertEquals("Test Item", itemResponse.name)
+        assertEquals("Test Item Kk", itemResponse.nameKk)
+        assertEquals("ntin-123", itemResponse.ntin)
+        assertEquals(1000.0, itemResponse.price)
+        assertEquals("163", itemResponse.measureUnitCode)
+        assertEquals("VAT_16", itemResponse.vatGroup)
     }
 }

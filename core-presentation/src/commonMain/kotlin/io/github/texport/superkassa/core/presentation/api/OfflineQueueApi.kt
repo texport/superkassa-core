@@ -1,7 +1,6 @@
 package io.github.texport.superkassa.core.presentation.api
 
-import io.github.texport.superkassa.core.presentation.api.model.QueueStatusRequest
-import io.github.texport.superkassa.core.presentation.api.model.QueueStatusResponse
+import io.github.texport.superkassa.core.presentation.api.model.queue.*
 
 /**
  * Интерфейс API управления автономной (оффлайн) очередью.
@@ -33,4 +32,22 @@ interface OfflineQueueApi {
      * @return Количество успешно отправленных команд.
      */
     fun processOfflineBatch(kkmId: String, limit: Int = 10): Int
+
+    /**
+     * Получить список задач из офлайн-очереди ОФД.
+     *
+     * @param kkmId ID ККМ.
+     * @param pin ПИН-код администратора.
+     * @return Список элементов очереди.
+     */
+    fun listQueue(kkmId: String, pin: String): List<QueueItemResponse>
+
+    /**
+     * Перезапустить задачи со статусом FAILED.
+     *
+     * @param kkmId ID ККМ.
+     * @param pin ПИН-код администратора.
+     * @return Количество обновленных задач.
+     */
+    fun retryFailed(kkmId: String, pin: String): Int
 }

@@ -1,9 +1,9 @@
-package io.github.texport.superkassa.core.domain.exception
+package io.github.texport.superkassa.core.domain.api.exception
 
 
 import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import io.github.texport.superkassa.core.string.api.CoreStrings
-import io.github.texport.superkassa.core.domain.model.auth.UserRole
+import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

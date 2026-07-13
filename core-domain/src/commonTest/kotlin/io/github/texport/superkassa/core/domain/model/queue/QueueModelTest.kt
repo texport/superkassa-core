@@ -1,4 +1,4 @@
-package io.github.texport.superkassa.core.domain.model.queue
+package io.github.texport.superkassa.core.domain.api.model.queue
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,4 +1,4 @@
-package io.github.texport.superkassa.core.domain.model.common
+package io.github.texport.superkassa.core.domain.api.model.common
 
 import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import kotlin.test.Test

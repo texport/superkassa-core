@@ -25,3 +25,6 @@ local.properties
 
 # Codex Rules
 .agents/AGENTS.md
+
+# Log files
+*.log
