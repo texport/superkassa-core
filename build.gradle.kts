@@ -19,7 +19,7 @@ plugins {
 }
 
 group = "io.github.texport"
-version = "1.1.3"
+version = "1.1.4"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
@@ -184,6 +184,7 @@ kotlin {
                 api(project(":offline-queue"))
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)
+                api(libs.kotlinx.datetime)
             }
         }
         jvmMain {
@@ -315,6 +316,7 @@ nmcp {
     publishAllPublicationsToCentralPortal {
         username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
         password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
+        publishingType.set("USER_MANAGED")
     }
 }
 
