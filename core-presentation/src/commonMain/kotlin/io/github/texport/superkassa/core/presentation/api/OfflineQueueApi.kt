@@ -14,6 +14,7 @@ interface OfflineQueueApi {
      * @param kkmId Уникальный идентификатор ККМ.
      * @return true, если прямая отправка разрешена.
      */
+    @Throws(Exception::class)
     fun canSendDirectly(kkmId: String): Boolean
 
     /**
@@ -22,6 +23,7 @@ interface OfflineQueueApi {
      * @param request Запрос с уникальным идентификатором ККМ.
      * @return Информация о статусе и размере очереди [QueueStatusResponse].
      */
+    @Throws(Exception::class)
     fun getQueueStatus(request: QueueStatusRequest): QueueStatusResponse
 
     /**
@@ -31,6 +33,7 @@ interface OfflineQueueApi {
      * @param limit Максимальное количество команд для обработки за один вызов.
      * @return Количество успешно отправленных команд.
      */
+    @Throws(Exception::class)
     fun processOfflineBatch(kkmId: String, limit: Int = 10): Int
 
     /**
@@ -40,6 +43,7 @@ interface OfflineQueueApi {
      * @param pin ПИН-код администратора.
      * @return Список элементов очереди.
      */
+    @Throws(Exception::class)
     fun listQueue(kkmId: String, pin: String): List<QueueItemResponse>
 
     /**
@@ -49,5 +53,6 @@ interface OfflineQueueApi {
      * @param pin ПИН-код администратора.
      * @return Количество обновленных задач.
      */
+    @Throws(Exception::class)
     fun retryFailed(kkmId: String, pin: String): Int
 }

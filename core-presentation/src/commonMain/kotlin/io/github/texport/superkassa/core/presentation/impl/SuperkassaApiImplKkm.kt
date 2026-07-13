@@ -10,6 +10,7 @@ import io.github.texport.superkassa.core.presentation.api.model.kkm.*
 import io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper
 import io.github.texport.superkassa.core.string.api.CoreStrings
 
+@Throws(Exception::class)
 fun SuperkassaApiImpl.initKkmImpl(pin: String, request: KkmInitDirectRequest): KkmResponse =
     registerKkmUseCase.initKkm(
         pin = pin,
@@ -24,6 +25,7 @@ fun SuperkassaApiImpl.initKkmImpl(pin: String, request: KkmInitDirectRequest): K
         okved = request.okved
     ).let { KkmMapper.toResponse(it) }
 
+@Throws(Exception::class)
 fun SuperkassaApiImpl.initKkmSimpleImpl(pin: String, request: KkmInitSimpleRequest): KkmResponse =
     registerKkmUseCase.initKkmSimple(
         pin = pin,

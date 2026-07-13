@@ -22,10 +22,12 @@ internal class OfflineQueueApiImpl(
     private val retryFailedQueueItemsUseCase: RetryFailedQueueItemsUseCase
 ) : OfflineQueueApi {
 
+    @Throws(Exception::class)
     override fun canSendDirectly(kkmId: String): Boolean {
         return queuePort.canSendDirectly(kkmId)
     }
 
+    @Throws(Exception::class)
     override fun getQueueStatus(request: QueueStatusRequest): QueueStatusResponse {
         val status = getQueueStatusUseCase.execute(request.kkmId)
         return QueueStatusResponse(
@@ -34,10 +36,12 @@ internal class OfflineQueueApiImpl(
         )
     }
 
+    @Throws(Exception::class)
     override fun processOfflineBatch(kkmId: String, limit: Int): Int {
         return queuePort.processOfflineBatch(kkmId, limit)
     }
 
+    @Throws(Exception::class)
     override fun listQueue(kkmId: String, pin: String): List<QueueItemResponse> {
         return listQueueItemsUseCase.execute(kkmId, pin).map {
             QueueItemResponse(
@@ -55,6 +59,7 @@ internal class OfflineQueueApiImpl(
         }
     }
 
+    @Throws(Exception::class)
     override fun retryFailed(kkmId: String, pin: String): Int {
         return retryFailedQueueItemsUseCase.execute(kkmId, pin)
     }

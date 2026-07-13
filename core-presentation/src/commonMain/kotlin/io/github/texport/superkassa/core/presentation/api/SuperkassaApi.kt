@@ -23,6 +23,7 @@ interface SuperkassaApi : PrintApi {
      *
      * @return Список ставок НДС.
      */
+    @Throws(Exception::class)
     fun listVatRates(): List<VatRateResponse>
 
     /**
@@ -32,6 +33,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Параметры инициализации ККМ.
      * @return Сведения об инициализированной ККМ.
      */
+    @Throws(Exception::class)
     fun initKkm(pin: String, request: KkmInitDirectRequest): KkmResponse
 
     /**
@@ -41,6 +43,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Упрощенный запрос на инициализацию.
      * @return Сведения об инициализированной ККМ.
      */
+    @Throws(Exception::class)
     fun initKkmSimple(pin: String, request: KkmInitSimpleRequest): KkmResponse
 
     /**
@@ -48,6 +51,7 @@ interface SuperkassaApi : PrintApi {
      *
      * @return FactoryNumberResponse с номером и годом.
      */
+    @Throws(Exception::class)
     fun generateFactoryInfo(): FactoryNumberResponse
 
     /**
@@ -56,6 +60,7 @@ interface SuperkassaApi : PrintApi {
      * @param id ID ККМ.
      * @return Сведения о ККМ.
      */
+    @Throws(Exception::class)
     fun getKkm(id: String): KkmResponse
 
     /**
@@ -64,6 +69,7 @@ interface SuperkassaApi : PrintApi {
      * @param params Параметры пагинации, сортировки и поиска.
      * @return Результат поиска ККМ.
      */
+    @Throws(Exception::class)
     fun listKkms(params: KkmListParams): KkmListResponse
 
     /**
@@ -73,6 +79,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return True при успешном удалении.
      */
+    @Throws(Exception::class)
     fun deleteKkm(id: String, pin: String): Boolean
 
     /**
@@ -82,6 +89,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Список денежных счетчиков.
      */
+    @Throws(Exception::class)
     fun listCounters(kkmId: String, pin: String): List<CounterSnapshotResponse>
 
     /**
@@ -92,6 +100,7 @@ interface SuperkassaApi : PrintApi {
      * @param autoCloseShift Флаг автоматического закрытия смены.
      * @return Сведения об обновленной ККМ.
      */
+    @Throws(Exception::class)
     fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean): KkmResponse
 
     /**
@@ -103,6 +112,7 @@ interface SuperkassaApi : PrintApi {
      * @param defaultVatGroup Новая группа НДС по умолчанию.
      * @return Сведения об обновленной ККМ.
      */
+    @Throws(Exception::class)
     fun updateTaxSettings(kkmId: String, pin: String, taxRegime: TaxRegime, defaultVatGroup: VatGroup): KkmResponse
 
     /**
@@ -113,6 +123,7 @@ interface SuperkassaApi : PrintApi {
      * @param branding Настройки брендирования чеков.
      * @return Сведения об обновленной ККМ.
      */
+    @Throws(Exception::class)
     fun updateBrandingSettings(kkmId: String, pin: String, branding: ReceiptBrandingRequest): KkmResponse
 
     /**
@@ -122,6 +133,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Сведения о ККМ в состоянии программирования.
      */
+    @Throws(Exception::class)
     fun enterProgramming(kkmId: String, pin: String): KkmResponse
 
     /**
@@ -131,6 +143,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Сведения об обновленной ККМ.
      */
+    @Throws(Exception::class)
     fun exitProgramming(kkmId: String, pin: String): KkmResponse
 
     /**
@@ -140,6 +153,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Список пользователей.
      */
+    @Throws(Exception::class)
     fun listUsers(kkmId: String, pin: String): List<UserResponse>
 
     /**
@@ -150,6 +164,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Данные создаваемого пользователя.
      * @return Созданный пользователь.
      */
+    @Throws(Exception::class)
     fun createUser(kkmId: String, pin: String, request: UserCreateRequest): UserResponse
 
     /**
@@ -161,6 +176,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Новые параметры пользователя.
      * @return Обновленный пользователь.
      */
+    @Throws(Exception::class)
     fun updateUser(kkmId: String, userId: String, pin: String, request: UserUpdateRequest): UserResponse
 
     /**
@@ -171,6 +187,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return True при успешном удалении.
      */
+    @Throws(Exception::class)
     fun deleteUser(kkmId: String, userId: String, pin: String): Boolean
 
     /**
@@ -180,6 +197,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Запрос с идентификатором ККМ.
      * @return Информация об авторизации в ОФД.
      */
+    @Throws(Exception::class)
     fun getOfdAuthInfo(pin: String, request: OfdAuthInfoRequest): OfdAuthInfoResponse
 
     /**
@@ -190,6 +208,7 @@ interface SuperkassaApi : PrintApi {
      * @param token Новый токен.
      * @return True при успешном обновлении.
      */
+    @Throws(Exception::class)
     fun updateOfdToken(kkmId: String, pin: String, token: String): Boolean
 
     /**
@@ -198,6 +217,7 @@ interface SuperkassaApi : PrintApi {
      * @param kkmId ID ККМ.
      * @return Результат выполнения команды.
      */
+    @Throws(Exception::class)
     fun checkOfdConnection(kkmId: String): OfdCommandResponse
 
     /**
@@ -206,6 +226,7 @@ interface SuperkassaApi : PrintApi {
      * @param kkmId ID ККМ.
      * @return Результат выполнения команды.
      */
+    @Throws(Exception::class)
     fun getOfdInfo(kkmId: String): OfdCommandResponse
 
     /**
@@ -215,6 +236,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Результат выполнения команды ОФД.
      */
+    @Throws(Exception::class)
     fun syncOfdServiceInfo(kkmId: String, pin: String): OfdCommandResponse
 
     /**
@@ -224,6 +246,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код администратора.
      * @return Результат выполнения команды ОФД.
      */
+    @Throws(Exception::class)
     fun syncOfdCounters(kkmId: String, pin: String): OfdCommandResponse
 
     /**
@@ -232,6 +255,7 @@ interface SuperkassaApi : PrintApi {
      * @param command Команда создания чека.
      * @return Результат выполнения фискальной операции.
      */
+    @Throws(Exception::class)
     fun createReceipt(command: CreateReceiptCommand): ReceiptResponse
 
     /**
@@ -242,6 +266,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Запрос продажи.
      * @return Результат создания чека.
      */
+    @Throws(Exception::class)
     fun createSellReceipt(kkmId: String, pin: String, request: ReceiptSellRequest): ReceiptResponse
 
     /**
@@ -252,6 +277,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Запрос возврата продажи.
      * @return Результат создания чека.
      */
+    @Throws(Exception::class)
     fun createSellReturnReceipt(kkmId: String, pin: String, request: ReceiptSellReturnRequest): ReceiptResponse
 
     /**
@@ -262,6 +288,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Запрос покупки.
      * @return Результат создания чека.
      */
+    @Throws(Exception::class)
     fun createBuyReceipt(kkmId: String, pin: String, request: ReceiptBuyRequest): ReceiptResponse
 
     /**
@@ -272,6 +299,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Запрос возврата покупки.
      * @return Результат создания чека.
      */
+    @Throws(Exception::class)
     fun createBuyReturnReceipt(kkmId: String, pin: String, request: ReceiptBuyReturnRequest): ReceiptResponse
 
     /**
@@ -282,6 +310,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Данные операции.
      * @return Результат проведения операции.
      */
+    @Throws(Exception::class)
     fun cashIn(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResponse
 
     /**
@@ -292,6 +321,7 @@ interface SuperkassaApi : PrintApi {
      * @param request Данные операции.
      * @return Результат проведения операции.
      */
+    @Throws(Exception::class)
     fun cashOut(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResponse
 
     // Вспомогательные комментарии для смен
@@ -303,6 +333,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код кассира.
      * @return Информация по открытой смене.
      */
+    @Throws(Exception::class)
     fun openShift(kkmId: String, pin: String): ShiftResponse
 
     /**
@@ -312,6 +343,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код кассира.
      * @return Результат генерации сменного Z-отчета.
      */
+    @Throws(Exception::class)
     fun closeShift(kkmId: String, pin: String): ReportResponse
 
     /**
@@ -321,6 +353,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код пользователя.
      * @return Информация об открытой смене.
      */
+    @Throws(Exception::class)
     fun getOpenShift(kkmId: String, pin: String): ShiftResponse
 
     /**
@@ -332,6 +365,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код пользователя.
      * @return Список смен.
      */
+    @Throws(Exception::class)
     fun listShifts(kkmId: String, limit: Int, offset: Int, pin: String): List<ShiftResponse>
 
     /**
@@ -344,6 +378,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код пользователя.
      * @return Список снимков фискальных документов.
      */
+    @Throws(Exception::class)
     fun listShiftDocuments(
         kkmId: String,
         shiftId: String,
@@ -363,6 +398,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код пользователя.
      * @return Список фискальных документов.
      */
+    @Throws(Exception::class)
     fun listFiscalDocumentsByPeriod(
         kkmId: String,
         fromInclusive: Long,
@@ -379,6 +415,7 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код кассира/администратора.
      * @return Сведения об отправке/формировании отчета.
      */
+    @Throws(Exception::class)
     fun createReport(kkmId: String, pin: String): ReportResponse
 
     /**
@@ -388,5 +425,6 @@ interface SuperkassaApi : PrintApi {
      * @param request Запрос с идентификатором кассы и штрихкодом.
      * @return Результат поиска номенклатуры.
      */
+    @Throws(Exception::class)
     fun lookupNomenclature(pin: String, request: NomenclatureLookupRequest): NomenclatureLookupResponse
 }

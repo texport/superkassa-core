@@ -19,12 +19,19 @@ import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
  */
 interface StoragePort {
     /**
-     * Выполняет блок кода внутри транзакции базы данных.
-     *
-     * @param block функциональный блок, выполняемый в рамках транзакции.
-     * @return результат выполнения блока.
+     * Начало транзакции.
      */
-    fun <T> inTransaction(block: () -> T): T
+    fun startTransaction() {}
+
+    /**
+     * Фиксация транзакции.
+     */
+    fun commitTransaction() {}
+
+    /**
+     * Откат изменений транзакции.
+     */
+    fun rollbackTransaction() {}
 
     /**
      * Регистрирует ККМ в базе данных.
@@ -543,4 +550,24 @@ interface StoragePort {
      * @return `true`, если результат сохранен успешно; `false` в противном случае.
      */
     fun updateIdempotencyResponse(kkmId: String, idempotencyKey: String, responseRef: String?): Boolean
+
+    /**
+     * Выполняет блок кода внутри транзакции базы данных.
+     *
+     * @param block функциональный блок, выполняемый в рамках транзакции.
+     * @return результат выполнения блока.
+     */
+    @OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+    @kotlin.native.HiddenFromObjC
+    fun <T> inTransaction(block: () -> T): T {
+        startTransaction()
+        try {
+            val result = block()
+            commitTransaction()
+            return result
+        } catch (e: Exception) {
+            rollbackTransaction()
+            throw e
+        }
+    }
 }

@@ -240,118 +240,154 @@ class SuperkassaApiImpl(
         processOfdDocumentResult = processOfdDocumentResultUseCase
     )
 
+    @Throws(Exception::class)
     override fun listVatRates(): List<VatRateResponse> =
         DomainVatGroup.entries.map { CommonMapper.toResponse(it) }
 
     // Registration & Initialization delegates
+    @Throws(Exception::class)
     override fun initKkm(pin: String, request: KkmInitDirectRequest): KkmResponse =
         initKkmImpl(pin, request)
 
+    @Throws(Exception::class)
     override fun initKkmSimple(pin: String, request: KkmInitSimpleRequest): KkmResponse =
         initKkmSimpleImpl(pin, request)
 
+    @Throws(Exception::class)
     override fun generateFactoryInfo(): FactoryNumberResponse =
         generateFactoryInfoImpl()
 
     // KKM Retrieval & Listing
+    @Throws(Exception::class)
     override fun getKkm(id: String): KkmResponse =
         getKkmImpl(id)
 
+    @Throws(Exception::class)
     override fun listKkms(params: KkmListParams): KkmListResponse =
         listKkmsImpl(params)
 
+    @Throws(Exception::class)
     override fun deleteKkm(id: String, pin: String): Boolean =
         deleteKkmImpl(id, pin)
 
+    @Throws(Exception::class)
     override fun listCounters(kkmId: String, pin: String): List<CounterSnapshotResponse> =
         listCountersImpl(kkmId, pin)
 
     // Settings
+    @Throws(Exception::class)
     override fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean): KkmResponse =
         updateKkmSettingsImpl(kkmId, pin, autoCloseShift)
 
+    @Throws(Exception::class)
     override fun updateTaxSettings(kkmId: String, pin: String, taxRegime: TaxRegime, defaultVatGroup: VatGroup): KkmResponse =
         updateTaxSettingsImpl(kkmId, pin, taxRegime, defaultVatGroup)
 
+    @Throws(Exception::class)
     override fun updateBrandingSettings(kkmId: String, pin: String, branding: ReceiptBrandingRequest): KkmResponse =
         updateBrandingSettingsImpl(kkmId, pin, branding)
 
+    @Throws(Exception::class)
     override fun enterProgramming(kkmId: String, pin: String): KkmResponse =
         enterProgrammingImpl(kkmId, pin)
 
+    @Throws(Exception::class)
     override fun exitProgramming(kkmId: String, pin: String): KkmResponse =
         exitProgrammingImpl(kkmId, pin)
 
     // User delegates
+    @Throws(Exception::class)
     override fun listUsers(kkmId: String, pin: String): List<UserResponse> =
         listUsersImpl(kkmId, pin)
 
+    @Throws(Exception::class)
     override fun createUser(kkmId: String, pin: String, request: UserCreateRequest): UserResponse =
         createUserImpl(kkmId, pin, request)
 
+    @Throws(Exception::class)
     override fun updateUser(kkmId: String, userId: String, pin: String, request: UserUpdateRequest): UserResponse =
         updateUserImpl(kkmId, userId, pin, request)
 
+    @Throws(Exception::class)
     override fun deleteUser(kkmId: String, userId: String, pin: String): Boolean =
         deleteUserImpl(kkmId, userId, pin)
 
     // OFD delegates
+    @Throws(Exception::class)
     override fun getOfdAuthInfo(pin: String, request: OfdAuthInfoRequest): OfdAuthInfoResponse =
         getOfdAuthInfoImpl(pin, request)
 
+    @Throws(Exception::class)
     override fun updateOfdToken(kkmId: String, pin: String, token: String): Boolean =
         updateOfdTokenImpl(kkmId, pin, token)
 
+    @Throws(Exception::class)
     override fun checkOfdConnection(kkmId: String): OfdCommandResponse =
         checkOfdConnectionImpl(kkmId)
 
+    @Throws(Exception::class)
     override fun getOfdInfo(kkmId: String): OfdCommandResponse =
         getOfdInfoImpl(kkmId)
 
+    @Throws(Exception::class)
     override fun syncOfdServiceInfo(kkmId: String, pin: String): OfdCommandResponse =
         syncOfdServiceInfoImpl(kkmId, pin)
 
+    @Throws(Exception::class)
     override fun syncOfdCounters(kkmId: String, pin: String): OfdCommandResponse =
         syncOfdCountersImpl(kkmId, pin)
 
     // Fiscal Operations / Receipt and Cash processing delegates
+    @Throws(Exception::class)
     override fun createReceipt(command: CreateReceiptCommand): ReceiptResponse =
         createReceiptImpl(command)
 
+    @Throws(Exception::class)
     override fun createSellReceipt(kkmId: String, pin: String, request: ReceiptSellRequest): ReceiptResponse =
         createSellReceiptImpl(kkmId, pin, request)
 
+    @Throws(Exception::class)
     override fun createSellReturnReceipt(kkmId: String, pin: String, request: ReceiptSellReturnRequest): ReceiptResponse =
         createSellReturnReceiptImpl(kkmId, pin, request)
 
+    @Throws(Exception::class)
     override fun createBuyReceipt(kkmId: String, pin: String, request: ReceiptBuyRequest): ReceiptResponse =
         createBuyReceiptImpl(kkmId, pin, request)
 
+    @Throws(Exception::class)
     override fun createBuyReturnReceipt(kkmId: String, pin: String, request: ReceiptBuyReturnRequest): ReceiptResponse =
         createBuyReturnReceiptImpl(kkmId, pin, request)
 
+    @Throws(Exception::class)
     override fun cashIn(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResponse =
         cashInImpl(kkmId, pin, request)
 
+    @Throws(Exception::class)
     override fun cashOut(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResponse =
         cashOutImpl(kkmId, pin, request)
 
     // Shift Info delegates
+    @Throws(Exception::class)
     override fun openShift(kkmId: String, pin: String): ShiftResponse =
         openShiftImpl(kkmId, pin)
 
+    @Throws(Exception::class)
     override fun closeShift(kkmId: String, pin: String): ReportResponse =
         closeShiftImpl(kkmId, pin)
 
+    @Throws(Exception::class)
     override fun getOpenShift(kkmId: String, pin: String): ShiftResponse =
         getOpenShiftImpl(kkmId, pin)
 
+    @Throws(Exception::class)
     override fun listShifts(kkmId: String, limit: Int, offset: Int, pin: String): List<ShiftResponse> =
         listShiftsImpl(kkmId, limit, offset, pin)
 
+    @Throws(Exception::class)
     override fun listShiftDocuments(kkmId: String, shiftId: String, limit: Int, offset: Int, pin: String): List<FiscalDocumentResponse> =
         listShiftDocumentsImpl(kkmId, shiftId, limit, offset, pin)
 
+    @Throws(Exception::class)
     override fun listFiscalDocumentsByPeriod(
         kkmId: String,
         fromInclusive: Long,
@@ -362,6 +398,7 @@ class SuperkassaApiImpl(
     ): List<FiscalDocumentResponse> =
         listFiscalDocumentsByPeriodImpl(kkmId, fromInclusive, toExclusive, limit, offset, pin)
 
+    @Throws(Exception::class)
     override fun createReport(kkmId: String, pin: String): ReportResponse =
         createReportImpl(kkmId, pin)
 
@@ -369,6 +406,7 @@ class SuperkassaApiImpl(
         requireOperationalUseCase.execute(kkm)
     }
 
+    @Throws(Exception::class)
     override fun lookupNomenclature(pin: String, request: NomenclatureLookupRequest): NomenclatureLookupResponse =
         lookupNomenclatureImpl(pin, request)
 }
