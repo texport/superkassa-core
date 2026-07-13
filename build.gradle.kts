@@ -19,7 +19,7 @@ plugins {
 }
 
 group = "io.github.texport"
-version = "1.1.2"
+version = "1.1.3"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
@@ -48,25 +48,6 @@ allprojects {
             buildUponDefaultConfig = true
             allRules = true
             autoCorrect = true
-        }
-    }
-
-    plugins.withId("com.gradleup.nmcp") {
-        val nmcpExt = this@allprojects.extensions.findByName("nmcp")
-        if (nmcpExt != null) {
-            try {
-                val usernameProp = nmcpExt.javaClass.getMethod("getUsername").invoke(nmcpExt)
-                val passwordProp = nmcpExt.javaClass.getMethod("getPassword").invoke(nmcpExt)
-                val setMethod = usernameProp.javaClass.getMethod("set", Any::class.java)
-                val uVal = project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME")
-                val pVal = project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD")
-                if (uVal != null && pVal != null) {
-                    setMethod.invoke(usernameProp, uVal)
-                    setMethod.invoke(passwordProp, pVal)
-                }
-            } catch (e: Exception) {
-                // ignore
-            }
         }
     }
 
@@ -231,6 +212,10 @@ tasks.named<Jar>("jvmJar") {
         dependsOn(sub.tasks.named("compileKotlinJvm"))
         val compileKotlin = sub.tasks.named("compileKotlinJvm", org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class)
         from(compileKotlin.map { it.destinationDirectory })
+
+        dependsOn(sub.tasks.named("jvmProcessResources"))
+        val processResources = sub.tasks.named("jvmProcessResources", Copy::class)
+        from(processResources.map { it.destinationDir })
     }
 }
 
@@ -323,6 +308,13 @@ nmcpAggregation {
         username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
         password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
         publishingType.set("USER_MANAGED")
+    }
+}
+
+nmcp {
+    publishAllPublicationsToCentralPortal {
+        username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
+        password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
     }
 }
 
