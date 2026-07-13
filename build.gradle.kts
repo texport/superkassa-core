@@ -51,6 +51,25 @@ allprojects {
         }
     }
 
+    plugins.withId("com.gradleup.nmcp") {
+        val nmcpExt = this@allprojects.extensions.findByName("nmcp")
+        if (nmcpExt != null) {
+            try {
+                val usernameProp = nmcpExt.javaClass.getMethod("getUsername").invoke(nmcpExt)
+                val passwordProp = nmcpExt.javaClass.getMethod("getPassword").invoke(nmcpExt)
+                val setMethod = usernameProp.javaClass.getMethod("set", Any::class.java)
+                val uVal = project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME")
+                val pVal = project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD")
+                if (uVal != null && pVal != null) {
+                    setMethod.invoke(usernameProp, uVal)
+                    setMethod.invoke(passwordProp, pVal)
+                }
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
+    }
+
     plugins.withType<MavenPublishPlugin> {
         configure<PublishingExtension> {
             publications.withType<MavenPublication>().configureEach {
@@ -87,6 +106,33 @@ allprojects {
                         connection.set("scm:git:git://github.com/texport/superkassa-core.git")
                         developerConnection.set("scm:git:ssh://github.com/texport/superkassa-core.git")
                         url.set("https://github.com/texport/superkassa-core")
+                    }
+                }
+                
+                // Remove local subproject dependencies from the generated POM
+                pom.withXml {
+                    val root = asNode()
+                    val depsNode = root.children().firstOrNull { 
+                        (it as? groovy.util.Node)?.name().toString().endsWith("dependencies") 
+                    } as? groovy.util.Node
+                    if (depsNode != null) {
+                        val toRemove = mutableListOf<groovy.util.Node>()
+                        for (child in depsNode.children()) {
+                            if (child is groovy.util.Node && child.name().toString().endsWith("dependency")) {
+                                val artifactIdNode = child.children().firstOrNull { 
+                                    (it as? groovy.util.Node)?.name().toString().endsWith("artifactId") 
+                                } as? groovy.util.Node
+                                val artifactId = artifactIdNode?.value()?.toString() ?: ""
+                                if (artifactId.contains("delivery") || artifactId.contains("queue") || 
+                                    artifactId.contains("renderer") || artifactId.contains("domain") || 
+                                    artifactId.contains("presentation") || artifactId.contains("data") || 
+                                    artifactId.contains("string")
+                                ) {
+                                    toRemove.add(child)
+                                }
+                            }
+                        }
+                        toRemove.forEach { depsNode.remove(it) }
                     }
                 }
             }
@@ -278,4 +324,8 @@ nmcpAggregation {
         password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
         publishingType.set("USER_MANAGED")
     }
+}
+
+tasks.withType<GenerateModuleMetadata> {
+    enabled = false
 }
