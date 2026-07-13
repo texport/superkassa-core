@@ -1,0 +1,2 @@
+# Exclude HTML test resource files from repository language statistics
+receipt-renderer/src/test/resources/receipt-examples/** linguist-documentation
