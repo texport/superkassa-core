@@ -1,6 +1,7 @@
 package io.github.texport.superkassa.core.presentation.api.model.common
 
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
+import io.github.texport.superkassa.core.presentation.api.model.reference.TrilingualMessageResponse
 import kotlinx.serialization.Serializable
 
 /**
@@ -14,5 +15,7 @@ data class VatRateResponse(
     @Schema(description = "Процентная ставка НДС (в целых процентах)", example = "12")
     val percent: Int,
     @Schema(description = "Текстовое описание ставки НДС", example = "НДС 12%")
-    val description: String
+    val description: String,
+    @Schema(description = "Локализованное название ставки НДС")
+    val name: TrilingualMessageResponse
 )

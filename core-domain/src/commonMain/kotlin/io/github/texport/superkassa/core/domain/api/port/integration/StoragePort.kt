@@ -399,6 +399,17 @@ interface StoragePort {
     ): Boolean
 
     /**
+     * Сохраняет фискальный или служебный документ смены (открытие, закрытие, отчеты).
+     */
+    fun saveShiftDocument(
+        kkmId: String,
+        type: String,
+        documentId: String,
+        shiftId: String,
+        createdAt: Long
+    ): Boolean
+
+    /**
      * Обновляет фискальный статус чека после отправки в ОФД или перехода в автономный режим.
      *
      * @param documentId уникальный идентификатор документа.
@@ -414,6 +425,7 @@ interface StoragePort {
         fiscalSign: String?,
         autonomousSign: String?,
         ofdStatus: String,
+        ofdErrorCode: Int? = null,
         deliveredAt: Long?,
         isAutonomous: Boolean? = null
     ): Boolean
@@ -551,23 +563,43 @@ interface StoragePort {
      */
     fun updateIdempotencyResponse(kkmId: String, idempotencyKey: String, responseRef: String?): Boolean
 
-    /**
-     * Выполняет блок кода внутри транзакции базы данных.
-     *
-     * @param block функциональный блок, выполняемый в рамках транзакции.
-     * @return результат выполнения блока.
-     */
-    @OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
-    @kotlin.native.HiddenFromObjC
-    fun <T> inTransaction(block: () -> T): T {
+}
+
+/**
+ * Выполняет блок кода внутри транзакции базы данных.
+ *
+ * @param block функциональный блок, выполняемый в рамках транзакции.
+ * @return результат выполнения блока.
+ */
+@OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+@kotlin.native.HiddenFromObjC
+inline fun <T> StoragePort.inTransaction(block: () -> T): T {
+    println("[StoragePort.kt] inTransaction: ENTER")
+    return try {
+        println("[StoragePort.kt] calling startTransaction()")
         startTransaction()
+        println("[StoragePort.kt] startTransaction() DONE")
+
+        println("[StoragePort.kt] calling block()")
+        val result = block()
+        println("[StoragePort.kt] block() DONE")
+
+        println("[StoragePort.kt] calling commitTransaction()")
+        commitTransaction()
+        println("[StoragePort.kt] commitTransaction() DONE")
+
+        println("[StoragePort.kt] returning result")
+        result
+    } catch (e: Exception) {
+        println("[StoragePort.kt] caught Exception: ${e::class.simpleName} - ${e.message}")
+        println("[StoragePort.kt] calling rollbackTransaction()")
         try {
-            val result = block()
-            commitTransaction()
-            return result
-        } catch (e: Exception) {
             rollbackTransaction()
-            throw e
+            println("[StoragePort.kt] rollbackTransaction() DONE")
+        } catch (rErr: Exception) {
+            println("[StoragePort.kt] rollbackTransaction() FAILED: ${rErr.message}")
         }
+        println("[StoragePort.kt] re-throwing exception")
+        throw e
     }
 }

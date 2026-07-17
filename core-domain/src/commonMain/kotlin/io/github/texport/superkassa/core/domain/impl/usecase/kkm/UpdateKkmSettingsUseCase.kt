@@ -36,9 +36,13 @@ class UpdateKkmSettingsUseCase(
      * @return Обновленная информация о ККМ.
      * @throws ValidationException Если ККМ не находится в режиме программирования.
      */
-    fun updateGeneralSettings(kkm: KkmInfo, autoCloseShift: Boolean): KkmInfo {
+    fun updateGeneralSettings(kkm: KkmInfo, autoCloseShift: Boolean, autoCashout: Boolean): KkmInfo {
         requireProgramming(kkm, "KKM_SETTINGS_REQUIRES_PROGRAMMING")
-        val updated = kkm.copy(updatedAt = clock.now(), autoCloseShift = autoCloseShift)
+        val updated = kkm.copy(
+            updatedAt = clock.now(),
+            autoCloseShift = autoCloseShift,
+            autoCashout = autoCashout
+        )
         storage.updateKkm(updated)
         return updated
     }

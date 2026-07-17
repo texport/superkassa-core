@@ -45,12 +45,33 @@ fun SuperkassaApiImpl.generateFactoryInfoImpl(): FactoryNumberResponse {
     )
 }
 
-fun SuperkassaApiImpl.getKkmImpl(id: String): KkmResponse =
-    storage.findKkm(id)?.let { KkmMapper.toResponse(it) }
-        ?: throw NotFoundException(
-            trilingualMessage = CoreStrings.kkmNotFound(),
-            code = "KKM_NOT_FOUND"
-        )
+fun SuperkassaApiImpl.getKkmImpl(id: String): KkmResponse {
+    val kkm = storage.findKkm(id) ?: throw NotFoundException(
+        trilingualMessage = CoreStrings.kkmNotFound(),
+        code = "KKM_NOT_FOUND"
+    )
+    
+    val openShift = storage.findOpenShift(id)
+    val queueStatus = try {
+        queue.getQueueStatus(io.github.texport.superkassa.core.presentation.api.model.queue.QueueStatusRequest(id))
+    } catch (e: Exception) {
+        null
+    }
+    
+    val lastError = try {
+        val tasks = storage.listQueueTasksByCashbox(id, "OFFLINE", 20)
+        tasks.firstOrNull { it.status == "FAILED" }?.lastError
+    } catch (e: Exception) {
+        null
+    }
+
+    return KkmMapper.toResponse(kkm).copy(
+        isShiftOpen = openShift != null,
+        shiftOpenedAt = openShift?.openedAt,
+        offlineQueueCount = queueStatus?.pendingCount ?: 0,
+        lastSyncError = lastError
+    )
+}
 
 fun SuperkassaApiImpl.listKkmsImpl(params: KkmListParams): KkmListResponse {
     val items = storage.listKkms(
@@ -60,7 +81,26 @@ fun SuperkassaApiImpl.listKkmsImpl(params: KkmListParams): KkmListResponse {
         search = params.search,
         sortBy = params.sortBy,
         sortOrder = params.sortOrder
-    ).map { KkmMapper.toResponse(it) }
+    ).map { kkm ->
+        val openShift = storage.findOpenShift(kkm.id)
+        val queueStatus = try {
+            queue.getQueueStatus(io.github.texport.superkassa.core.presentation.api.model.queue.QueueStatusRequest(kkm.id))
+        } catch (e: Exception) {
+            null
+        }
+        val lastError = try {
+            val tasks = storage.listQueueTasksByCashbox(kkm.id, "OFFLINE", 20)
+            tasks.firstOrNull { it.status == "FAILED" }?.lastError
+        } catch (e: Exception) {
+            null
+        }
+        KkmMapper.toResponse(kkm).copy(
+            isShiftOpen = openShift != null,
+            shiftOpenedAt = openShift?.openedAt,
+            offlineQueueCount = queueStatus?.pendingCount ?: 0,
+            lastSyncError = lastError
+        )
+    }
     val total = storage.countKkms(state = params.state, search = params.search)
     return KkmListResponse(items = items, total = total)
 }
@@ -73,15 +113,15 @@ fun SuperkassaApiImpl.deleteKkmImpl(id: String, pin: String): Boolean {
 
 fun SuperkassaApiImpl.listCountersImpl(kkmId: String, pin: String): List<CounterSnapshotResponse> {
     authorization.requireKkm(kkmId)
-    authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN))
+    authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
     return storage.listCounters(kkmId).map { KkmMapper.toResponse(it) }
 }
 
-fun SuperkassaApiImpl.updateKkmSettingsImpl(kkmId: String, pin: String, autoCloseShift: Boolean): KkmResponse {
+fun SuperkassaApiImpl.updateKkmSettingsImpl(kkmId: String, pin: String, autoCloseShift: Boolean, autoCashout: Boolean): KkmResponse {
     kkmCommonHelper.ensureSystemTimeValid()
     authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN))
     val kkm = authorization.requireKkm(kkmId)
-    return updateSettingsUseCase.updateGeneralSettings(kkm, autoCloseShift).let { KkmMapper.toResponse(it) }
+    return updateSettingsUseCase.updateGeneralSettings(kkm, autoCloseShift, autoCashout).let { KkmMapper.toResponse(it) }
 }
 
 fun SuperkassaApiImpl.updateTaxSettingsImpl(kkmId: String, pin: String, taxRegime: TaxRegime, defaultVatGroup: VatGroup): KkmResponse {

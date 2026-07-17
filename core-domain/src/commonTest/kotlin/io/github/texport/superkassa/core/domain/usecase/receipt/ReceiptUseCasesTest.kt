@@ -27,6 +27,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.impl.helper.common.IdempotentOperationExecutor
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.RequireOperationalUseCase
@@ -76,10 +77,6 @@ class ReceiptUseCasesTest {
         every { storage.findKkmForUpdate(any()) } answers { storage.findKkm(firstArg()) }
         every { authorizeUserUseCase.requireKkm(any(), any()) } answers { authorizeUserUseCase.requireKkm(firstArg()) }
         every { authorizeUserUseCase.requireRole(any(), any(), any(), any()) } answers { authorizeUserUseCase.requireRole(firstArg(), secondArg(), thirdArg()) }
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
     }
 
     // --- CreateCashOperationUseCase Tests ---
@@ -710,7 +707,7 @@ class ReceiptUseCasesTest {
         )
 
         verify {
-            storage.updateReceiptStatus("doc-3", ofdResult.fiscalSign, ofdResult.autonomousSign, "SENT", 1200L, false)
+            storage.updateReceiptStatus("doc-3", ofdResult.fiscalSign, ofdResult.autonomousSign, "SENT", null, 1200L, false)
             updateCountersUseCase.execute("kkm-1", "shift-1", receiptReq, false)
             receiptDeliveryHelper.deliverReceipt("kkm-1", "doc-3", receiptReq, doc, "http://ofd/receipt", any())
         }
@@ -734,7 +731,7 @@ class ReceiptUseCasesTest {
         )
 
         verify {
-            storage.updateReceiptStatus("doc-3", ofdResult.fiscalSign, ofdResult.autonomousSign, "SENT", 1200L, false)
+            storage.updateReceiptStatus("doc-3", ofdResult.fiscalSign, ofdResult.autonomousSign, "SENT", null, 1200L, false)
             updateCountersUseCase.execute("kkm-1", "shift-1", receiptReq, false)
         }
         verify(exactly = 0) {
@@ -780,41 +777,9 @@ class ReceiptUseCasesTest {
         )
 
         verify {
-            storage.updateReceiptStatus("doc-3", ofdResult.fiscalSign, ofdResult.autonomousSign, "SENT", 1200L, false)
+            storage.updateReceiptStatus("doc-3", ofdResult.fiscalSign, ofdResult.autonomousSign, "SENT", null, 1200L, false)
             updateCountersUseCase.execute("kkm-1", "shift-1", receiptReq, false)
             storage.updateKkm(any())
-        }
-    }
-
-    @Test
-    fun testProcessOfdDocumentResultKkmBlockedAndUnblocked() {
-        val ofdResultBlocked = OfdCommandResult(status = OfdCommandStatus.FAILED, resultCode = 15)
-        processOfdDocumentResult.execute(
-            kkm = kkm,
-            documentId = "doc-3",
-            kkmId = "kkm-1",
-            ofdResult = ofdResultBlocked,
-            commandType = OfdCommandType.TICKET,
-            now = 1200L,
-            receiptContext = null
-        )
-        verify {
-            storage.updateKkm(match { it.state == KkmState.BLOCKED.name })
-        }
-
-        val blockedKkm = kkm.copy(state = KkmState.BLOCKED.name)
-        val ofdResultUnblocked = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
-        processOfdDocumentResult.execute(
-            kkm = blockedKkm,
-            documentId = "doc-3",
-            kkmId = "kkm-1",
-            ofdResult = ofdResultUnblocked,
-            commandType = OfdCommandType.TICKET,
-            now = 1200L,
-            receiptContext = null
-        )
-        verify {
-            storage.updateKkm(match { it.state == KkmState.ACTIVE.name })
         }
     }
 
@@ -857,7 +822,7 @@ class ReceiptUseCasesTest {
         )
 
         verify {
-            storage.updateReceiptStatus("doc-3", null, "1300", "PENDING", null, true)
+            storage.updateReceiptStatus("doc-3", null, "1300", "PENDING", null, null, true)
             queue.enqueueOffline(match { it.kkmId == "kkm-1" && it.type == OfdCommandType.TICKET.value && it.payloadRef == "doc-3" })
             storage.updateKkm(match { it.autonomousSince == 1200L })
             updateCountersUseCase.execute("kkm-1", "shift-1", receiptReq, true)

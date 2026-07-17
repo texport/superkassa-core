@@ -12,6 +12,7 @@ import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 
 /**

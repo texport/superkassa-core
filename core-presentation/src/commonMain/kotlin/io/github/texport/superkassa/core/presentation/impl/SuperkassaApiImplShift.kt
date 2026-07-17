@@ -23,6 +23,12 @@ fun SuperkassaApiImpl.getOpenShiftImpl(kkmId: String, pin: String): ShiftRespons
         ?: throw ConflictException(CoreStrings.shiftNotOpen(), "SHIFT_NOT_OPEN")).let { ShiftMapper.toResponse(it) }
 }
 
+fun SuperkassaApiImpl.getLocalOpenShiftImpl(kkmId: String, pin: String): ShiftResponse? {
+    authorization.requireKkm(kkmId)
+    authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
+    return storage.findOpenShift(kkmId)?.let { ShiftMapper.toResponse(it) }
+}
+
 fun SuperkassaApiImpl.listShiftsImpl(
     kkmId: String,
     limit: Int,

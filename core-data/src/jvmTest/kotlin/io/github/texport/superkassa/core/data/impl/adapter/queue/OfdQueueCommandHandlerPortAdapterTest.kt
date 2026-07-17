@@ -23,7 +23,7 @@ class OfdQueueCommandHandlerPortAdapterTest {
     @Test
     fun testHandleSuccess() {
         val sendFiscalCommand = mockk<SendFiscalCommandUseCase>()
-        val storage = mockk<StoragePort>()
+        val storage = mockk<StoragePort>(relaxed = true)
         val clock = mockk<ClockPort>()
 
         every { clock.now() } returns 10000L
@@ -32,11 +32,13 @@ class OfdQueueCommandHandlerPortAdapterTest {
             sendFiscalCommand.execute("c1", OfdCommandType.TICKET, "ref1")
         } returns OfdCommandResult(
             status = OfdCommandStatus.OK,
+            resultCode = 0,
             fiscalSign = "fs123",
             autonomousSign = null
         )
+        every { storage.findFiscalDocumentById(any()) } returns null
         every {
-            storage.updateReceiptStatus("ref1", "fs123", null, "SENT", 10000L, null)
+            storage.updateReceiptStatus("ref1", "fs123", null, "SENT", null, 10000L, false)
         } returns true
 
         val adapter = OfdQueueCommandHandlerPortAdapter(sendFiscalCommand, storage, clock)
@@ -56,14 +58,14 @@ class OfdQueueCommandHandlerPortAdapterTest {
         assertEquals(QueueStatus.SENT, result.status)
 
         verify {
-            storage.updateReceiptStatus("ref1", "fs123", null, "SENT", 10000L, null)
+            storage.updateReceiptStatus("ref1", "fs123", null, "SENT", null, 10000L, false)
         }
     }
 
     @Test
     fun testHandleFailure() {
         val sendFiscalCommand = mockk<SendFiscalCommandUseCase>()
-        val storage = mockk<StoragePort>()
+        val storage = mockk<StoragePort>(relaxed = true)
         val clock = mockk<ClockPort>()
 
         every { clock.now() } returns 10000L

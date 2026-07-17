@@ -40,6 +40,7 @@ data class FiscalDocumentSnapshot(
     val autonomousSign: String?,
     val isAutonomous: Boolean,
     val ofdStatus: String?,
+    val ofdErrorCode: Int? = null,
     val deliveredAt: Long?,
     val receiptUrl: String? = null,
     val registrationNumber: String? = null,

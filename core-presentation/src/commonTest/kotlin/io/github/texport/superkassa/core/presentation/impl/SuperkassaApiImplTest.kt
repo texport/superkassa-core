@@ -81,10 +81,6 @@ class SuperkassaApiImplTest {
     )
 
     init {
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
         every { ofdConfig.parseTag(any()) } answers {
             val tag = firstArg<String>()
             val parts = tag.split("_")
@@ -141,6 +137,8 @@ class SuperkassaApiImplTest {
         val rates = api.listVatRates()
         assertEquals(io.github.texport.superkassa.core.domain.api.model.common.VatGroup.entries.size, rates.size)
         assertEquals("NO_VAT", rates.first().code)
+        assertNotNull(rates.first().name)
+        assertEquals("Без НДС", rates.first().name.ru)
     }
 
     @Test
@@ -172,13 +170,90 @@ class SuperkassaApiImplTest {
     fun `listKkms calls storage list and count`() {
         every { storage.listKkms(any(), any(), any(), any(), any(), any()) } returns listOf(testKkmInfo)
         every { storage.countKkms(any(), any()) } returns 1
+        every { storage.findOpenShift("kkm-1") } returns ShiftInfo("shift-1", "kkm-1", 1L, ShiftStatus.OPEN, 1000L)
+        
+        // Let's just restore the basic assertion, but to cover branches, the storage mock will execute the `lastError` fetching.
+        every { storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 20) } returns listOf(
+            io.github.texport.superkassa.core.domain.api.model.queue.QueueTask(
+                id = "task-1", cashboxId = "kkm-1", lane = "OFFLINE", type = "REPORT", payloadRef = "ref-1",
+                status = "FAILED", lastError = "Network timeout", attempt = 1, nextAttemptAt = null, createdAt = 1000L
+            )
+        )
 
         val params = KkmListParams()
         val result = api.listKkms(params)
         assertEquals(1, result.total)
         assertEquals(1, result.items.size)
-        assertEquals(io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(testKkmInfo), result.items.first())
+        
+        val expected = io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(testKkmInfo).copy(
+            isShiftOpen = true,
+            shiftOpenedAt = 1000L,
+            offlineQueueCount = 0, // QueueStatus will throw since queue is not mocked properly here, or it returns relaxed 0
+            lastSyncError = "Network timeout"
+        )
+        assertEquals(expected, result.items.first())
     }
+
+    @Test
+    fun `listKkms handles exceptions in shift and queue status fetching`() {
+        every { storage.listKkms(any(), any(), any(), any(), any(), any()) } returns listOf(testKkmInfo)
+        every { storage.countKkms(any(), any()) } returns 1
+        every { storage.findOpenShift("kkm-1") } returns null
+        every { storage.listQueueTasksByCashbox(any(), any(), any(), any()) } throws RuntimeException("DB error")
+
+        val params = KkmListParams()
+        val result = api.listKkms(params)
+        assertEquals(1, result.total)
+        
+        val expected = io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(testKkmInfo).copy(
+            isShiftOpen = false,
+            shiftOpenedAt = null,
+            offlineQueueCount = 0,
+            lastSyncError = null
+        )
+        assertEquals(expected, result.items.first())
+    }
+    
+    @Test
+    fun `getKkm handles exceptions in shift and queue status fetching`() {
+        every { storage.findKkm("kkm-1") } returns testKkmInfo
+        every { storage.findOpenShift("kkm-1") } returns null
+        every { storage.listQueueTasksByCashbox(any(), any(), any(), any()) } throws RuntimeException("DB error")
+        
+        val result = api.getKkm("kkm-1")
+        val expected = io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(testKkmInfo).copy(
+            isShiftOpen = false,
+            shiftOpenedAt = null,
+            offlineQueueCount = 0,
+            lastSyncError = null
+        )
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun `getLocalOpenShift returns shift when open`() {
+        every { storage.findKkm("kkm-1") } returns testKkmInfo
+        val testUser = KkmUser("user-1", "Name", DomainUserRole.ADMIN, "hash", 1000L)
+        every { storage.findUserByPin("kkm-1", any()) } returns testUser
+        val testShift = ShiftInfo("shift-1", "kkm-1", 1L, ShiftStatus.OPEN, 1000L)
+        every { storage.findOpenShift("kkm-1") } returns testShift
+        
+        val result = api.getLocalOpenShift("kkm-1", "1234")
+        assertEquals(testShift.id, result?.id)
+        assertEquals(testShift.shiftNo, result?.shiftNo)
+    }
+    
+    @Test
+    fun `getLocalOpenShift returns null when no open shift`() {
+        every { storage.findKkm("kkm-1") } returns testKkmInfo
+        val testUser = KkmUser("user-1", "Name", DomainUserRole.ADMIN, "hash", 1000L)
+        every { storage.findUserByPin("kkm-1", any()) } returns testUser
+        every { storage.findOpenShift("kkm-1") } returns null
+        
+        val result = api.getLocalOpenShift("kkm-1", "1234")
+        assertEquals(null, result)
+    }
+
 
     @Test
     fun `deleteKkm requires ADMIN role and calls decommission`() {
@@ -214,7 +289,7 @@ class SuperkassaApiImplTest {
         every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
         every { storage.updateKkm(any()) } returns true
 
-        val updated = api.updateKkmSettings("kkm-1", "1234", true)
+        val updated = api.updateKkmSettings("kkm-1", "1234", true, false)
         assertTrue(updated.autoCloseShift)
     }
 
@@ -411,11 +486,6 @@ class SuperkassaApiImplTest {
             deliveredAt = 1000L
         )
 
-        // Mock transaction block to execute the lambda synchronously
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
 
         val result = api.cashIn("kkm-1", "1234", request)
         assertNotNull(result.documentId)
@@ -425,10 +495,6 @@ class SuperkassaApiImplTest {
     fun `initKkm executes KKM initialization UseCases`() {
         every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
         every { idGenerator.nextId() } returns "kkm-new"
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
         every { storage.createKkm(any()) } returns true
         every { pinHasher.hash("1234") } returns "hash-1234"
         every { storage.createUser(any(), any(), any(), any(), any(), any(), any()) } returns true
@@ -451,10 +517,6 @@ class SuperkassaApiImplTest {
     fun `initKkmSimple initializes KKM with defaults`() {
         every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
         every { idGenerator.nextId() } returns "kkm-simple"
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
         every { storage.createKkm(any()) } returns true
         every { pinHasher.hash("1234") } returns "hash-1234"
         every { storage.createUser(any(), any(), any(), any(), any(), any(), any()) } returns true
@@ -533,10 +595,6 @@ class SuperkassaApiImplTest {
         every { queue.canSendDirectly("kkm-1") } returns true
         every { storage.findOpenShift("kkm-1") } returns null
         every { tokenCodec.decodeToken(any()) } returns 1234L
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
         val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
 
@@ -553,10 +611,6 @@ class SuperkassaApiImplTest {
         every { queue.canSendDirectly("kkm-1") } returns true
         every { storage.findOpenShift("kkm-1") } returns null
         every { tokenCodec.decodeToken(any()) } returns 1234L
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
         val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
 
@@ -573,10 +627,6 @@ class SuperkassaApiImplTest {
         every { storage.findOpenShift("kkm-1") } returns ShiftInfo("shift-1", "kkm-1", 1L, ShiftStatus.OPEN, 1000L)
         every { idGenerator.nextId() } returns "doc-new"
         every { queue.canSendDirectly("kkm-1") } returns true
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
         val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
         val mockSnapshot = FiscalDocumentSnapshot(
@@ -672,6 +722,7 @@ class SuperkassaApiImplTest {
             amount = 100.0
         )
         every { storage.findOpenShift("kkm-1") } returns ShiftInfo("shift-1", "kkm-1", 1L, ShiftStatus.OPEN, 1000L)
+        every { storage.loadCounters("kkm-1", "SHIFT", "shift-1") } returns mapOf("CASH_SUM" to 15000L)
         val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
         every { storage.findFiscalDocumentById(any()) } returns FiscalDocumentSnapshot(
@@ -691,10 +742,6 @@ class SuperkassaApiImplTest {
             deliveredAt = 1000L
         )
 
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
 
         val result = api.cashOut("kkm-1", "1234", request)
         assertNotNull(result.documentId)
@@ -708,10 +755,6 @@ class SuperkassaApiImplTest {
         every { storage.findUserByPin("kkm-1", "hash-admin") } returns adminUser
         every { idGenerator.nextId() } returns "shift-new"
         every { queue.canSendDirectly("kkm-1") } returns true
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
         val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
 
@@ -969,5 +1012,82 @@ class SuperkassaApiImplTest {
         val json = kotlinx.serialization.json.Json.encodeToString(QueueStatusResponse.serializer(), status)
         val decoded = kotlinx.serialization.json.Json.decodeFromString(QueueStatusResponse.serializer(), json)
         assertEquals(status, decoded)
+    }
+
+    @Test
+    fun testNewReferences() {
+        assertEquals(3, api.getOfdEnvironments().size)
+        assertEquals("DEV", api.getOfdEnvironments()[0].code)
+        assertEquals("TEST", api.getOfdEnvironments()[1].code)
+        assertEquals("PROD", api.getOfdEnvironments()[2].code)
+
+        assertEquals(1, api.getOfdProviders().size)
+        assertEquals("KAZAKHTELECOM", api.getOfdProviders()[0].code)
+        assertEquals("oofd.kz", api.getOfdProviders()[0].website)
+
+        assertEquals(2, api.getCoreModes().size)
+        assertEquals("DESKTOP", api.getCoreModes()[0].code)
+        assertEquals("SERVER", api.getCoreModes()[1].code)
+
+        assertEquals(2, api.getAuthModes().size)
+        assertEquals("NONE", api.getAuthModes()[0].code)
+        assertEquals("BEARER", api.getAuthModes()[1].code)
+
+        assertEquals(3, api.getReceiptLanguages().size)
+        assertEquals("RU", api.getReceiptLanguages()[0].code)
+        assertEquals("KK", api.getReceiptLanguages()[1].code)
+        assertEquals("MIXED", api.getReceiptLanguages()[2].code)
+
+        assertEquals(3, api.getReceiptLayoutTypes().size)
+        assertEquals("TAPE_80MM", api.getReceiptLayoutTypes()[0].code)
+        assertEquals("TAPE_58MM", api.getReceiptLayoutTypes()[1].code)
+        assertEquals("FULLSCREEN", api.getReceiptLayoutTypes()[2].code)
+
+        assertEquals(4, api.getPrintDocumentTypes().size)
+        assertEquals("DOCUMENT", api.getPrintDocumentTypes()[0].code)
+        assertEquals("X_REPORT", api.getPrintDocumentTypes()[1].code)
+        assertEquals("OPEN_SHIFT", api.getPrintDocumentTypes()[2].code)
+        assertEquals("CLOSE_SHIFT", api.getPrintDocumentTypes()[3].code)
+
+        assertEquals(7, api.getOfdCommandTypes().size)
+        assertEquals("TICKET", api.getOfdCommandTypes()[0].code)
+
+        assertEquals(2, api.getCashOperationTypes().size)
+        assertEquals("CASH_IN", api.getCashOperationTypes()[0].code)
+        assertEquals("CASH_OUT", api.getCashOperationTypes()[1].code)
+    }
+
+    @Test
+    fun testOtherReferencesAndAuth() {
+        assertNotNull(api.getPaymentTypes())
+        assertNotNull(api.getDocumentTypes())
+        assertNotNull(api.getUserRoles())
+        assertNotNull(api.getTaxRegimes())
+        assertNotNull(api.getPaperWidths())
+        assertNotNull(api.getBrandingColors())
+        assertNotNull(api.getKkmStates())
+        assertNotNull(api.getKkmModes())
+        assertNotNull(api.getShiftStatuses())
+        assertNotNull(api.getDeliveryStatuses())
+        assertNotNull(api.getOfdCommandStatuses())
+        assertNotNull(api.getReceiptOperationTypes())
+
+        every { storage.findKkm("kkm-1") } returns testKkmInfo
+        every { pinHasher.hash("1234") } returns "hash1234"
+        every { storage.findUserByPin("kkm-1", "hash1234") } returns KkmUser(
+            id = "user-1",
+            name = "Cashier",
+            role = io.github.texport.superkassa.core.domain.api.model.auth.UserRole.CASHIER,
+            pin = "1234",
+            createdAt = 123456789L
+        )
+
+        val authResponse = api.authenticate("kkm-1", "1234")
+        assertEquals("user-1", authResponse.userId)
+
+        every { storage.findUserByPin("kkm-1", "hash1234") } returns null
+        assertFailsWith<io.github.texport.superkassa.core.domain.api.exception.ForbiddenException> {
+            api.authenticate("kkm-1", "1234")
+        }
     }
 }

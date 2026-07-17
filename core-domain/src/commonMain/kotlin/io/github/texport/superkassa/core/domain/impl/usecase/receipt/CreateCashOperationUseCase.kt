@@ -61,6 +61,14 @@ class CreateCashOperationUseCase(
                 // Проверка наличия открытой смены на ККМ
                 val shift = storage.findOpenShift(kkmId)
                     ?: throw ConflictException(CoreStrings.shiftNotOpen(), "SHIFT_NOT_OPEN")
+                
+                if (type == CashOperationType.CASH_OUT) {
+                    val currentCash = storage.loadCounters(kkmId, "SHIFT", shift.id)["CASH_SUM"] ?: 0L
+                    if (amountMoney.bills > currentCash) {
+                        throw ValidationException(CoreStrings.badRequest(), "INSUFFICIENT_CASH")
+                    }
+                }
+                
                 shift.id
             },
             saveOperation = { docId, now, shiftId ->

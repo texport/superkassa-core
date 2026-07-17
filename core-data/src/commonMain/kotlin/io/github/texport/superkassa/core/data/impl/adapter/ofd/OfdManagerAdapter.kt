@@ -129,17 +129,28 @@ internal class OfdManagerAdapter(
                 }
             }
             if (response.isFailure) {
-                val error = response.exceptionOrNull()?.message ?: "unknown"
-                val isTimeout = error.contains("timeout", ignoreCase = true) ||
+                val exception = response.exceptionOrNull()
+                val error = exception?.message ?: "unknown"
+                
+                val exName = exception?.let { it::class.simpleName } ?: ""
+                val causeName = exception?.cause?.let { it::class.simpleName } ?: ""
+                val isNetworkError = exName.contains("IOException") ||
+                    causeName.contains("IOException") ||
+                    exName.contains("Timeout") ||
+                    error.contains("timeout", ignoreCase = true) ||
                     error.contains("time out", ignoreCase = true) ||
                     error.contains("Нет ответа", ignoreCase = true) ||
-                    error.contains("No response", ignoreCase = true)
+                    error.contains("No response", ignoreCase = true) ||
+                    error.contains("connection", ignoreCase = true) ||
+                    error.contains("refused", ignoreCase = true)
+
                 lastNoConnectionMillis[throttleKey] = now
                 val sendFailMsg = "OFD SEND FAILED: commandType=${command.commandType}, " +
                     "kkmId=${command.kkmId}, error=$error"
                 logger.warn(sendFailMsg)
+                
                 return OfdCommandResult(
-                    status = if (isTimeout) OfdCommandStatus.TIMEOUT else OfdCommandStatus.FAILED,
+                    status = if (isNetworkError) OfdCommandStatus.TIMEOUT else OfdCommandStatus.FAILED,
                     errorMessage = CoreStrings.ofdRequestFailedData(error)
                 )
             }
@@ -154,7 +165,12 @@ internal class OfdManagerAdapter(
             val fiscalSign = OfdResponseUtils.extractFiscalSign(responseJson)
 
             if (resultCode != null) lastNoConnectionMillis.remove(throttleKey)
-            val status = if (resultCode == 0) OfdCommandStatus.OK else OfdCommandStatus.FAILED
+            
+            val status = when (resultCode) {
+                0 -> OfdCommandStatus.OK
+                254, 255 -> OfdCommandStatus.TIMEOUT
+                else -> OfdCommandStatus.FAILED
+            }
 
             if (status == OfdCommandStatus.OK) {
                 val successMsg = "OFD RECV SUCCESS: commandType=${command.commandType}, " +
@@ -198,20 +214,26 @@ internal class OfdManagerAdapter(
         } catch (ex: Exception) {
             val exName = ex::class.simpleName ?: ""
             val causeName = ex.cause?.let { it::class.simpleName } ?: ""
+            val errorMsg = ex.message ?: "unknown"
+            
             val isNetworkError = exName.contains("IOException") ||
                 causeName.contains("IOException") ||
-                exName.contains("Timeout")
+                exName.contains("Timeout") ||
+                errorMsg.contains("connection", ignoreCase = true) ||
+                errorMsg.contains("refused", ignoreCase = true)
+
             if (isNetworkError) {
-                val netErrMsg = "OFD connection failed for kkmId=${command.kkmId}: " +
-                    "${ex.message ?: "unknown"}"
+                val netErrMsg = "OFD connection failed for kkmId=${command.kkmId}: $errorMsg"
                 logger.warn(netErrMsg)
             } else {
                 logger.error("OFD request failed with unexpected error", ex)
             }
+            
             lastNoConnectionMillis[throttleKey] = now
+            
             OfdCommandResult(
-                status = OfdCommandStatus.FAILED,
-                errorMessage = CoreStrings.ofdRequestFailedData(ex.message)
+                status = if (isNetworkError) OfdCommandStatus.TIMEOUT else OfdCommandStatus.FAILED,
+                errorMessage = CoreStrings.ofdRequestFailedData(errorMsg)
             )
         }
     }

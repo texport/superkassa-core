@@ -37,10 +37,13 @@ class RecalculateShiftCountersUseCase(
      * @return [Map] Карта пересчитанных счетчиков (ключ-значение).
      */
     fun execute(kkmId: String, shift: ShiftInfo): Map<String, Long> {
+        println("[RecalculateShiftCountersUseCase.kt] execute START")
         val rebuilt = rebuildShiftCounters(kkmId, shift)
+        println("[RecalculateShiftCountersUseCase.kt] rebuildShiftCounters DONE, updating ${rebuilt.size} counters...")
         rebuilt.forEach { (key, value) ->
             storage.upsertCounter(kkmId, CounterScopes.SHIFT, shift.id, key, value)
         }
+        println("[RecalculateShiftCountersUseCase.kt] upsertCounter loop DONE")
         return rebuilt
     }
 
@@ -70,6 +73,10 @@ class RecalculateShiftCountersUseCase(
             val nonNullableKey = CounterKeyFormats.NON_NULLABLE_SUM.format(op)
             result[nonNullableKey] = startValue
         }
+
+        val startCash = existing["start_shift_cash.sum"] ?: 0L
+        result["start_shift_cash.sum"] = startCash
+        result[CounterKeyFormats.CASH_SUM] = startCash
 
         var offset = 0
         val limit = 500

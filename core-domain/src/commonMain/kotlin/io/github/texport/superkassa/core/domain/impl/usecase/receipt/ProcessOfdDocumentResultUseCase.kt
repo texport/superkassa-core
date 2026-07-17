@@ -61,14 +61,15 @@ class ProcessOfdDocumentResultUseCase(
         // Обновление статуса блокировки ККМ на основе кода ошибки ОФД (код 15 означает блокировку)
         updateKkmBlockedStateFromOfd(kkm, ofdResult, now)
 
-        if (resultCode == null) {
-            // Если resultCode == null, произошел таймаут или обрыв связи — фискализируем автономно
+        if (resultCode == null || resultCode == 254 || resultCode == 255) {
+            // Если произошел таймаут или обрыв связи, или ОФД вернул 254/255 — фискализируем автономно
             val autonomousSign = clock.now().toString()
             storage.updateReceiptStatus(
                 documentId = documentId,
                 fiscalSign = null,
                 autonomousSign = autonomousSign,
                 ofdStatus = "PENDING",
+                ofdErrorCode = null,
                 deliveredAt = null,
                 isAutonomous = true
             )
@@ -99,11 +100,15 @@ class ProcessOfdDocumentResultUseCase(
 
         // Результат получен от ОФД напрямую (онлайн)
         val success = resultCode == 0
+        val isFailed = resultCode == 13 || resultCode == 14 || resultCode == 17
+        val status = if (success) "SENT" else if (isFailed) "FAILED" else "PENDING"
+        
         storage.updateReceiptStatus(
             documentId = documentId,
             fiscalSign = ofdResult.fiscalSign,
             autonomousSign = ofdResult.autonomousSign,
-            ofdStatus = if (success) "SENT" else "FAILED",
+            ofdStatus = status,
+            ofdErrorCode = if (isFailed) resultCode else null,
             deliveredAt = if (success) now else null,
             isAutonomous = false
         )
@@ -156,10 +161,23 @@ class ProcessOfdDocumentResultUseCase(
      */
     private fun updateKkmBlockedStateFromOfd(kkm: KkmInfo, ofdResult: OfdCommandResult, now: Long) {
         val code = ofdResult.resultCode ?: return
-        if (code == 15 && kkm.state != KkmState.BLOCKED.name) {
-            storage.updateKkm(kkm.copy(updatedAt = now, state = KkmState.BLOCKED.name))
-        } else if (code == 0 && kkm.state == KkmState.BLOCKED.name) {
-            storage.updateKkm(kkm.copy(updatedAt = now, state = KkmState.ACTIVE.name))
+        val shouldBlock = code in 1..7 || code == 11 || code == 12 || code == 15
+        if (shouldBlock && kkm.state != KkmState.BLOCKED.name) {
+            storage.updateKkm(
+                kkm.copy(
+                    updatedAt = now,
+                    state = KkmState.BLOCKED.name,
+                    blockReasonCode = code + 1000
+                )
+            )
+        } else if (code == 0 && kkm.state == KkmState.BLOCKED.name && (kkm.blockReasonCode ?: 0) >= 1000) {
+            storage.updateKkm(
+                kkm.copy(
+                    updatedAt = now,
+                    state = KkmState.ACTIVE.name,
+                    blockReasonCode = null
+                )
+            )
         }
     }
 

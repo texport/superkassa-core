@@ -19,7 +19,7 @@ plugins {
 }
 
 group = "io.github.texport"
-version = "1.1.5"
+version = "1.1.7"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
@@ -171,6 +171,7 @@ kotlin {
             export(project(":core-domain"))
             export(project(":core-presentation"))
             export(project(":core-data"))
+            export(project(":core-string"))
         }
     }
 
@@ -180,6 +181,7 @@ kotlin {
                 api(project(":core-domain"))
                 api(project(":core-presentation"))
                 api(project(":core-data"))
+                api(project(":core-string"))
                 api(project(":offline-queue"))
                 api(libs.kotlinx.serialization.json)
                 api(libs.kotlinx.coroutines.core)

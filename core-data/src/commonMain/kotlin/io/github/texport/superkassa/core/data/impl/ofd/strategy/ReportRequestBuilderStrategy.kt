@@ -39,11 +39,14 @@ class ReportRequestBuilderStrategy(
      */
     override fun build(command: OfdCommandRequest, config: OfdConfig): JsonObject? {
         val serviceBlock = buildServiceBlock(command) ?: return null
+        println("[ReportRequestBuilderStrategy.kt] serviceBlock built")
         val shift = storage.findOpenShift(command.kkmId) ?: return null
-        // Для X-отчета пересобираем счётчики смены из документов,
-        // чтобы zxReport опирался на консистентные данные.
+        println("[ReportRequestBuilderStrategy.kt] open shift found: ${shift.id}")
+        
+        println("[ReportRequestBuilderStrategy.kt] calling recalculateShiftCountersUseCase.execute...")
         val counters = recalculateShiftCountersUseCase
             .execute(command.kkmId, shift)
+        println("[ReportRequestBuilderStrategy.kt] recalculateShiftCountersUseCase.execute DONE")
         val now = command.offlineEndMillis ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
         val shiftNo = shift.shiftNo.toInt().coerceAtLeast(0)
         val zxInput = ZxReportBuilder.build(

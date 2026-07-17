@@ -5,6 +5,7 @@ import io.github.texport.superkassa.core.domain.api.model.kkm.KkmMode
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 
 /**
  * Сценарий выхода ККМ из режима программирования.

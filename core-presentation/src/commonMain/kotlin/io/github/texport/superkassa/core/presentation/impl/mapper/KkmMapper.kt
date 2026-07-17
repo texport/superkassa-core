@@ -142,10 +142,14 @@ object KkmMapper {
             lastZReportNo = kkm.lastZReportNo,
             autonomousSince = kkm.autonomousSince,
             autoCloseShift = kkm.autoCloseShift,
+            autoCashout = kkm.autoCashout,
             lastFiscalHashBase64 = kkm.lastFiscalHashBase64,
             taxRegime = kkm.taxRegime.name,
             defaultVatGroup = kkm.defaultVatGroup.name,
-            branding = kkm.branding.let { toResponse(it) }
+            branding = kkm.branding.let { toResponse(it) },
+            blockReasonCode = kkm.blockReasonCode,
+            isProgrammingMode = kkm.mode == io.github.texport.superkassa.core.domain.api.model.kkm.KkmMode.PROGRAMMING.name || kkm.state == io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.PROGRAMMING.name,
+            isTokenValid = !kkm.tokenEncryptedBase64.isNullOrEmpty()
         )
     }
 

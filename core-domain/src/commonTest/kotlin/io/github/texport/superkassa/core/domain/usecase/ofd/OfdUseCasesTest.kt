@@ -17,6 +17,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.api.port.internal.TokenCodecPort
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.EnforceAutonomousLimitsUseCase
@@ -57,10 +58,6 @@ class OfdUseCasesTest {
         every { storage.findKkmForUpdate(any()) } answers { storage.findKkm(firstArg()) }
         every { authorizeUserUseCase.requireKkm(any(), any()) } answers { authorizeUserUseCase.requireKkm(firstArg()) }
         every { authorizeUserUseCase.requireRole(any(), any(), any(), any()) } answers { authorizeUserUseCase.requireRole(firstArg(), secondArg(), thirdArg()) }
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
     }
 
     @Test

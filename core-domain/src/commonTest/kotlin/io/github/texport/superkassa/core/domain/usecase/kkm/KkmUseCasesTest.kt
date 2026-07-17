@@ -29,6 +29,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfdConfigPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.api.port.internal.TokenCodecPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.api.port.internal.PinHasherPort
@@ -70,10 +71,6 @@ class KkmUseCasesTest {
     )
 
     init {
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
         every { storage.findKkmByRegistrationNumber(any()) } returns null
         every { storage.findKkmBySystemId(any()) } returns null
     }
@@ -947,14 +944,14 @@ class KkmUseCasesTest {
     fun testUpdateGeneralSettingsRequiresProgramming() {
         val activeKkm = kkm.copy(state = KkmState.ACTIVE.name)
         assertFailsWith<ValidationException> {
-            updateKkmSettings.updateGeneralSettings(activeKkm, true)
+            updateKkmSettings.updateGeneralSettings(activeKkm, true, false)
         }
     }
 
     @Test
     fun testUpdateGeneralSettingsSuccess() {
         every { clock.now() } returns 1000L
-        val res = updateKkmSettings.updateGeneralSettings(kkm, true)
+        val res = updateKkmSettings.updateGeneralSettings(kkm, true, false)
         assertEquals(true, res.autoCloseShift)
         verify { storage.updateKkm(match { it.autoCloseShift }) }
     }

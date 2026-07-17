@@ -13,6 +13,7 @@ import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.RequireOperationalUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
@@ -47,10 +48,6 @@ class ProcessReportUseCaseTest {
     )
 
     init {
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
         every { authorizeUser.requireKkm("kkm-1") } returns kkm
         every { authorizeUser.execute("kkm-1", "1234", setOf(UserRole.ADMIN, UserRole.CASHIER)) } returns mockk()
         every { idGenerator.nextId() } returns "doc-123"

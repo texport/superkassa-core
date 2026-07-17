@@ -14,6 +14,7 @@ import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 
 /**
@@ -86,16 +87,21 @@ class OpenShiftUseCase(
                 lastLocalShiftNo + 1L
             }
 
+            val openDocId = idGenerator.nextId()
             val shift = ShiftInfo(
                 id = shiftId,
                 kkmId = kkmId,
                 shiftNo = shiftNo,
                 status = ShiftStatus.OPEN,
-                openedAt = now
+                openedAt = now,
+                openDocumentId = openDocId
             )
 
             // Сохраняем открытую смену в базу данных
             storage.createShift(shift)
+
+            // Сохраняем фискальный документ открытия смены
+            storage.saveShiftDocument(kkmId, "SHIFT_OPEN", openDocId, shiftId, now)
 
             // Обновляем информацию о ККМ, устанавливая номер последней смены
             storage.updateKkm(kkm.copy(updatedAt = now, lastShiftNo = shiftNo.toInt()))
@@ -121,6 +127,11 @@ class OpenShiftUseCase(
                     storage.upsertCounter(kkmId, CounterScopes.SHIFT, shiftId, shiftNonNullableKey, startValue)
                 }
             }
+
+            // Переносим текущее состояние наличных (cash.sum) в новую смену
+            val globalCashSum = globalCounters[CounterKeyFormats.CASH_SUM] ?: 0L
+            storage.upsertCounter(kkmId, CounterScopes.SHIFT, shiftId, "start_shift_cash.sum", globalCashSum)
+            storage.upsertCounter(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.CASH_SUM, globalCashSum)
 
             shift
         }

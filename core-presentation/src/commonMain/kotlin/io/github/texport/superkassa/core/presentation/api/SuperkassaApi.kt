@@ -8,6 +8,7 @@ import io.github.texport.superkassa.core.presentation.api.model.queue.*
 import io.github.texport.superkassa.core.presentation.api.model.receipt.*
 import io.github.texport.superkassa.core.presentation.api.model.shift.*
 import io.github.texport.superkassa.core.presentation.api.model.user.*
+import io.github.texport.superkassa.core.presentation.api.model.reference.*
 
 /**
  * Интерфейс API Superkassa для взаимодействия презентационного слоя с бизнес-логикой.
@@ -98,10 +99,11 @@ interface SuperkassaApi : PrintApi {
      * @param kkmId ID ККМ.
      * @param pin ПИН-код администратора.
      * @param autoCloseShift Флаг автоматического закрытия смены.
+     * @param autoCashout Флаг автоматического изъятия наличных при закрытии смены.
      * @return Сведения об обновленной ККМ.
      */
     @Throws(Exception::class)
-    fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean): KkmResponse
+    fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean, autoCashout: Boolean): KkmResponse
 
     /**
      * Обновить налоговый режим и группу НДС по умолчанию.
@@ -357,6 +359,16 @@ interface SuperkassaApi : PrintApi {
     fun getOpenShift(kkmId: String, pin: String): ShiftResponse
 
     /**
+     * Получить локальную информацию об открытой смене ККМ (без проверок доступности ОФД).
+     *
+     * @param kkmId ID ККМ.
+     * @param pin ПИН-код пользователя.
+     * @return Информация об открытой смене или null, если смена закрыта.
+     */
+    @Throws(Exception::class)
+    fun getLocalOpenShift(kkmId: String, pin: String): ShiftResponse?
+
+    /**
      * Получить историю смен для ККМ с пагинацией.
      *
      * @param kkmId ID ККМ.
@@ -427,4 +439,184 @@ interface SuperkassaApi : PrintApi {
      */
     @Throws(Exception::class)
     fun lookupNomenclature(pin: String, request: NomenclatureLookupRequest): NomenclatureLookupResponse
+
+    /**
+     * Аутентифицировать пользователя кассы (проверить PIN-код).
+     *
+     * @param kkmId ID ККМ.
+     * @param pin ПИН-код пользователя.
+     * @return Сведения о вошедшем пользователе.
+     */
+    @Throws(Exception::class)
+    fun authenticate(kkmId: String, pin: String): UserResponse
+
+    /**
+     * Получить справочник типов оплат.
+     *
+     * @return Список типов оплат.
+     */
+    @Throws(Exception::class)
+    fun getPaymentTypes(): List<PaymentTypeResponse>
+
+    /**
+     * Получить справочник типов документов.
+     *
+     * @return Список типов документов.
+     */
+    @Throws(Exception::class)
+    fun getDocumentTypes(): List<DocumentTypeResponse>
+
+    /**
+     * Получить справочник ролей пользователей.
+     *
+     * @return Список ролей пользователей.
+     */
+    @Throws(Exception::class)
+    fun getUserRoles(): List<UserRoleResponse>
+
+    /**
+     * Получить справочник налоговых режимов.
+     *
+     * @return Список налоговых режимов.
+     */
+    @Throws(Exception::class)
+    fun getTaxRegimes(): List<TaxRegimeResponse>
+
+
+    /**
+     * Получить справочник ширины чековой ленты.
+     *
+     * @return Список вариантов ширины ленты.
+     */
+    @Throws(Exception::class)
+    fun getPaperWidths(): List<PaperWidthResponse>
+
+    /**
+     * Получить справочник цветов брендирования.
+     *
+     * @return Список цветов брендирования.
+     */
+    @Throws(Exception::class)
+    fun getBrandingColors(): List<BrandingColorResponse>
+
+    /**
+     * Получить справочник состояний ККМ.
+     *
+     * @return Список состояний ККМ.
+     */
+    @Throws(Exception::class)
+    fun getKkmStates(): List<KkmStateResponse>
+
+    /**
+     * Получить справочник режимов работы ККМ.
+     *
+     * @return Список режимов работы ККМ.
+     */
+    @Throws(Exception::class)
+    fun getKkmModes(): List<KkmModeResponse>
+
+    /**
+     * Получить справочник статусов смены.
+     *
+     * @return Список статусов смены.
+     */
+    @Throws(Exception::class)
+    fun getShiftStatuses(): List<ShiftStatusResponse>
+
+    /**
+     * Получить справочник статусов отправки в ОФД.
+     *
+     * @return Список статусов отправки.
+     */
+    @Throws(Exception::class)
+    fun getDeliveryStatuses(): List<DeliveryStatusResponse>
+
+    /**
+     * Получить справочник статусов выполнения команд ОФД.
+     *
+     * @return Список статусов команд.
+     */
+    @Throws(Exception::class)
+    fun getOfdCommandStatuses(): List<OfdCommandStatusResponse>
+
+    /**
+     * Получить справочник типов фискальных операций чека.
+     *
+     * @return Список типов фискальных операций.
+     */
+    @Throws(Exception::class)
+    fun getReceiptOperationTypes(): List<ReceiptOperationTypeResponse>
+
+    /**
+     * Получить справочник окружений/сред взаимодействия с ОФД.
+     *
+     * @return Список сред ОФД.
+     */
+    @Throws(Exception::class)
+    fun getOfdEnvironments(): List<OfdEnvironmentResponse>
+
+    /**
+     * Получить справочник провайдеров ОФД.
+     *
+     * @return Список провайдеров ОФД.
+     */
+    @Throws(Exception::class)
+    fun getOfdProviders(): List<OfdProviderResponse>
+
+    /**
+     * Получить справочник режимов работы ядра.
+     *
+     * @return Список режимов работы ядра.
+     */
+    @Throws(Exception::class)
+    fun getCoreModes(): List<CoreModeResponse>
+
+    /**
+     * Получить справочник режимов авторизации.
+     *
+     * @return Список режимов авторизации.
+     */
+    @Throws(Exception::class)
+    fun getAuthModes(): List<AuthModeResponse>
+
+    /**
+     * Получить справочник языков чеков.
+     *
+     * @return Список языков чеков.
+     */
+    @Throws(Exception::class)
+    fun getReceiptLanguages(): List<ReceiptLanguageResponse>
+
+    /**
+     * Получить справочник типов макетов чека.
+     *
+     * @return Список типов макетов.
+     */
+    @Throws(Exception::class)
+    fun getReceiptLayoutTypes(): List<ReceiptLayoutTypeResponse>
+
+    /**
+     * Получить справочник типов печатных документов.
+     *
+     * @return Список типов печатных документов.
+     */
+    @Throws(Exception::class)
+    fun getPrintDocumentTypes(): List<PrintDocumentTypeResponse>
+
+    /**
+     * Получить справочник типов команд ОФД.
+     *
+     * @return Список типов команд ОФД.
+     */
+    @Throws(Exception::class)
+    fun getOfdCommandTypes(): List<OfdCommandTypeResponse>
+
+    /**
+     * Получить справочник типов операций с наличными.
+     *
+     * @return Список типов операций с наличными.
+     */
+    @Throws(Exception::class)
+    fun getCashOperationTypes(): List<CashOperationTypeResponse>
+
 }

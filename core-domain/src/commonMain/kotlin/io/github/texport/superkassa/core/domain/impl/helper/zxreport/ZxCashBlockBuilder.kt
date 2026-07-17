@@ -26,12 +26,12 @@ object ZxCashBlockBuilder {
         // Предпочитаем явный счетчик CASH_SUM, если он есть.
         val explicitCash = counters[CounterKeyFormats.CASH_SUM]
         if (explicitCash != null) {
-            return explicitCash
+            return maxOf(0L, explicitCash)
         }
 
         // Фолбэк на старую логику: сумма продаж по операции SELL.
         val sellKey = CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")
-        return counters[sellKey] ?: 0L
+        return maxOf(0L, counters[sellKey] ?: 0L)
     }
 
     /**

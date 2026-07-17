@@ -65,7 +65,7 @@ class EnforceAutonomousLimitsUseCase(
         // 3. Блокировка кассы при превышении лимита автономной работы
         if (autonomousSince != null && now - autonomousSince > maxAutonomousDurationMs) {
             if (kkm.state != KkmState.BLOCKED.name) {
-                storage.updateKkm(kkm.copy(updatedAt = now, state = KkmState.BLOCKED.name))
+                storage.updateKkm(kkm.copy(updatedAt = now, state = KkmState.BLOCKED.name, blockReasonCode = 2))
             }
             throw ConflictException(CoreStrings.kkmAutonomousTooLong(), "KKM_AUTONOMOUS_TOO_LONG")
         }
@@ -79,7 +79,8 @@ class EnforceAutonomousLimitsUseCase(
                 kkm.copy(
                     updatedAt = now,
                     state = KkmState.ACTIVE.name,
-                    autonomousSince = null
+                    autonomousSince = null,
+                    blockReasonCode = null
                 )
             )
         }

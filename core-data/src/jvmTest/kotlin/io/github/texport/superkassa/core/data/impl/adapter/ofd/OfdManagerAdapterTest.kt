@@ -194,7 +194,7 @@ class OfdManagerAdapterTest {
         coEvery { networkClient.sendAndReceive(any(), any()) } returns Result.failure<ByteArray>(RuntimeException("Connection refused"))
 
         val result = adapter.send(request)
-        assertEquals(OfdCommandStatus.FAILED, result.status)
+        assertEquals(OfdCommandStatus.TIMEOUT, result.status)
         assertNotNull(result.errorMessage)
     }
 
@@ -216,7 +216,7 @@ class OfdManagerAdapterTest {
         every { codec.encode(any()) } throws java.io.IOException()
 
         val result = adapter.send(request)
-        assertEquals(OfdCommandStatus.FAILED, result.status)
+        assertEquals(OfdCommandStatus.TIMEOUT, result.status)
         assertNotNull(result.errorMessage)
     }
 
@@ -238,7 +238,7 @@ class OfdManagerAdapterTest {
         every { codec.encode(any()) } throws RuntimeException(java.io.IOException("Wrapped error"))
 
         val result = adapter.send(request)
-        assertEquals(OfdCommandStatus.FAILED, result.status)
+        assertEquals(OfdCommandStatus.TIMEOUT, result.status)
         assertNotNull(result.errorMessage)
     }
 
@@ -260,7 +260,7 @@ class OfdManagerAdapterTest {
         every { codec.encode(any()) } throws java.util.concurrent.TimeoutException("Timeout")
 
         val result = adapter.send(request)
-        assertEquals(OfdCommandStatus.FAILED, result.status)
+        assertEquals(OfdCommandStatus.TIMEOUT, result.status)
         assertNotNull(result.errorMessage)
     }
 
@@ -373,7 +373,7 @@ class OfdManagerAdapterTest {
         // First request fails and sets lastNoConnectionMillis
         coEvery { networkClient.sendAndReceive(any(), any()) } returns Result.failure<ByteArray>(RuntimeException("Connection refused"))
         val firstResult = adapter.send(request)
-        assertEquals(OfdCommandStatus.FAILED, firstResult.status)
+        assertEquals(OfdCommandStatus.TIMEOUT, firstResult.status)
 
         // Second request triggers throttle immediately because it is within 60s
         val secondResult = adapter.send(request)

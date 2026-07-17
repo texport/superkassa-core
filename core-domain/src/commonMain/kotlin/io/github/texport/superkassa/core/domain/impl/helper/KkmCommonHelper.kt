@@ -14,6 +14,7 @@ import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfdManagerPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidatorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.TokenCodecPort
 
@@ -120,6 +121,38 @@ class KkmCommonHelper(
             defaultServiceInfo = ::defaultServiceInfo
         )
         val result = ofd.send(request)
+        
+        val code = result.resultCode
+        if (code != null) {
+            if (code == 8 || code == 9) {
+                // Выбрасывается исключение, заставляющее ядро (или очередь) сгенерировать новый reqNum и повторить запрос
+                throw ValidationException(
+                    io.github.texport.superkassa.core.string.api.TrilingualMessage(
+                        "Техническая ошибка синхронизации", 
+                        "Синхрондау қатесі", 
+                        "Sync error"
+                    ), 
+                    "OFD_RETRY_REQUEST"
+                )
+            }
+            val blockingCodes = setOf(1, 2, 3, 4, 5, 6, 7, 11, 12, 15)
+            if (code in blockingCodes && (kkm.state != io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.BLOCKED.name || kkm.blockReasonCode != (code + 1000))) {
+                val clearedToken = if (code == 2) null else kkm.tokenEncryptedBase64
+                storage.updateKkm(kkm.copy(
+                    updatedAt = now,
+                    state = io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.BLOCKED.name,
+                    blockReasonCode = code + 1000,
+                    tokenEncryptedBase64 = clearedToken
+                ))
+            } else if (code == 0 && kkm.state == io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.BLOCKED.name) {
+                storage.updateKkm(kkm.copy(
+                    updatedAt = now,
+                    state = io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.ACTIVE.name,
+                    blockReasonCode = null
+                ))
+            }
+        }
+
         if (updateToken) {
             result.responseToken?.let { nextToken ->
                 storage.updateKkmToken(kkm.id, tokenCodec.encodeToken(nextToken), now)

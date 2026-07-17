@@ -12,6 +12,7 @@ import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.RequireOperationalUseCase
@@ -29,10 +30,6 @@ class IdempotentOperationExecutorTest {
     private val executor = IdempotentOperationExecutor(storage, idGenerator, clock, authorizeUserUseCase, requireOperationalUseCase)
 
     init {
-        every { storage.inTransaction<Any>(any()) } answers {
-            val block = firstArg<() -> Any>()
-            block()
-        }
     }
 
     @Test

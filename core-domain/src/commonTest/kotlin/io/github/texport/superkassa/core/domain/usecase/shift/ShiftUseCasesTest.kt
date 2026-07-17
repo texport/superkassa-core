@@ -28,6 +28,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
 import kotlin.test.Test
@@ -61,10 +62,6 @@ class ShiftUseCasesTest {
         every { clock.now() } returns 1000L
         every { idGenerator.nextId() } returns "id-gen"
         every { storage.findKkmForUpdate(any()) } answers { storage.findKkm(firstArg()) }
-        every { storage.inTransaction<Any?>(any()) } answers {
-            val block = firstArg<() -> Any?>()
-            block()
-        }
     }
 
     // ==========================================

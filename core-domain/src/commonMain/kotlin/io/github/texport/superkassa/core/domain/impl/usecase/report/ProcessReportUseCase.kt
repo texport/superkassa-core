@@ -9,6 +9,7 @@ import io.github.texport.superkassa.core.domain.api.model.report.ReportResult
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.RequireOperationalUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase

@@ -9,11 +9,15 @@ import platform.Foundation.NSUTF8StringEncoding
 internal actual object ResourceLoader {
     actual fun readText(path: String): String? {
         val cleanPath = path.removePrefix("/")
-        val extension = cleanPath.substringAfterLast('.', "")
-        val name = cleanPath.substringBeforeLast('.')
+        
+        val directory = if (cleanPath.contains("/")) cleanPath.substringBeforeLast("/") else null
+        val fileName = cleanPath.substringAfterLast("/")
+        
+        val extension = fileName.substringAfterLast('.', "")
+        val name = fileName.substringBeforeLast('.')
 
         val bundle = NSBundle.mainBundle
-        val filePath = bundle.pathForResource(name, extension) ?: return null
+        val filePath = bundle.pathForResource(name, extension, directory) ?: return null
         return NSString.stringWithContentsOfFile(filePath, NSUTF8StringEncoding, null)
     }
 }

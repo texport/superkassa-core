@@ -51,6 +51,8 @@ data class KkmResponse(
     val autonomousSince: Long? = null,
     @Schema(description = "Автоматическое закрытие смены", example = "false")
     val autoCloseShift: Boolean = false,
+    @Schema(description = "Автоматическое изъятие наличных при закрытии смены", example = "false")
+    val autoCashout: Boolean = false,
     @Schema(description = "Хэш последней фискальной операции", example = "base64hash==")
     val lastFiscalHashBase64: String? = null,
     @Schema(
@@ -64,5 +66,21 @@ data class KkmResponse(
     )
     val defaultVatGroup: String? = null,
     @Schema(description = "Настройки брендирования чеков")
-    val branding: ReceiptBrandingResponse? = null
+    val branding: ReceiptBrandingResponse? = null,
+    @Schema(description = "Код причины блокировки ОФД")
+    val blockReasonCode: Int? = null,
+    
+    // Агрегированные статусы (для UI)
+    @Schema(description = "Статус открытой смены (true = открыта, false = закрыта)", example = "true")
+    val isShiftOpen: Boolean = false,
+    @Schema(description = "Время открытия текущей смены (epoch ms)", example = "1700000000000")
+    val shiftOpenedAt: Long? = null,
+    @Schema(description = "Количество чеков в офлайн-очереди", example = "5")
+    val offlineQueueCount: Int = 0,
+    @Schema(description = "Текст последней ошибки синхронизации с ОФД")
+    val lastSyncError: String? = null,
+    @Schema(description = "Режим программирования (касса заблокирована для настроек)", example = "false")
+    val isProgrammingMode: Boolean = false,
+    @Schema(description = "Флаг наличия/валидности токена ОФД", example = "true")
+    val isTokenValid: Boolean = false
 )

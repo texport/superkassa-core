@@ -16,6 +16,10 @@ import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
+import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
+import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
+import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
 
@@ -78,6 +82,9 @@ class CloseShiftUseCase(
             val documentId = idGenerator.nextId()
             val now = clock.now()
 
+            // Сохраняем фискальный документ закрытия смены (Z-отчет)
+            storage.saveShiftDocument(kkmId, "SHIFT_CLOSE", documentId, shift.id, now)
+
             // Проверяем, нужно ли отправлять документ через офлайн-очередь (например, если нет связи)
             val hasQueue = !queue.canSendDirectly(kkmId)
             val (deliveryStatus, deliveryError) =
@@ -89,16 +96,77 @@ class CloseShiftUseCase(
                         payloadRef = documentId
                     )
                     queue.enqueueOffline(command)
+                    storage.updateReceiptStatus(
+                        documentId = documentId,
+                        fiscalSign = null,
+                        autonomousSign = now.toString(),
+                        ofdStatus = "PENDING",
+                        deliveredAt = null,
+                        isAutonomous = true
+                    )
                     DeliveryStatus.OFFLINE_QUEUED to null
                 } else {
                     // Если связь есть, отправляем команду закрытия смены напрямую в ОФД
                     val result = sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.CLOSE_SHIFT, documentId)
-                    when (result.status) {
-                        OfdCommandStatus.OK -> DeliveryStatus.ONLINE_OK to null
-                        OfdCommandStatus.TIMEOUT -> DeliveryStatus.OFFLINE_QUEUED to result.errorMessage
-                        OfdCommandStatus.FAILED -> DeliveryStatus.ONLINE_ERROR to result.errorMessage
+                    val (status, ofdStatusText) = when (result.status) {
+                        OfdCommandStatus.OK -> DeliveryStatus.ONLINE_OK to "SENT"
+                        OfdCommandStatus.TIMEOUT -> DeliveryStatus.OFFLINE_QUEUED to "PENDING"
+                        OfdCommandStatus.FAILED -> DeliveryStatus.ONLINE_ERROR to "FAILED"
                     }
+                    
+                    storage.updateReceiptStatus(
+                        documentId = documentId,
+                        fiscalSign = result.fiscalSign,
+                        autonomousSign = result.autonomousSign,
+                        ofdStatus = ofdStatusText,
+                        deliveredAt = if (result.status == OfdCommandStatus.OK) now else null,
+                        isAutonomous = (result.status == OfdCommandStatus.TIMEOUT)
+                    )
+
+                    if (result.status == OfdCommandStatus.TIMEOUT) {
+                        val command = OfflineQueueCommandRequest(
+                            kkmId = kkmId,
+                            type = OfdCommandType.CLOSE_SHIFT.value,
+                            payloadRef = documentId
+                        )
+                        queue.enqueueOffline(command)
+                    }
+
+                    status to result.errorMessage
                 }
+
+            // Выполняем автоизъятие, если оно включено и в кассе есть наличные
+            val globalCounters = storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)
+            val currentCash = globalCounters[CounterKeyFormats.CASH_SUM] ?: 0L
+            if (kkm.autoCashout && currentCash > 0L) {
+                val cashOutDocId = idGenerator.nextId()
+                storage.saveCashOperation(
+                    kkmId = kkmId,
+                    type = "CASH_OUT",
+                    amount = Money(currentCash, 0),
+                    documentId = cashOutDocId,
+                    shiftId = shift.id,
+                    createdAt = now
+                )
+                storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.CASH_SUM, 0L)
+                storage.upsertCounter(kkmId, CounterScopes.SHIFT, shift.id, CounterKeyFormats.CASH_SUM, 0L)
+                storage.saveShiftDocument(kkmId, "CASH_OUT", cashOutDocId, shift.id, now)
+
+                val placementCommand = OfflineQueueCommandRequest(
+                    kkmId = kkmId,
+                    type = OfdCommandType.MONEY_PLACEMENT.value,
+                    payloadRef = cashOutDocId
+                )
+                if (queue.canSendDirectly(kkmId)) {
+                    try {
+                        sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.MONEY_PLACEMENT, cashOutDocId)
+                    } catch (e: Exception) {
+                        // игнорируем ошибку отправки автоизъятия при закрытии смены
+                    }
+                } else {
+                    queue.enqueueOffline(placementCommand)
+                }
+            }
 
             // Фиксируем закрытие смены в локальной базе данных
             storage.closeShift(shift.id, ShiftStatus.CLOSED, now, documentId)

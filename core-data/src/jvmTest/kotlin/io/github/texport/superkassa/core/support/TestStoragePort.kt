@@ -29,8 +29,6 @@ class TestStoragePort : StoragePort {
 
     data class RoomQueueLock(val cashboxId: String, val ownerId: String, val leaseUntil: Long, val acquiredAt: Long)
 
-    override fun <T> inTransaction(block: () -> T): T = block()
-
     override fun createKkm(info: KkmInfo): Boolean {
         kkms[info.id] = info
         return true
@@ -332,11 +330,40 @@ class TestStoragePort : StoragePort {
         return true
     }
 
+    override fun saveShiftDocument(
+        kkmId: String,
+        type: String,
+        documentId: String,
+        shiftId: String,
+        createdAt: Long
+    ): Boolean {
+        val shift = shifts[shiftId]
+        documents[documentId] =
+            FiscalDocumentSnapshot(
+                id = documentId,
+                cashboxId = kkmId,
+                shiftId = shiftId,
+                docType = type,
+                docNo = null,
+                shiftNo = shift?.shiftNo,
+                createdAt = createdAt,
+                totalAmount = null,
+                currency = "KZT",
+                fiscalSign = null,
+                autonomousSign = null,
+                isAutonomous = false,
+                ofdStatus = "PENDING",
+                deliveredAt = null
+            )
+        return true
+    }
+
     override fun updateReceiptStatus(
         documentId: String,
         fiscalSign: String?,
         autonomousSign: String?,
         ofdStatus: String,
+        ofdErrorCode: Int?,
         deliveredAt: Long?,
         isAutonomous: Boolean?
     ): Boolean {
@@ -346,6 +373,7 @@ class TestStoragePort : StoragePort {
                 fiscalSign = fiscalSign ?: current.fiscalSign,
                 autonomousSign = autonomousSign ?: current.autonomousSign,
                 ofdStatus = ofdStatus,
+                ofdErrorCode = ofdErrorCode ?: current.ofdErrorCode,
                 deliveredAt = deliveredAt,
                 isAutonomous = isAutonomous ?: current.isAutonomous
             )

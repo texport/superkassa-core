@@ -14,6 +14,7 @@ import io.github.texport.superkassa.core.domain.api.model.queue.QueueDispatchSta
 import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
 import kotlin.test.Test
@@ -36,14 +37,6 @@ class QueueUseCasesTest {
     private val kkmProg = KkmInfo(id = "kkm-1", createdAt = 0, updatedAt = 0, mode = KkmMode.PROGRAMMING.name, state = KkmState.PROGRAMMING.name)
 
     init {
-        every { storage.inTransaction<Any>(any()) } answers {
-            val block = firstArg<() -> Any>()
-            block()
-        }
-        every { storage.inTransaction<Int>(any()) } answers {
-            val block = firstArg<() -> Int>()
-            block()
-        }
     }
 
     @Test
@@ -101,7 +94,7 @@ class QueueUseCasesTest {
         val res = processQueueCommand.execute(mockCommand)
         assertEquals(QueueDispatchStatus.SENT, res.status)
         verify {
-            storage.updateReceiptStatus("payload-1", "fs-123", "as-123", "SENT", 2000L, null)
+            storage.updateReceiptStatus("payload-1", "fs-123", "as-123", "SENT", null, 2000L, false)
         }
     }
 

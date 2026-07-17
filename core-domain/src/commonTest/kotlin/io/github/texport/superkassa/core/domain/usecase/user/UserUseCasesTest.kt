@@ -3,6 +3,7 @@ package io.github.texport.superkassa.core.domain.impl.usecase.user
 import io.mockk.every
 import io.mockk.mockk
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
+import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
@@ -33,6 +34,8 @@ class UserUseCasesTest {
         every { storage.findKkmForUpdate(any()) } answers { storage.findKkm(firstArg()) }
         every { authorizeUserUseCase.requireKkm(any(), any()) } answers { authorizeUserUseCase.requireKkm(firstArg()) }
         every { authorizeUserUseCase.requireRole(any(), any(), any(), any()) } answers { authorizeUserUseCase.requireRole(firstArg(), secondArg(), thirdArg()) }
+        every { pinHasher.hash(any()) } answers { "hash-" + firstArg<String>() }
+        every { storage.findUserByPin(any(), any()) } answers { KkmUser("admin", "Admin", UserRole.ADMIN, "admin-pin", 0L) }
     }
 
     @Test
@@ -259,6 +262,28 @@ class UserUseCasesTest {
         }
         assertFailsWith<ValidationException> {
             updateUser.execute("kkm-1", "user-1", "admin-pin", "John New", UserRole.ADMIN, "1111")
+        }
+    }
+
+    @Test
+    fun testCashierCanUpdateOwnPinButNotRole() {
+        val existing = KkmUser("cashier-1", "Cashier", UserRole.CASHIER, "2222", 500L)
+        every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
+        every { storage.findUserByPin("kkm-1", "hash-2222") } returns existing
+        every { storage.listUsers("kkm-1") } returns listOf(existing)
+        every { storage.updateUser("kkm-1", "cashier-1", "Cashier New", UserRole.CASHIER, "3333", any()) } returns true
+
+        val res = updateUser.execute("kkm-1", "cashier-1", "2222", "Cashier New", UserRole.CASHIER, "3333")
+        assertEquals("Cashier New", res.name)
+
+        assertFailsWith<ValidationException> {
+            updateUser.execute("kkm-1", "cashier-1", "2222", "Cashier New", UserRole.ADMIN, "3333")
+        }
+
+        val other = KkmUser("admin-1", "Admin", UserRole.ADMIN, "1111", 500L)
+        every { storage.listUsers("kkm-1") } returns listOf(existing, other)
+        assertFailsWith<ForbiddenException> {
+            updateUser.execute("kkm-1", "admin-1", "2222", "Admin New", UserRole.ADMIN, "4444")
         }
     }
 }

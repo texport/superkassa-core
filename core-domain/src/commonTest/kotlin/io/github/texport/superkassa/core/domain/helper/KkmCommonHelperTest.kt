@@ -25,7 +25,7 @@ import kotlin.test.assertFailsWith
  */
 class KkmCommonHelperTest {
 
-    private val storage = mockk<StoragePort>()
+    private val storage = mockk<StoragePort>(relaxed = true)
     private val clock = mockk<ClockPort>()
     private val timeValidator = mockk<TimeValidatorPort>()
     private val tokenCodec = mockk<TokenCodecPort>()
@@ -160,10 +160,6 @@ class KkmCommonHelperTest {
         every { timeValidator.validate(clock) } returns TimeValidationResult(ok = true)
         every { authorization.requireRole("kkm-1", "1234", setOf(UserRole.ADMIN)) } returns Unit
         
-        val transactionSlot = slot<() -> KkmInfo>()
-        every { storage.inTransaction(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke()
-        }
         every { authorization.requireKkm("kkm-1") } returns kkm
         every { storage.findOpenShift("kkm-1") } returns null
         every { queue.canSendDirectly("kkm-1") } returns true
@@ -181,10 +177,6 @@ class KkmCommonHelperTest {
         every { timeValidator.validate(clock) } returns TimeValidationResult(ok = true)
         every { authorization.requireRole("kkm-1", "1234", setOf(UserRole.ADMIN)) } returns Unit
         
-        val transactionSlot = slot<() -> KkmInfo>()
-        every { storage.inTransaction(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke()
-        }
         every { authorization.requireKkm("kkm-1") } returns kkm
         every { storage.findOpenShift("kkm-1") } returns mockk<ShiftInfo>()
 
@@ -202,10 +194,6 @@ class KkmCommonHelperTest {
         every { timeValidator.validate(clock) } returns TimeValidationResult(ok = true)
         every { authorization.requireRole("kkm-1", "1234", setOf(UserRole.ADMIN)) } returns Unit
         
-        val transactionSlot = slot<() -> KkmInfo>()
-        every { storage.inTransaction(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke()
-        }
         every { authorization.requireKkm("kkm-1") } returns kkm
         every { storage.findOpenShift("kkm-1") } returns null
         every { queue.canSendDirectly("kkm-1") } returns false
@@ -266,10 +254,6 @@ class KkmCommonHelperTest {
         every { timeValidator.validate(clock) } returns TimeValidationResult(ok = true)
         every { authorization.requireRole("kkm-1", "1234", setOf(UserRole.ADMIN)) } returns Unit
         
-        val transactionSlot = slot<() -> KkmInfo>()
-        every { storage.inTransaction(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke()
-        }
         every { authorization.requireKkm("kkm-1") } returns kkm
         every { queue.canSendDirectly("kkm-1") } returns true
 

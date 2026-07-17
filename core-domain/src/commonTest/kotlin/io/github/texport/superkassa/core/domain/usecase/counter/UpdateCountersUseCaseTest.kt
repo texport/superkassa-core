@@ -458,8 +458,6 @@ private class InMemoryStoragePort : StoragePort {
     private val kkms = mutableMapOf<String, KkmInfo>()
     private val users = mutableMapOf<String, MutableList<KkmUser>>()
 
-    override fun <T> inTransaction(block: () -> T): T = block()
-
     override fun createKkm(info: KkmInfo): Boolean {
         kkms[info.id] = info
         return true
@@ -608,11 +606,20 @@ private class InMemoryStoragePort : StoragePort {
         createdAt: Long
     ): Boolean = true
 
+    override fun saveShiftDocument(
+        kkmId: String,
+        type: String,
+        documentId: String,
+        shiftId: String,
+        createdAt: Long
+    ): Boolean = true
+
     override fun updateReceiptStatus(
         documentId: String,
         fiscalSign: String?,
         autonomousSign: String?,
         ofdStatus: String,
+        ofdErrorCode: Int?,
         deliveredAt: Long?,
         isAutonomous: Boolean?
     ): Boolean = true

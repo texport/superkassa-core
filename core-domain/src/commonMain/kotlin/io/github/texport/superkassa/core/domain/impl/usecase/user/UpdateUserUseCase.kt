@@ -2,6 +2,7 @@ package io.github.texport.superkassa.core.domain.impl.usecase.user
 
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.string.api.CoreStrings
+import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
@@ -48,7 +49,19 @@ class UpdateUserUseCase(
         userPin: String?
     ): KkmUser {
         authorizeUserUseCase.requireKkm(kkmId)
-        authorizeUserUseCase.requireRole(kkmId, pin, setOf(UserRole.ADMIN), allowDefaultPin = true)
+        val callerPinHash = pinHasher.hash(pin)
+        val caller = storage.findUserByPin(kkmId, callerPinHash)
+            ?: throw ForbiddenException(CoreStrings.userNotFound(), "CALLER_NOT_FOUND")
+
+        if (caller.role != UserRole.ADMIN) {
+            if (caller.id != userId) {
+                throw ForbiddenException(CoreStrings.userForbidden(), "USER_FORBIDDEN")
+            }
+            if (role != null && role != caller.role) {
+                throw ValidationException(CoreStrings.userForbidden(), "CASHIER_CANNOT_CHANGE_ROLE")
+            }
+        }
+
         if (userPin != null && (userPin == "0000" || userPin == "1111")) {
             throw ValidationException(CoreStrings.defaultPinNotAllowed(), "DEFAULT_PIN_NOT_ALLOWED")
         }

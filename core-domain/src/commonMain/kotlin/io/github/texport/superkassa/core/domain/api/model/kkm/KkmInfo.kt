@@ -30,6 +30,7 @@ import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBrandin
  * @property taxRegime Налоговый режим ККМ (по умолчанию неплательщик НДС).
  * @property defaultVatGroup Группа НДС по умолчанию для позиций без явно указанной ставки.
  * @property branding Настройки брендирования и локализации печатных форм чеков.
+ * @property blockReasonCode Код причины блокировки ОФД (CPCR код, например 2 - неверный токен).
  */
 data class KkmInfo(
     val id: String,
@@ -50,8 +51,10 @@ data class KkmInfo(
     val lastZReportNo: Int? = null,
     val autonomousSince: Long? = null,
     val autoCloseShift: Boolean = false,
+    val autoCashout: Boolean = false,
     val lastFiscalHashBase64: String? = null,
     val taxRegime: TaxRegime = TaxRegime.NO_VAT,
     val defaultVatGroup: VatGroup = VatGroup.NO_VAT,
-    val branding: ReceiptBranding = ReceiptBranding()
+    val branding: ReceiptBranding = ReceiptBranding(),
+    val blockReasonCode: Int? = null
 )

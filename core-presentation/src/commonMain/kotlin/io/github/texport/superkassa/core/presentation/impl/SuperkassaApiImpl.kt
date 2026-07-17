@@ -6,6 +6,10 @@ import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdEnvironment
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdProvider
+import io.github.texport.superkassa.core.domain.api.model.settings.CoreMode
+import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
@@ -52,6 +56,13 @@ import io.github.texport.superkassa.core.presentation.api.model.queue.*
 import io.github.texport.superkassa.core.presentation.api.model.receipt.*
 import io.github.texport.superkassa.core.presentation.api.model.shift.*
 import io.github.texport.superkassa.core.presentation.api.model.user.*
+import io.github.texport.superkassa.core.presentation.api.model.reference.*
+import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
+import io.github.texport.superkassa.core.presentation.impl.mapper.UserMapper
+import io.github.texport.superkassa.core.presentation.impl.mapper.ReferenceMapper
+import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
+import io.github.texport.superkassa.core.string.api.CoreStrings
+import io.github.texport.superkassa.core.string.api.TrilingualMessage
 
 /**
  * Реализация API Superkassa ([SuperkassaApi]), делегирующая выполнение
@@ -66,7 +77,7 @@ class SuperkassaApiImpl(
     internal val tokenCodec: TokenCodecPort,
     internal val idGenerator: IdGeneratorPort,
     internal val clock: ClockPort,
-    pinHasher: PinHasherPort,
+    internal val pinHasher: PinHasherPort,
     internal val coreSettings: CoreSettings,
     internal val receiptRenderPort: ReceiptRenderPort,
     internal val documentConvertPort: DocumentConvertPort,
@@ -276,8 +287,8 @@ class SuperkassaApiImpl(
 
     // Settings
     @Throws(Exception::class)
-    override fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean): KkmResponse =
-        updateKkmSettingsImpl(kkmId, pin, autoCloseShift)
+    override fun updateKkmSettings(kkmId: String, pin: String, autoCloseShift: Boolean, autoCashout: Boolean): KkmResponse =
+        updateKkmSettingsImpl(kkmId, pin, autoCloseShift, autoCashout)
 
     @Throws(Exception::class)
     override fun updateTaxSettings(kkmId: String, pin: String, taxRegime: TaxRegime, defaultVatGroup: VatGroup): KkmResponse =
@@ -380,6 +391,10 @@ class SuperkassaApiImpl(
         getOpenShiftImpl(kkmId, pin)
 
     @Throws(Exception::class)
+    override fun getLocalOpenShift(kkmId: String, pin: String): ShiftResponse? =
+        getLocalOpenShiftImpl(kkmId, pin)
+
+    @Throws(Exception::class)
     override fun listShifts(kkmId: String, limit: Int, offset: Int, pin: String): List<ShiftResponse> =
         listShiftsImpl(kkmId, limit, offset, pin)
 
@@ -409,4 +424,77 @@ class SuperkassaApiImpl(
     @Throws(Exception::class)
     override fun lookupNomenclature(pin: String, request: NomenclatureLookupRequest): NomenclatureLookupResponse =
         lookupNomenclatureImpl(pin, request)
+
+    @Throws(Exception::class)
+    override fun authenticate(kkmId: String, pin: String): UserResponse {
+        authorization.requireKkm(kkmId)
+        authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER), allowDefaultPin = true)
+        val pinHash = pinHasher.hash(pin)
+        val user = storage.findUserByPin(kkmId, pinHash) ?: throw ForbiddenException(CoreStrings.userNotFound(), "USER_NOT_FOUND")
+        return UserMapper.toResponse(user)
+    }
+
+    override fun getPaymentTypes(): List<PaymentTypeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.receipt.PaymentType.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getDocumentTypes(): List<DocumentTypeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.receipt.DocumentType.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getUserRoles(): List<UserRoleResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.user.UserRole.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getTaxRegimes(): List<TaxRegimeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.kkm.TaxRegime.entries.map { ReferenceMapper.toResponse(it) }
+
+
+    override fun getPaperWidths(): List<PaperWidthResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.receipt.PaperWidth.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getBrandingColors(): List<BrandingColorResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.receipt.BrandingColor.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getKkmStates(): List<KkmStateResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.kkm.KkmState.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getKkmModes(): List<KkmModeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.kkm.KkmMode.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getShiftStatuses(): List<ShiftStatusResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.shift.ShiftStatus.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getDeliveryStatuses(): List<DeliveryStatusResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.ofd.DeliveryStatus.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getOfdCommandStatuses(): List<OfdCommandStatusResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.ofd.OfdCommandStatus.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getReceiptOperationTypes(): List<ReceiptOperationTypeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptOperationType.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getOfdEnvironments(): List<OfdEnvironmentResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.ofd.OfdEnvironment.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getOfdProviders(): List<OfdProviderResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.ofd.OfdProvider.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getCoreModes(): List<CoreModeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.kkm.CoreMode.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getAuthModes(): List<AuthModeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.auth.AuthMode.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getReceiptLanguages(): List<ReceiptLanguageResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.kkm.ReceiptLanguage.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getReceiptLayoutTypes(): List<ReceiptLayoutTypeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptLayoutType.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getPrintDocumentTypes(): List<PrintDocumentTypeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.receipt.PrintDocumentType.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getOfdCommandTypes(): List<OfdCommandTypeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.ofd.OfdCommandType.entries.map { ReferenceMapper.toResponse(it) }
+
+    override fun getCashOperationTypes(): List<CashOperationTypeResponse> =
+        io.github.texport.superkassa.core.presentation.api.model.kkm.CashOperationType.entries.map { ReferenceMapper.toResponse(it) }
 }
