@@ -44,6 +44,46 @@ class KkmCommonHelperTest {
     )
 
     @Test
+    fun testRequestNumberIsNotSpentWhenOfdDidNotAnswer() {
+        // Спецификация CPCR, «Работа в нормальном режиме»: при обрыве или
+        // отсутствии ответа повтор уходит с теми же TOKEN и REQNUM. Раньше
+        // номер сохранялся до отправки, и сервер видел два разных запроса
+        // вместо повтора одного.
+        val kkm = KkmInfo(
+            id = "kkm-1", createdAt = 0L, updatedAt = 0L,
+            mode = "ACTIVE", state = "ACTIVE", tokenEncryptedBase64 = "encrypted"
+        )
+        val request = mockk<OfdCommandRequest>()
+
+        every { tokenCodec.decodeToken("encrypted") } returns 1234L
+        every { generateRequestNumberUseCase.execute("kkm-1", persist = false) } returns 77
+        every { clock.now() } returns 1000L
+        every {
+            ofdCommandRequestFactory.build(
+                kkm = kkm,
+                commandType = OfdCommandType.TICKET,
+                payloadRef = "payload",
+                token = 1234L,
+                reqNum = 77,
+                now = 1000L,
+                serviceInfoOverride = null,
+                registrationNumberOverride = null,
+                factoryNumberOverride = null,
+                ofdProviderOverride = null,
+                defaultServiceInfo = any()
+            )
+        } returns request
+        every { ofd.send(request) } returns OfdCommandResult(
+            status = OfdCommandStatus.FAILED,
+            errorMessage = "Транспортная ошибка"
+        )
+
+        helper.sendOfdCommand(kkm, OfdCommandType.TICKET, "payload")
+
+        verify(exactly = 0) { generateRequestNumberUseCase.commit(any(), any()) }
+    }
+
+    @Test
     fun testEnsureSystemTimeValidSuccess() {
         every { timeValidator.validate(clock) } returns TimeValidationResult(ok = true)
         helper.ensureSystemTimeValid()
@@ -77,7 +117,8 @@ class KkmCommonHelperTest {
         )
 
         every { tokenCodec.decodeToken("encrypted") } returns 1234L
-        every { generateRequestNumberUseCase.execute("kkm-1") } returns 77
+        every { generateRequestNumberUseCase.execute("kkm-1", persist = false) } returns 77
+        every { generateRequestNumberUseCase.commit("kkm-1", 77) } returns Unit
         every { clock.now() } returns 1000L
         every {
             ofdCommandRequestFactory.build(
@@ -115,7 +156,8 @@ class KkmCommonHelperTest {
         )
 
         every { tokenCodec.decodeToken("encrypted") } returns 1234L
-        every { generateRequestNumberUseCase.execute("kkm-1") } returns 77
+        every { generateRequestNumberUseCase.execute("kkm-1", persist = false) } returns 77
+        every { generateRequestNumberUseCase.commit("kkm-1", 77) } returns Unit
         every { clock.now() } returns 1000L
         every {
             ofdCommandRequestFactory.build(
@@ -219,7 +261,8 @@ class KkmCommonHelperTest {
         )
 
         every { tokenCodec.decodeToken("encrypted") } returns 1234L
-        every { generateRequestNumberUseCase.execute("kkm-1") } returns 77
+        every { generateRequestNumberUseCase.execute("kkm-1", persist = false) } returns 77
+        every { generateRequestNumberUseCase.commit("kkm-1", 77) } returns Unit
         every { clock.now() } returns 1000L
         every {
             ofdCommandRequestFactory.build(

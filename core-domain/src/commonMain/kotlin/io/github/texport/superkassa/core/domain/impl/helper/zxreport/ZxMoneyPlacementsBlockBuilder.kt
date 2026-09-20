@@ -41,7 +41,7 @@ object ZxMoneyPlacementsBlockBuilder {
                 operation = op,
                 operationsTotalCount = totalCount,
                 operationsCount = count,
-                operationsSumBills = sum,
+                operationsSumTiyn = sum,
                 offlineCount = offlineCount
             )
         }

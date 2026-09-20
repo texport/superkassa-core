@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.impl
 
+import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime as DomainTaxRegime
@@ -22,20 +23,36 @@ fun SuperkassaApiImpl.initKkmImpl(pin: String, request: KkmInitDirectRequest): K
         factoryNumber = request.factoryNumber,
         manufactureYear = request.manufactureYear,
         serviceInfo = request.serviceInfo?.let { KkmMapper.toDomain(it) },
-        okved = request.okved
+        okved = request.okved,
+        adminPin = request.adminPin
     ).let { KkmMapper.toResponse(it) }
 
 @Throws(Exception::class)
-fun SuperkassaApiImpl.initKkmSimpleImpl(pin: String, request: KkmInitSimpleRequest): KkmResponse =
-    registerKkmUseCase.initKkmSimple(
-        pin = pin,
-        ofdId = request.ofdId,
-        ofdEnvironment = request.ofdEnvironment,
-        ofdSystemId = request.ofdSystemId,
-        ofdToken = request.ofdToken,
-        defaultVatGroup = DomainVatGroup.valueOf(request.defaultVatGroup.name),
-        okved = request.okved
-    ).let { KkmMapper.toResponse(it) }
+fun SuperkassaApiImpl.initKkmSimpleImpl(pin: String, request: KkmInitSimpleRequest): KkmResponse {
+    logger.info(
+        "API -> initKkmSimple: systemId='{}', ofdId='{}', env='{}'",
+        request.ofdSystemId,
+        request.ofdId,
+        request.ofdEnvironment
+    )
+    return try {
+        val result = registerKkmUseCase.initKkmSimple(
+            pin = pin,
+            ofdId = request.ofdId,
+            ofdEnvironment = request.ofdEnvironment,
+            ofdSystemId = request.ofdSystemId,
+            ofdToken = request.ofdToken,
+            defaultVatGroup = DomainVatGroup.valueOf(request.defaultVatGroup.name),
+            okved = request.okved,
+            adminPin = request.adminPin
+        )
+        logger.info("API -> initKkmSimple SUCCESS: kkmId='{}'", result.id)
+        KkmMapper.toResponse(result)
+    } catch (e: Exception) {
+        logger.error("API -> initKkmSimple ERROR for systemId='${request.ofdSystemId}'", e)
+        throw e
+    }
+}
 
 fun SuperkassaApiImpl.generateFactoryInfoImpl(): FactoryNumberResponse {
     val factoryNumber = idGenerator.generateFactoryNumber(coreSettings.kkmFactoryNumberPrefix)
@@ -46,18 +63,29 @@ fun SuperkassaApiImpl.generateFactoryInfoImpl(): FactoryNumberResponse {
 }
 
 fun SuperkassaApiImpl.getKkmImpl(id: String): KkmResponse {
-    val kkm = storage.findKkm(id) ?: throw NotFoundException(
+    val stored = storage.findKkm(id) ?: throw NotFoundException(
         trilingualMessage = CoreStrings.kkmNotFound(),
         code = "KKM_NOT_FOUND"
     )
-    
+
+    // Автономный признак сверяется с очередью при чтении кассы: очередь
+    // расходится в фоне, и до этой сверки касса числилась автономной,
+    // пока кассир не пробьёт следующий чек. Превышенный лимит автономной
+    // работы здесь только записывается: чтение кассы отказом не отвечает,
+    // об этом скажет само действие.
+    val kkm = try {
+        enforceAutonomousLimitsUseCase.execute(stored)
+    } catch (limitExceeded: ConflictException) {
+        storage.findKkm(id) ?: stored
+    }
+
     val openShift = storage.findOpenShift(id)
     val queueStatus = try {
         queue.getQueueStatus(io.github.texport.superkassa.core.presentation.api.model.queue.QueueStatusRequest(id))
     } catch (e: Exception) {
         null
     }
-    
+
     val lastError = try {
         val tasks = storage.listQueueTasksByCashbox(id, "OFFLINE", 20)
         tasks.firstOrNull { it.status == "FAILED" }?.lastError
@@ -69,6 +97,7 @@ fun SuperkassaApiImpl.getKkmImpl(id: String): KkmResponse {
         isShiftOpen = openShift != null,
         shiftOpenedAt = openShift?.openedAt,
         offlineQueueCount = queueStatus?.pendingCount ?: 0,
+        stuckQueueCount = queueStatus?.rejectedCount ?: 0,
         lastSyncError = lastError
     )
 }
@@ -84,7 +113,9 @@ fun SuperkassaApiImpl.listKkmsImpl(params: KkmListParams): KkmListResponse {
     ).map { kkm ->
         val openShift = storage.findOpenShift(kkm.id)
         val queueStatus = try {
-            queue.getQueueStatus(io.github.texport.superkassa.core.presentation.api.model.queue.QueueStatusRequest(kkm.id))
+            queue.getQueueStatus(
+                io.github.texport.superkassa.core.presentation.api.model.queue.QueueStatusRequest(kkm.id)
+            )
         } catch (e: Exception) {
             null
         }
@@ -98,6 +129,7 @@ fun SuperkassaApiImpl.listKkmsImpl(params: KkmListParams): KkmListResponse {
             isShiftOpen = openShift != null,
             shiftOpenedAt = openShift?.openedAt,
             offlineQueueCount = queueStatus?.pendingCount ?: 0,
+            stuckQueueCount = queueStatus?.rejectedCount ?: 0,
             lastSyncError = lastError
         )
     }
@@ -111,6 +143,13 @@ fun SuperkassaApiImpl.deleteKkmImpl(id: String, pin: String): Boolean {
     return decommissionUseCase.execute(kkm)
 }
 
+fun SuperkassaApiImpl.validateCanDeleteKkmImpl(id: String, pin: String): Boolean {
+    val kkm = authorization.requireKkm(id)
+    authorization.requireRole(kkm.id, pin, setOf(UserRole.ADMIN))
+    decommissionUseCase.validateCanDelete(kkm)
+    return true
+}
+
 fun SuperkassaApiImpl.listCountersImpl(kkmId: String, pin: String): List<CounterSnapshotResponse> {
     authorization.requireKkm(kkmId)
     authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
@@ -121,7 +160,11 @@ fun SuperkassaApiImpl.updateKkmSettingsImpl(kkmId: String, pin: String, autoClos
     kkmCommonHelper.ensureSystemTimeValid()
     authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN))
     val kkm = authorization.requireKkm(kkmId)
-    return updateSettingsUseCase.updateGeneralSettings(kkm, autoCloseShift, autoCashout).let { KkmMapper.toResponse(it) }
+    return updateSettingsUseCase.updateGeneralSettings(
+        kkm,
+        autoCloseShift,
+        autoCashout
+    ).let { KkmMapper.toResponse(it) }
 }
 
 fun SuperkassaApiImpl.updateTaxSettingsImpl(kkmId: String, pin: String, taxRegime: TaxRegime, defaultVatGroup: VatGroup): KkmResponse {
@@ -142,6 +185,20 @@ fun SuperkassaApiImpl.updateBrandingSettingsImpl(kkmId: String, pin: String, bra
     return updateSettingsUseCase.updateBranding(kkm, KkmMapper.toDomain(branding)).let { KkmMapper.toResponse(it) }
 }
 
+/**
+ * Пишет название кассы на узел.
+ *
+ * Пин спрашивается, как у соседних настроек, но роли не различаются:
+ * название не влияет ни на чек, ни на смену, а даёт его тот, кто в этот
+ * момент за кассой. Требование прав администратора оставило бы кассы
+ * безымянными на всех рабочих местах, где владелец не входит сам.
+ */
+fun SuperkassaApiImpl.updateKkmNameImpl(kkmId: String, pin: String, name: String?): KkmResponse {
+    authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
+    val kkm = authorization.requireKkm(kkmId)
+    return updateSettingsUseCase.updateName(kkm, name).let { KkmMapper.toResponse(it) }
+}
+
 fun SuperkassaApiImpl.enterProgrammingImpl(kkmId: String, pin: String): KkmResponse {
     val kkm = authorization.requireKkm(kkmId)
     authorization.requireRole(kkm.id, pin, setOf(UserRole.ADMIN))
@@ -155,7 +212,15 @@ fun SuperkassaApiImpl.exitProgrammingImpl(kkmId: String, pin: String): KkmRespon
 }
 
 fun SuperkassaApiImpl.cashInImpl(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResponse =
-    createCashOperationUseCase.execute(kkmId, KkmMapper.toDomain(request, pin), CashOperationType.CASH_IN).let { KkmMapper.toResponse(it) }
+    createCashOperationUseCase.execute(
+        kkmId,
+        KkmMapper.toDomain(request, pin),
+        CashOperationType.CASH_IN
+    ).let { KkmMapper.toResponse(it) }
 
 fun SuperkassaApiImpl.cashOutImpl(kkmId: String, pin: String, request: CashOperationRequest): CashOperationResponse =
-    createCashOperationUseCase.execute(kkmId, KkmMapper.toDomain(request, pin), CashOperationType.CASH_OUT).let { KkmMapper.toResponse(it) }
+    createCashOperationUseCase.execute(
+        kkmId,
+        KkmMapper.toDomain(request, pin),
+        CashOperationType.CASH_OUT
+    ).let { KkmMapper.toResponse(it) }

@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.api
 
+import io.github.texport.superkassa.core.presentation.api.model.kkm.DocumentDetailsResponse
 import io.github.texport.superkassa.core.presentation.api.model.auth.*
 import io.github.texport.superkassa.core.presentation.api.model.common.*
 import io.github.texport.superkassa.core.presentation.api.model.kkm.*
@@ -9,15 +10,30 @@ import io.github.texport.superkassa.core.presentation.api.model.receipt.*
 import io.github.texport.superkassa.core.presentation.api.model.shift.*
 import io.github.texport.superkassa.core.presentation.api.model.user.*
 import io.github.texport.superkassa.core.presentation.api.model.reference.*
+import io.github.texport.superkassa.core.domain.impl.logging.LogListener
 
 /**
  * Интерфейс API Superkassa для взаимодействия презентационного слоя с бизнес-логикой.
  */
 interface SuperkassaApi : PrintApi {
+
+    companion object
+
     /**
      * Фасад управления офлайн-очередью команд ОФД.
      */
     val queue: OfflineQueueApi
+
+    /**
+     * Установить минимальный уровень логирования.
+     * @param levelName Название уровня (INFO, DEBUG, TRACE и т.д.).
+     */
+    fun setLogLevel(levelName: String)
+
+    /**
+     * Установить слушатель логов для передачи сообщений во внешний код (например, Swift).
+     */
+    fun setLogListener(listener: LogListener)
 
     /**
      * Получить список доступных ставок НДС.
@@ -84,6 +100,16 @@ interface SuperkassaApi : PrintApi {
     fun deleteKkm(id: String, pin: String): Boolean
 
     /**
+     * Проверить возможность снятия ККМ с учета (удаления).
+     *
+     * @param id ID ККМ.
+     * @param pin ПИН-код администратора.
+     * @return True если удаление разрешено.
+     */
+    @Throws(Exception::class)
+    fun validateCanDeleteKkm(id: String, pin: String): Boolean
+
+    /**
      * Получить список накопленных денежных счетчиков ККМ.
      *
      * @param kkmId ID ККМ.
@@ -129,6 +155,21 @@ interface SuperkassaApi : PrintApi {
     fun updateBrandingSettings(kkmId: String, pin: String, branding: ReceiptBrandingRequest): KkmResponse
 
     /**
+     * Задать название кассы.
+     *
+     * Название живёт на узле и потому одинаково на всех рабочих местах.
+     * Фискальным реквизитом оно не является: режим программирования
+     * для правки не нужен.
+     *
+     * @param kkmId ID ККМ.
+     * @param pin ПИН-код пользователя кассы.
+     * @param name Название или `null`, чтобы его снять.
+     * @return Сведения об обновленной ККМ.
+     */
+    @Throws(Exception::class)
+    fun updateKkmName(kkmId: String, pin: String, name: String?): KkmResponse
+
+    /**
      * Войти в режим программирования параметров ККМ.
      *
      * @param kkmId ID ККМ.
@@ -157,6 +198,16 @@ interface SuperkassaApi : PrintApi {
      */
     @Throws(Exception::class)
     fun listUsers(kkmId: String, pin: String): List<UserResponse>
+
+    /**
+     * Узнать, кто работает под этим ПИН-кодом.
+     *
+     * @param kkmId ID ККМ.
+     * @param pin ПИН-код вошедшего.
+     * @return Пользователь кассы; ПИН-код в ответе не возвращается.
+     */
+    @Throws(Exception::class)
+    fun currentUser(kkmId: String, pin: String): UserResponse
 
     /**
      * Создать нового пользователя в ККМ.
@@ -410,6 +461,17 @@ interface SuperkassaApi : PrintApi {
      * @param pin ПИН-код пользователя.
      * @return Список фискальных документов.
      */
+    /**
+     * Получить документ вместе с составом чека и тем, кто его оформил.
+     *
+     * @param kkmId ID ККМ.
+     * @param documentId ID документа.
+     * @param pin ПИН-код пользователя.
+     * @return Документ, его позиции и имя оформившего.
+     */
+    @Throws(Exception::class)
+    fun getDocumentDetails(kkmId: String, documentId: String, pin: String): DocumentDetailsResponse
+
     @Throws(Exception::class)
     fun listFiscalDocumentsByPeriod(
         kkmId: String,
@@ -453,6 +515,9 @@ interface SuperkassaApi : PrintApi {
     /**
      * Получить справочник типов оплат.
      *
+     * Каждый элемент несёт признак `supported`: допускает ли действующая
+     * версия протокола такой вид оплаты.
+     *
      * @return Список типов оплат.
      */
     @Throws(Exception::class)
@@ -481,7 +546,6 @@ interface SuperkassaApi : PrintApi {
      */
     @Throws(Exception::class)
     fun getTaxRegimes(): List<TaxRegimeResponse>
-
 
     /**
      * Получить справочник ширины чековой ленты.
@@ -619,4 +683,11 @@ interface SuperkassaApi : PrintApi {
     @Throws(Exception::class)
     fun getCashOperationTypes(): List<CashOperationTypeResponse>
 
+    /**
+     * Получить справочник видов отрасли чека.
+     *
+     * @return Список видов отрасли.
+     */
+    @Throws(Exception::class)
+    fun getReceiptDomainTypes(): List<ReceiptDomainTypeResponse>
 }

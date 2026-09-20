@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.receipt
 
+import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
@@ -7,6 +8,7 @@ import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationRequest
 import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationResult
 import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationType
+import io.github.texport.superkassa.core.domain.api.model.kkm.becameFiscal
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
@@ -15,6 +17,7 @@ import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePo
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.helper.common.IdempotentOperationExecutor
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
+import io.github.texport.superkassa.core.domain.impl.usecase.shift.RecalculateShiftCountersUseCase
 
 /**
  * Сценарий выполнения операции внесения/изъятия наличных денег.
@@ -33,7 +36,8 @@ class CreateCashOperationUseCase(
     private val queue: OfflineQueuePort,
     private val executor: IdempotentOperationExecutor,
     private val kkmCommonHelper: KkmCommonHelper,
-    private val processOfdDocumentResult: ProcessOfdDocumentResultUseCase
+    private val processOfdDocumentResult: ProcessOfdDocumentResultUseCase,
+    private val recalculateShiftCounters: RecalculateShiftCountersUseCase
 ) {
     /**
      * Выполняет операцию внесения или изъятия наличных средств.
@@ -46,10 +50,17 @@ class CreateCashOperationUseCase(
      */
     fun execute(kkmId: String, request: CashOperationRequest, type: CashOperationType): CashOperationResult {
         // Проверка корректности суммы операции (не должна быть отрицательной)
-        if (request.amount < 0.0) {
-            throw ValidationException(CoreStrings.badRequest(), "CASH_SUM_NEGATIVE")
+        if (request.amount.signum < 0) {
+            throw ValidationException(CoreStrings.cashSumNegative(), "CASH_SUM_NEGATIVE")
         }
         val amountMoney = Money.fromTenge(request.amount)
+
+        // Оцениваем статус автономной очереди ДО сохранения нового документа
+        val hasQueue = !queue.canSendDirectly(kkmId)
+
+        // Смену открывает проверка, а деньги в ящике двигает обработка ответа
+        // ОФД: смена одна и та же, и перечитывать её из документа незачем.
+        var openShift = ""
 
         // Выполнение идемпотентной фискальной операции
         return executor.executeIdempotentFiscalOperation(
@@ -61,17 +72,23 @@ class CreateCashOperationUseCase(
                 // Проверка наличия открытой смены на ККМ
                 val shift = storage.findOpenShift(kkmId)
                     ?: throw ConflictException(CoreStrings.shiftNotOpen(), "SHIFT_NOT_OPEN")
-                
+
                 if (type == CashOperationType.CASH_OUT) {
-                    val currentCash = storage.loadCounters(kkmId, "SHIFT", shift.id)["CASH_SUM"] ?: 0L
-                    if (amountMoney.bills > currentCash) {
-                        throw ValidationException(CoreStrings.badRequest(), "INSUFFICIENT_CASH")
+                    // Сохранённый счётчик обновляется только при построении отчёта,
+                    // поэтому между отчётами он отстаёт от действительности.
+                    // Остаток берётся тем же расчётом, что и X- и Z-отчёт, — иначе
+                    // касса откажет в изъятии денег, которые у неё есть.
+                    val currentCash = recalculateShiftCounters.execute(kkmId, shift)[CounterKeyFormats.CASH_SUM] ?: 0L
+                    // Сравнение в тиынах: остаток ящика хранится в них.
+                    if (amountMoney.tiyn() > currentCash) {
+                        throw ValidationException(CoreStrings.insufficientCash(), "INSUFFICIENT_CASH")
                     }
                 }
-                
+
                 shift.id
             },
             saveOperation = { docId, now, shiftId ->
+                openShift = shiftId
                 // Сохранение операции с наличными в базе данных ККМ
                 storage.saveCashOperation(
                     kkmId = kkmId,
@@ -81,13 +98,6 @@ class CreateCashOperationUseCase(
                     shiftId = shiftId,
                     createdAt = now
                 )
-                // Обновление общего баланса наличных в ККМ по результатам проведения операции
-                processOfdDocumentResult.updateCashSumForOperation(
-                    kkmId = kkmId,
-                    shiftId = shiftId,
-                    type = type,
-                    amountBills = amountMoney.bills
-                )
             },
             sendOfdCommand = { kkmInfo, docId ->
                 val command = OfflineQueueCommandRequest(
@@ -96,10 +106,10 @@ class CreateCashOperationUseCase(
                     payloadRef = docId
                 )
                 // Если ККМ работает в автономном/офлайн-режиме, помещаем команду в очередь
-                val hasQueue = !queue.canSendDirectly(kkmId)
                 if (hasQueue) {
                     queue.enqueueOffline(command)
-                    OfdCommandResult(status = OfdCommandStatus.OK)
+                    // Поставлено в очередь, а не доставлено.
+                    OfdCommandResult(status = OfdCommandStatus.TIMEOUT)
                 } else {
                     // Иначе отправляем команду напрямую в ОФД через ККМ
                     kkmCommonHelper.sendOfdCommand(kkmInfo, OfdCommandType.MONEY_PLACEMENT, docId)
@@ -116,9 +126,20 @@ class CreateCashOperationUseCase(
                     now = now,
                     receiptContext = null
                 )
-                // Обновление счетчиков операций внесения/изъятия по результатам фискализации документа
-                val isOffline = ofdResult.status == OfdCommandStatus.TIMEOUT
-                processOfdDocumentResult.updateMoneyPlacementCountersFromDocument(documentId, isOffline)
+                // Деньги в ящике двигает только проведённый документ. Отвергнутое
+                // ОФД изъятие денег из кассы не забирает: иначе в ящике недостача
+                // по операции, которой не было, — и так до ближайшего X-отчёта.
+                val document = storage.findFiscalDocumentById(documentId)
+                if (document != null && document.becameFiscal()) {
+                    processOfdDocumentResult.updateCashSumForOperation(
+                        kkmId = currentKkmId,
+                        shiftId = openShift,
+                        type = type,
+                        amountTiyn = amountMoney.tiyn()
+                    )
+                    val isOffline = ofdResult.status == OfdCommandStatus.TIMEOUT
+                    processOfdDocumentResult.updateMoneyPlacementCountersFromDocument(documentId, isOffline)
+                }
             },
             buildResult = { documentId, ofdResult, deliveryStatus ->
                 // Сборка финального объекта результата кассовой операции

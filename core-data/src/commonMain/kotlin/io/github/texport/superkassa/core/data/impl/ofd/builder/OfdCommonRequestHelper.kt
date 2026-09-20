@@ -91,4 +91,16 @@ object OfdCommonRequestHelper {
      * @return код типа налога.
      */
     fun taxTypeForGroup(group: VatGroup): Int = if (group == VatGroup.VAT_0) 100 else 100
+
+    /**
+     * Денежная структура из суммы в тиынах.
+     *
+     * Счётчики кассы копятся в тиынах, а протокол требует пару «тенге
+     * и тиыны». Прежде дробная часть прибивалась нулём во всех полях
+     * отчёта, и Z-отчёт расходился с настоящими деньгами.
+     */
+    fun moneyFromTiyn(tiyn: Long): kotlinx.serialization.json.JsonObject =
+        moneyObject(tiyn / TIYN_IN_TENGE, (tiyn % TIYN_IN_TENGE).toInt())
+
+    private const val TIYN_IN_TENGE = 100L
 }

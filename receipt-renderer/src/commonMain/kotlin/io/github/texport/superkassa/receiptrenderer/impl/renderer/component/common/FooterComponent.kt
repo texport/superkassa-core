@@ -18,24 +18,18 @@ internal object FooterComponent {
             ""
         }
 
-        val footerInfo = if (titleKey.contains("report")) {
-            translateInlineKey("print_form_report")
-        } else if (titleKey.contains("cash_in") || titleKey.contains("cash_out") || titleKey.contains("cash_operation")) {
-            translateInlineKey("print_form_operation")
-        } else {
-            translateInlineKey("print_form_document")
-        }
-
         val footerStatusHtml = if (footerStatus.isNotEmpty()) {
             "<div class=\"footer-item bold\">$footerStatus</div>"
         } else {
             ""
         }
 
+        // Строки «Печатная форма документа» на ленте нет: покупателю она
+        // ничего не сообщает, требованием КГД не предусмотрена и отнимала
+        // место у того, что кассир печатает сам.
         return """
             <div class="footer center">
                 $footerStatusHtml
-                <div class="footer-item muted">$footerInfo</div>
                 $footerHtml
             </div>
         """.trimIndent()

@@ -77,7 +77,7 @@ object OfdInfoCountersSnapshotParser {
             val obj = element.jsonObject
             val operation = obj["operation"]?.jsonPrimitive?.content ?: return@forEach
             val count = obj["count"]?.jsonPrimitive?.long ?: 0L
-            val sum = moneyBills(obj, "sum")
+            val sum = moneyTiyn(obj, "sum")
 
             shiftCounters[CounterKeyFormats.OPERATION_COUNT.format(operation)] = count
             shiftCounters[CounterKeyFormats.OPERATION_SUM.format(operation)] = sum
@@ -90,16 +90,16 @@ object OfdInfoCountersSnapshotParser {
 
             shiftCounters[CounterKeyFormats.TICKET_TOTAL_COUNT.format(operation)] = obj["ticketsTotalCount"]?.jsonPrimitive?.long ?: 0L
             shiftCounters[CounterKeyFormats.TICKET_COUNT.format(operation)] = obj["ticketsCount"]?.jsonPrimitive?.long ?: 0L
-            shiftCounters[CounterKeyFormats.TICKET_SUM.format(operation)] = moneyBills(obj, "ticketsSum")
+            shiftCounters[CounterKeyFormats.TICKET_SUM.format(operation)] = moneyTiyn(obj, "ticketsSum")
             shiftCounters[CounterKeyFormats.TICKET_OFFLINE_COUNT.format(operation)] = obj["offlineCount"]?.jsonPrimitive?.long ?: 0L
-            shiftCounters[CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operation)] = moneyBills(obj, "discountSum")
-            shiftCounters[CounterKeyFormats.TICKET_MARKUP_SUM.format(operation)] = moneyBills(obj, "markupSum")
-            shiftCounters[CounterKeyFormats.TICKET_CHANGE_SUM.format(operation)] = moneyBills(obj, "changeSum")
+            shiftCounters[CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operation)] = moneyTiyn(obj, "discountSum")
+            shiftCounters[CounterKeyFormats.TICKET_MARKUP_SUM.format(operation)] = moneyTiyn(obj, "markupSum")
+            shiftCounters[CounterKeyFormats.TICKET_CHANGE_SUM.format(operation)] = moneyTiyn(obj, "changeSum")
 
             obj["payments"]?.jsonArray?.forEach { pe ->
                 val pObj = pe.jsonObject
                 val payment = pObj["payment"]?.jsonPrimitive?.content ?: return@forEach
-                val pSum = moneyBills(pObj, "sum")
+                val pSum = moneyTiyn(pObj, "sum")
                 val pCount = pObj["count"]?.jsonPrimitive?.long ?: 0L
 
                 shiftCounters[CounterKeyFormats.PAYMENT_SUM.format(operation, payment)] = pSum
@@ -108,12 +108,13 @@ object OfdInfoCountersSnapshotParser {
         }
 
         // 3. Парсинг общей суммы наличных в кассе (cashSum)
-        val cashSum = moneyBills(zxReport, "cashSum")
+        // Остаток ящика хранится в тиынах, поэтому берём и дробную часть.
+        val cashSum = moneyTiyn(zxReport, "cashSum")
         shiftCounters[CounterKeyFormats.CASH_SUM] = cashSum
 
         // 4. Парсинг общей выручки (revenue)
         zxReport["revenue"]?.jsonObject?.let { rev ->
-            val revSum = moneyBills(rev, "sum")
+            val revSum = moneyTiyn(rev, "sum")
             val isNegative = rev["isNegative"]?.jsonPrimitive?.boolean == true
             shiftCounters[CounterKeyFormats.REVENUE_SUM] = revSum
             shiftCounters[CounterKeyFormats.REVENUE_IS_NEGATIVE] = if (isNegative) 1L else 0L
@@ -123,7 +124,7 @@ object OfdInfoCountersSnapshotParser {
         zxReport["nonNullableSums"]?.jsonArray?.forEach { element ->
             val obj = element.jsonObject
             val operation = obj["operation"]?.jsonPrimitive?.content ?: return@forEach
-            val sum = moneyBills(obj, "sum")
+            val sum = moneyTiyn(obj, "sum")
             globalCounters[CounterKeyFormats.NON_NULLABLE_SUM.format(operation)] = sum
         }
 
@@ -131,7 +132,7 @@ object OfdInfoCountersSnapshotParser {
         zxReport["startShiftNonNullableSums"]?.jsonArray?.forEach { element ->
             val obj = element.jsonObject
             val operation = obj["operation"]?.jsonPrimitive?.content ?: return@forEach
-            val sum = moneyBills(obj, "sum")
+            val sum = moneyTiyn(obj, "sum")
             shiftCounters[CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format(operation)] = sum
         }
 
@@ -170,10 +171,19 @@ object OfdInfoCountersSnapshotParser {
     }
 
     /**
-     * Вспомогательный метод для безопасного извлечения целой части денежной суммы (в тиынах/копейках).
+     * Сумма из ответа ОФД целиком, в тиынах.
+     *
+     * ОФД присылает деньги парой «тенге и тиыны». Брать одни тенге значит
+     * терять дробную часть — для остатка денежного ящика это расхождение
+     * с настоящими деньгами.
      */
-    private fun moneyBills(obj: JsonObject, key: String): Long {
+    private fun moneyTiyn(obj: JsonObject, key: String): Long {
         val money = obj[key]?.jsonObject ?: return 0L
-        return money["bills"]?.jsonPrimitive?.long ?: 0L
+        val bills = money["bills"]?.jsonPrimitive?.long ?: 0L
+        val coins = money["coins"]?.jsonPrimitive?.long ?: 0L
+        return bills * TIYN_IN_TENGE + coins
     }
+
+    /** Тиынов в тенге. */
+    private const val TIYN_IN_TENGE = 100L
 }

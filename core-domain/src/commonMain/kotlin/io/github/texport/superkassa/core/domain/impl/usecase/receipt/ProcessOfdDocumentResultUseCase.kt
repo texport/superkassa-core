@@ -7,6 +7,7 @@ import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationType
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.model.queue.OfflineQueueCommandRequest
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
@@ -61,7 +62,7 @@ class ProcessOfdDocumentResultUseCase(
         // Обновление статуса блокировки ККМ на основе кода ошибки ОФД (код 15 означает блокировку)
         updateKkmBlockedStateFromOfd(kkm, ofdResult, now)
 
-        if (resultCode == null || resultCode == 254 || resultCode == 255) {
+        if (noAnswerFromOfd(ofdResult)) {
             // Если произошел таймаут или обрыв связи, или ОФД вернул 254/255 — фискализируем автономно
             val autonomousSign = clock.now().toString()
             storage.updateReceiptStatus(
@@ -73,6 +74,23 @@ class ProcessOfdDocumentResultUseCase(
                 deliveredAt = null,
                 isAutonomous = true
             )
+
+            // Номер автономного документа касса присваивает сама: в разрыве
+            // его неоткуда получить, а без номера ОФД не отличит документ,
+            // оформленный офлайн, от обычного сетевого.
+            val nextOfflineNumber = 1 + (
+                storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[
+                    CounterKeyFormats.OFFLINE_TICKET_NUMBER
+                ] ?: 0L
+                )
+            storage.upsertCounter(
+                kkmId,
+                CounterScopes.GLOBAL,
+                null,
+                CounterKeyFormats.OFFLINE_TICKET_NUMBER,
+                nextOfflineNumber
+            )
+            storage.updateDocumentNumber(documentId, nextOfflineNumber)
 
             // Постановка фискального документа в очередь для отложенной отправки при восстановлении связи
             queue.enqueueOffline(
@@ -98,22 +116,50 @@ class ProcessOfdDocumentResultUseCase(
             return
         }
 
+        if (resultCode == null) {
+            // Ответа нет, но и связи не теряли: узел не смог отправить команду
+            // (нечем построить запрос, негодная конфигурация ОФД). Повтор
+            // с теми же данными провалится так же, поэтому автономный признак
+            // здесь не выдаётся и в очередь документ не ставится: он навсегда
+            // остался бы «ожидает отправки» и молча копил бы попытки.
+            storage.updateReceiptStatus(
+                documentId = documentId,
+                fiscalSign = null,
+                autonomousSign = null,
+                ofdStatus = REJECTED,
+                ofdErrorCode = null,
+                deliveredAt = null,
+                isAutonomous = false
+            )
+            return
+        }
+
         // Результат получен от ОФД напрямую (онлайн)
+        // Связь была, ответ получен: документ либо принят, либо отвергнут.
+        // Третьего состояния нет. Раньше отказ с кодом вне списка 13/14/17
+        // оставлял документ в PENDING: в очередь он не попадал, повтор его
+        // не подхватывал, и чек висел «ожидает отправки» бессрочно.
         val success = resultCode == 0
-        val isFailed = resultCode == 13 || resultCode == 14 || resultCode == 17
-        val status = if (success) "SENT" else if (isFailed) "FAILED" else "PENDING"
-        
+        val status = if (success) DELIVERED else REJECTED
+
         storage.updateReceiptStatus(
             documentId = documentId,
             fiscalSign = ofdResult.fiscalSign,
             autonomousSign = ofdResult.autonomousSign,
             ofdStatus = status,
-            ofdErrorCode = if (isFailed) resultCode else null,
+            // Код отказа сохраняется при любом ненулевом результате: раньше
+            // причина отказа терялась везде, кроме трёх известных кодов.
+            ofdErrorCode = if (success) null else resultCode,
             deliveredAt = if (success) now else null,
             isAutonomous = false
         )
 
         if (success) {
+            val extractedDocNo = OfdResponseParser.extractDocNumber(ofdResult.responseJson)
+            if (extractedDocNo != null) {
+                storage.updateDocumentNumber(documentId, extractedDocNo)
+            }
+
             val ticketAds = OfdResponseParser.extractTicketAds(ofdResult.responseJson)
             if (ticketAds.isNotEmpty()) {
                 val freshKkm = storage.findKkmForUpdate(kkmId)
@@ -157,11 +203,26 @@ class ProcessOfdDocumentResultUseCase(
     }
 
     /**
+     * Остался ли документ без ответа ОФД по причине связи.
+     *
+     * Только такой исход даёт право фискализировать автономно и досылать
+     * из очереди. Отказ узла отправить команду связью не является.
+     */
+    private fun noAnswerFromOfd(result: OfdCommandResult): Boolean =
+        result.status == OfdCommandStatus.TIMEOUT ||
+            result.resultCode == SERVICE_TEMPORARILY_UNAVAILABLE ||
+            result.resultCode == UNKNOWN_ERROR
+
+    /**
      * Обновляет состояние блокировки ККМ на основе ответа ОФД.
      */
     private fun updateKkmBlockedStateFromOfd(kkm: KkmInfo, ofdResult: OfdCommandResult, now: Long) {
         val code = ofdResult.resultCode ?: return
-        val shouldBlock = code in 1..7 || code == 11 || code == 12 || code == 15
+        // 18 и 19 добавлены протоколом 2.0.4: касса снята с учёта и касса
+        // отключена от ОФД. Обе означают, что фискализировать больше нечего,
+        // и без них снятая с учёта касса продолжала бы выпускать чеки.
+        val shouldBlock = code in 1..7 || code == 11 || code == 12 || code == 15 ||
+            code == DEREGISTERED_CODE || code == DISCONNECTED_CODE
         if (shouldBlock && kkm.state != KkmState.BLOCKED.name) {
             storage.updateKkm(
                 kkm.copy(
@@ -205,18 +266,18 @@ class ProcessOfdDocumentResultUseCase(
      * @param kkmId Идентификатор кассового аппарата (ККМ).
      * @param shiftId Идентификатор текущей открытой смены.
      * @param type Тип кассовой операции (внесение или изъятие).
-     * @param amountBills Сумма операции в тиынах (минимальных денежных единицах).
+     * @param amountTiyn Сумма операции в тиынах (минимальных денежных единицах).
      */
     fun updateCashSumForOperation(
         kkmId: String,
         shiftId: String,
         type: CashOperationType,
-        amountBills: Long
+        amountTiyn: Long
     ) {
-        if (amountBills == 0L) return
+        if (amountTiyn == 0L) return
         val delta = when (type) {
-            CashOperationType.CASH_IN -> amountBills
-            CashOperationType.CASH_OUT -> -amountBills
+            CashOperationType.CASH_IN -> amountTiyn
+            CashOperationType.CASH_OUT -> -amountTiyn
         }
         fun update(scope: String, scopeShiftId: String?) {
             val current = storage.loadCounters(kkmId, scope, scopeShiftId)[CounterKeyFormats.CASH_SUM] ?: 0L
@@ -263,5 +324,25 @@ class ProcessOfdDocumentResultUseCase(
 
         updateScope(CounterScopes.SHIFT, shiftId)
         updateScope(CounterScopes.GLOBAL, null)
+    }
+
+    private companion object {
+        /** Документ принят ОФД. */
+        const val DELIVERED = "SENT"
+
+        /** Документ отвергнут: фискальным он не стал. */
+        const val REJECTED = "FAILED"
+
+        /** Сервис временно недоступен: отправку следует повторить. */
+        const val SERVICE_TEMPORARILY_UNAVAILABLE = 254
+
+        /** Неизвестная ошибка: отправку следует повторить. */
+        const val UNKNOWN_ERROR = 255
+
+        /** Касса снята с учёта в налоговом органе (протокол 2.0.4). */
+        const val DEREGISTERED_CODE = 18
+
+        /** Касса отключена от ОФД (протокол 2.0.4). */
+        const val DISCONNECTED_CODE = 19
     }
 }

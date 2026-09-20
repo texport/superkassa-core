@@ -27,7 +27,9 @@ class OfdQueueCommandHandlerPortAdapterTest {
         val clock = mockk<ClockPort>()
 
         every { clock.now() } returns 10000L
-        every { storage.findFiscalDocumentById("ref1") } returns null
+        // Документ по ссылке обязан находиться: без него узел не знает,
+        // чей это ответ, и статус доставки ставить некуда.
+        every { storage.findFiscalDocumentById("ref1") } returns mockk(relaxed = true)
         every {
             sendFiscalCommand.execute("c1", OfdCommandType.TICKET, "ref1")
         } returns OfdCommandResult(
@@ -36,9 +38,8 @@ class OfdQueueCommandHandlerPortAdapterTest {
             fiscalSign = "fs123",
             autonomousSign = null
         )
-        every { storage.findFiscalDocumentById(any()) } returns null
         every {
-            storage.updateReceiptStatus("ref1", "fs123", null, "SENT", null, 10000L, false)
+            storage.updateReceiptStatus("ref1", "fs123", any(), "SENT", null, 10000L, any())
         } returns true
 
         val adapter = OfdQueueCommandHandlerPortAdapter(sendFiscalCommand, storage, clock)
@@ -58,7 +59,7 @@ class OfdQueueCommandHandlerPortAdapterTest {
         assertEquals(QueueStatus.SENT, result.status)
 
         verify {
-            storage.updateReceiptStatus("ref1", "fs123", null, "SENT", null, 10000L, false)
+            storage.updateReceiptStatus("ref1", "fs123", any(), "SENT", null, 10000L, any())
         }
     }
 
@@ -91,6 +92,9 @@ class OfdQueueCommandHandlerPortAdapterTest {
         )
 
         val result = adapter.handle(command, renewLock = { true })
+        // Обмена не было: запрос не собрался и до ОФД не дошёл. Задача
+        // остаётся в очереди — причина бывает в состоянии кассы, а не
+        // в документе; отбраковка теряла фискальный документ молча.
         assertEquals(QueueStatus.FAILED, result.status)
         assertEquals("Server error", result.errorMessage)
         val err = result.error

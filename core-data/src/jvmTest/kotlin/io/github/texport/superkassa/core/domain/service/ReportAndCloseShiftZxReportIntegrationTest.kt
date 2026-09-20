@@ -61,8 +61,8 @@ class ReportAndCloseShiftZxReportIntegrationTest {
 
         val counters = mutableMapOf<String, Long>().apply {
             // Касса: начальное значение наличных и выручка.
-            put(CounterKeyFormats.CASH_SUM, 2_000L)
-            put(CounterKeyFormats.REVENUE_SUM, 2_000L)
+            put(CounterKeyFormats.CASH_SUM, 200_000L)
+            put(CounterKeyFormats.REVENUE_SUM, 200_000L)
             put(CounterKeyFormats.REVENUE_IS_NEGATIVE, 0L)
 
             // Внесение наличных (DEPOSIT): одна операция на 500.
@@ -76,7 +76,7 @@ class ReportAndCloseShiftZxReportIntegrationTest {
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_SUM.format("MONEY_PLACEMENT_DEPOSIT"),
-                500L
+                50_000L
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_OFFLINE_COUNT.format("MONEY_PLACEMENT_DEPOSIT"),
@@ -94,7 +94,7 @@ class ReportAndCloseShiftZxReportIntegrationTest {
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_SUM.format("MONEY_PLACEMENT_WITHDRAWAL"),
-                300L
+                30_000L
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_OFFLINE_COUNT.format("MONEY_PLACEMENT_WITHDRAWAL"),
@@ -202,7 +202,7 @@ class ReportAndCloseShiftZxReportIntegrationTest {
 
         val counters = mutableMapOf<String, Long>().apply {
             // Касса: значение наличных на конец смены.
-            put(CounterKeyFormats.CASH_SUM, 5_000L)
+            put(CounterKeyFormats.CASH_SUM, 500_000L)
 
             // Внесение и изъятие для moneyPlacements.
             put(
@@ -215,7 +215,7 @@ class ReportAndCloseShiftZxReportIntegrationTest {
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_SUM.format("MONEY_PLACEMENT_DEPOSIT"),
-                1_500L
+                150_000L
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_OFFLINE_COUNT.format("MONEY_PLACEMENT_DEPOSIT"),
@@ -232,7 +232,7 @@ class ReportAndCloseShiftZxReportIntegrationTest {
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_SUM.format("MONEY_PLACEMENT_WITHDRAWAL"),
-                500L
+                50_000L
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_OFFLINE_COUNT.format("MONEY_PLACEMENT_WITHDRAWAL"),

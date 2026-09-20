@@ -47,6 +47,7 @@ fun OfdRequestBuilderStrategy.buildServiceBlock(command: OfdCommandRequest): Jso
         factoryNumber = factoryNo,
         systemId = systemId,
         offlineBeginMillis = begin,
-        offlineEndMillis = end
+        offlineEndMillis = end,
+        knownTicketAds = command.knownTicketAds
     )
 }

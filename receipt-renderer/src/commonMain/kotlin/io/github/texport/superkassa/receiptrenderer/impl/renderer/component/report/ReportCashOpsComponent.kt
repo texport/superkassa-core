@@ -5,8 +5,8 @@ data class ReportCashOpsInput(
     val cashInSum: Long,
     val cashOutCount: Long,
     val cashOutSum: Long,
-    val cashSumBills: Long,
-    val revenueBills: Long
+    val cashSumTiyn: Long,
+    val revenueTiyn: Long
 )
 
 internal object ReportCashOpsComponent {
@@ -16,8 +16,8 @@ internal object ReportCashOpsComponent {
         translateInlineKey: (String) -> String,
         formatAmount: (Long) -> String
     ): String {
-        val revenueSign = if (input.revenueBills < 0) "-" else ""
-        val revenueSumStr = formatAmount(kotlin.math.abs(input.revenueBills))
+        val revenueSign = if (input.revenueTiyn < 0) "-" else ""
+        val revenueSumStr = formatAmount(kotlin.math.abs(input.revenueTiyn))
 
         val cashOpsTitle = translateInlineKey("cash_operations")
         val depLabel = t("deposits_count")
@@ -27,7 +27,7 @@ internal object ReportCashOpsComponent {
         val wdrSumStr = formatAmount(input.cashOutSum)
         val wdrSumLabel = t("withdrawn_total")
         val cashSumLabel = t("cash_in_drawer")
-        val cashSumStr = formatAmount(input.cashSumBills)
+        val cashSumStr = formatAmount(input.cashSumTiyn)
         val revenueLabel = t("shift_revenue")
 
         return """

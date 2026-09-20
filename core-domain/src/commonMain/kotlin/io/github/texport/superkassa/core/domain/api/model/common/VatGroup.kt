@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.api.model.common
 
+import kotlinx.serialization.Serializable
+
 /**
  * Группы ставок НДС.
  *
@@ -8,6 +10,7 @@ package io.github.texport.superkassa.core.domain.api.model.common
  * @property description Описание налоговой ставки.
  * @property taxTypeCode Код типа налога для протокола ОФД.
  */
+@Serializable
 enum class VatGroup(
     val percent: Int,
     val percentThousandths: Int,
@@ -25,6 +28,15 @@ enum class VatGroup(
 
     /** НДС 10% */
     VAT_10(10, 10_000, "НДС 10%", "TAX_TYPE_VAT_10"),
+
+    /**
+     * НДС 12%.
+     *
+     * Ставка, действовавшая до 2026 года. Нужна для возврата по чеку,
+     * пробитому по старой ставке: возврат повторяет налог исходного чека,
+     * а не берёт сегодняшний.
+     */
+    VAT_12(12, 12_000, "НДС 12%", "TAX_TYPE_VAT_12"),
 
     /** НДС 16% */
     VAT_16(16, 16_000, "НДС 16%", "TAX_TYPE_VAT_16")

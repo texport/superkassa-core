@@ -1,12 +1,14 @@
 package io.github.texport.superkassa.core.presentation.impl.mapper
 
+import io.github.texport.superkassa.core.domain.api.model.receipt.TicketAd as DomainTicketAd
+import io.github.texport.superkassa.core.domain.api.model.common.CounterSnapshot
+import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationRequest as DomainCashOperationRequest
+import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationResult
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBranding
-import io.github.texport.superkassa.core.domain.api.model.common.CounterSnapshot
-import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationResult
-import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
-import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationRequest as DomainCashOperationRequest
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDocumentTypes
 import io.github.texport.superkassa.core.presentation.api.model.kkm.*
 import io.github.texport.superkassa.core.presentation.api.model.ofd.DeliveryStatus
 
@@ -51,12 +53,14 @@ object KkmMapper {
         useForceDarkTheme = branding.useForceDarkTheme,
         customBackgroundColorHex = branding.customBackgroundColorHex,
         customCardTopBorderColorHex = branding.customCardTopBorderColorHex,
-        ofdTicketAds = branding.ofdTicketAds,
+        ofdTicketAds = branding.ofdTicketAds.map { TicketAdDto(it.type, it.version, it.text) },
         printOfdTicketAds = branding.printOfdTicketAds
     )
 
     fun toDomain(dto: ReceiptBrandingRequest): ReceiptBranding = ReceiptBranding(
-        language = io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLanguage.valueOf(dto.language.name),
+        language = io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLanguage.valueOf(
+            dto.language.name
+        ),
         headerLogoUrl = dto.headerLogoUrl,
         paperWidthMm = dto.paperWidthMm,
         themeColor = dto.themeColor,
@@ -72,7 +76,7 @@ object KkmMapper {
         useForceDarkTheme = dto.useForceDarkTheme,
         customBackgroundColorHex = dto.customBackgroundColorHex,
         customCardTopBorderColorHex = dto.customCardTopBorderColorHex,
-        ofdTicketAds = dto.ofdTicketAds,
+        ofdTicketAds = dto.ofdTicketAds.map { DomainTicketAd(it.type, it.version, it.text) },
         printOfdTicketAds = dto.printOfdTicketAds
     )
 
@@ -100,7 +104,7 @@ object KkmMapper {
         id = doc.id,
         cashboxId = doc.cashboxId,
         shiftId = doc.shiftId,
-        docType = doc.docType,
+        docType = ReceiptDocumentTypes.canonical(doc.docType),
         docNo = doc.docNo,
         shiftNo = doc.shiftNo,
         createdAt = doc.createdAt,
@@ -110,6 +114,9 @@ object KkmMapper {
         autonomousSign = doc.autonomousSign,
         isAutonomous = doc.isAutonomous,
         ofdStatus = doc.ofdStatus,
+        // Код отказа доходил до представления, но в ответ не попадал:
+        // кассир видел «ошибка» и ни слова о причине.
+        ofdErrorCode = doc.ofdErrorCode,
         deliveredAt = doc.deliveredAt,
         receiptUrl = doc.receiptUrl,
         registrationNumber = doc.registrationNumber,
@@ -126,6 +133,7 @@ object KkmMapper {
             kkmId = kkm.id,
             createdAt = kkm.createdAt,
             updatedAt = kkm.updatedAt,
+            name = kkm.name,
             mode = kkm.mode,
             state = kkm.state,
             ofdId = ofdId,

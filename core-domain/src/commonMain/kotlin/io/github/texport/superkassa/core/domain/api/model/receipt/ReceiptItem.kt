@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.api.model.receipt
 
+import kotlinx.serialization.Serializable
+
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 
@@ -15,11 +17,12 @@ import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
  * @property vatGroup Группа ставки НДС для позиции (если null, используется ставка по умолчанию для ККМ).
  * @property discount Скидка на позицию.
  * @property markup Наценка на позицию.
- * @property measureUnitCode Числовой код единицы измерения по ОКЕИ (если null, то 796 - штука).
+ * @property measureUnitCode Числовой код единицы измерения по ИС ЭСФ (если null, то 796 — штука).
  * @property listExciseStamp Список связанных акцизных марок.
  * @property ntin Национальный товарный код (НТИН).
  * @property isStorno Флаг сторнирования (аннулирования) позиции.
  */
+@Serializable
 data class ReceiptItem(
     val name: String,
     val sectionCode: String,
@@ -33,5 +36,13 @@ data class ReceiptItem(
     val measureUnitCode: String? = null,
     val listExciseStamp: List<String>? = null,
     val ntin: String? = null,
-    val isStorno: Boolean = false
+    val isStorno: Boolean = false,
+    /**
+     * Наименование на казахском.
+     *
+     * В ОФД не уходит: у позиции чека в CPCR одно имя, второго поля нет
+     * ни в одной версии протокола. Хранится и печатается кассой — чек
+     * в Казахстане двуязычный, и наименование товара не исключение.
+     */
+    val nameKk: String? = null
 )

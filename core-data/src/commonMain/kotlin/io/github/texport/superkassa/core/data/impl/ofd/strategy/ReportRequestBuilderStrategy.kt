@@ -3,6 +3,8 @@ package io.github.texport.superkassa.core.data.impl.ofd.strategy
 import io.github.texport.superkassa.core.data.impl.ofd.OfdConfig
 import io.github.texport.superkassa.core.data.impl.ofd.OfdRequestFactory
 import io.github.texport.superkassa.core.domain.impl.helper.zxreport.ZxReportBuilder
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandRequest
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
@@ -22,6 +24,18 @@ class ReportRequestBuilderStrategy(
 ) : OfdRequestBuilderStrategy {
 
     /**
+     * Смена снятого отчёта: своя у документа, иначе открытая.
+     *
+     * Своей смены нет у отчётов, снятых прежними версиями кассы, — для них
+     * остаётся прежний путь. Отчёт, снятый вне смены, не собирается вовсе:
+     * счётчики брать неоткуда.
+     */
+    private fun shiftOf(document: FiscalDocumentSnapshot?, kkmId: String): ShiftInfo? {
+        val own = document?.shiftId?.takeIf { it.isNotBlank() && it != NO_SHIFT }
+        return own?.let { storage?.findShiftById(it) } ?: storage?.findOpenShift(kkmId)
+    }
+
+    /**
      * Проверяет, может ли стратегия обработать указанный тип команды [commandType].
      *
      * @param commandType тип команды ОФД.
@@ -39,14 +53,18 @@ class ReportRequestBuilderStrategy(
      */
     override fun build(command: OfdCommandRequest, config: OfdConfig): JsonObject? {
         val serviceBlock = buildServiceBlock(command) ?: return null
-        println("[ReportRequestBuilderStrategy.kt] serviceBlock built")
-        val shift = storage.findOpenShift(command.kkmId) ?: return null
-        println("[ReportRequestBuilderStrategy.kt] open shift found: ${shift.id}")
-        
-        println("[ReportRequestBuilderStrategy.kt] calling recalculateShiftCountersUseCase.execute...")
+        // Отчёт, оформленный при оборванной связи, обязан это сообщать.
+        val documentForNumbers = storage?.findFiscalDocumentById(command.payloadRef)
+        val isOffline = documentForNumbers?.isAutonomous ?: false
+        // Смена берётся та, в которой отчёт сняли, а не та, что открыта сейчас.
+        // Прежде отчёт собирался по открытой смене, и досылка после
+        // её закрытия собрать запрос уже не могла: задача уходила
+        // в отбраковку, документ навсегда оставался неотправленным,
+        // а очередь при этом показывала ноль.
+        val shift = shiftOf(documentForNumbers, command.kkmId) ?: return null
+
         val counters = recalculateShiftCountersUseCase
             .execute(command.kkmId, shift)
-        println("[ReportRequestBuilderStrategy.kt] recalculateShiftCountersUseCase.execute DONE")
         val now = command.offlineEndMillis ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
         val shiftNo = shift.shiftNo.toInt().coerceAtLeast(0)
         val zxInput = ZxReportBuilder.build(
@@ -65,7 +83,12 @@ class ReportRequestBuilderStrategy(
             reqNum = command.reqNum,
             reportType = "REPORT_X",
             zxReport = zxInput,
-            serviceBlock = serviceBlock
+            serviceBlock = serviceBlock,
+            isOffline = isOffline,
+            printedDocumentNumber = documentForNumbers?.printedDocumentNumber
         )
     }
 }
+
+/** Чем помечен отчёт, снятый вне смены: смены у него нет. */
+private const val NO_SHIFT = "0"

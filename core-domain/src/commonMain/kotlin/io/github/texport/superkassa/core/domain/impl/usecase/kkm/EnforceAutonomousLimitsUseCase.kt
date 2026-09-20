@@ -32,6 +32,15 @@ class EnforceAutonomousLimitsUseCase(
          * Дефолтный максимальный лимит автономной работы: 72 часа.
          */
         private const val DEFAULT_MAX_AUTONOMOUS_DURATION_MS = 72L * 60L * 60L * 1000L
+
+        /**
+         * Причина блокировки «превышен предел автономной работы».
+         *
+         * Причины от ОФД записываются как код ответа плюс тысяча, поэтому
+         * собственная причина кассы взята из другого диапазона: раньше здесь
+         * стояла двойка, неотличимая от ответа ОФД «неверный токен».
+         */
+        internal const val AUTONOMOUS_LIMIT_BLOCK = 2001
     }
 
     /**
@@ -45,44 +54,53 @@ class EnforceAutonomousLimitsUseCase(
      * @param kkm Текущая информация о ККМ для проверки.
      * @throws ConflictException Если ККМ превысила лимит автономной работы.
      */
-    fun execute(kkm: KkmInfo) {
+    fun execute(kkm: KkmInfo): KkmInfo {
         val now = clock.now()
         val hasQueue = !queue.canSendDirectly(kkm.id)
         val autonomousSince = kkm.autonomousSince
 
         // 1. Активация автономного режима при появлении неотправленных документов
         if (autonomousSince == null && hasQueue) {
-            storage.updateKkm(kkm.copy(updatedAt = now, autonomousSince = now))
-            return
+            val started = kkm.copy(updatedAt = now, autonomousSince = now)
+            storage.updateKkm(started)
+            return started
         }
 
         // 2. Сброс автономного режима, если очередь пуста, и касса не заблокирована
         if (autonomousSince != null && !hasQueue && kkm.state != KkmState.BLOCKED.name) {
-            storage.updateKkm(kkm.copy(updatedAt = now, autonomousSince = null))
-            return
+            val restored = kkm.copy(updatedAt = now, autonomousSince = null)
+            storage.updateKkm(restored)
+            return restored
         }
 
         // 3. Блокировка кассы при превышении лимита автономной работы
         if (autonomousSince != null && now - autonomousSince > maxAutonomousDurationMs) {
             if (kkm.state != KkmState.BLOCKED.name) {
-                storage.updateKkm(kkm.copy(updatedAt = now, state = KkmState.BLOCKED.name, blockReasonCode = 2))
+                storage.updateKkm(
+                    kkm.copy(
+                        updatedAt = now,
+                        state = KkmState.BLOCKED.name,
+                        blockReasonCode = AUTONOMOUS_LIMIT_BLOCK
+                    )
+                )
             }
             throw ConflictException(CoreStrings.kkmAutonomousTooLong(), "KKM_AUTONOMOUS_TOO_LONG")
         }
 
         // 4. Разблокировка кассы при восстановлении связи и пустой очереди
-        if (kkm.state == KkmState.BLOCKED.name) {
+        if (kkm.state == KkmState.BLOCKED.name && kkm.blockReasonCode == AUTONOMOUS_LIMIT_BLOCK) {
             if (hasQueue) {
                 throw ConflictException(CoreStrings.kkmAutonomousTooLong(), "KKM_AUTONOMOUS_TOO_LONG")
             }
-            storage.updateKkm(
-                kkm.copy(
-                    updatedAt = now,
-                    state = KkmState.ACTIVE.name,
-                    autonomousSince = null,
-                    blockReasonCode = null
-                )
+            val released = kkm.copy(
+                updatedAt = now,
+                state = KkmState.ACTIVE.name,
+                autonomousSince = null,
+                blockReasonCode = null
             )
+            storage.updateKkm(released)
+            return released
         }
+        return kkm
     }
 }

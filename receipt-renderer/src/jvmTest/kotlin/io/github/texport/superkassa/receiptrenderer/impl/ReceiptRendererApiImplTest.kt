@@ -8,6 +8,7 @@ import io.github.texport.superkassa.core.domain.api.model.common.*
 import io.github.texport.superkassa.core.domain.api.model.receipt.*
 import io.github.texport.superkassa.core.domain.api.port.integration.QrCodeGeneratorPort
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.ReceiptTranslator
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.*
@@ -196,6 +197,47 @@ class ReceiptRendererApiImplTest {
     }
 
     @Test
+    fun testOfdProviderNameKeepsBilingualMarkup() {
+        // Название оператора на двух языках — готовая двухэтажная разметка.
+        // Экранирование результата печатало на чеке сам тег <span class=...>.
+        val renderer = ReceiptRendererApiImpl(StubQrCodeGenerator())
+        val request = ReceiptRequest(
+            kkmId = "kkm-123",
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            items = emptyList(),
+            payments = emptyList(),
+            total = Money(150, 0),
+            idempotencyKey = "key-ofd-name"
+        )
+        val doc = FiscalDocumentSnapshot(
+            id = "doc-ofd-name",
+            cashboxId = "kkm-123",
+            shiftId = "shift-456",
+            docType = "TICKET",
+            docNo = 7L,
+            shiftNo = 1,
+            createdAt = 1782200000000L,
+            totalAmount = 15000L,
+            currency = "KZT",
+            fiscalSign = "FS-7",
+            autonomousSign = null,
+            isAutonomous = false,
+            ofdStatus = "DELIVERED",
+            deliveredAt = 1782200010000L,
+            receiptUrl = "https://kassa.kz/receipt/7",
+            registrationNumber = "RN-999",
+            ofdProvider = "BFD:DEV"
+        )
+
+        val html = renderer.renderHtml(request, doc, defaultKkm)
+
+        assertTrue(html.contains("<span class=\"lang-fraction-top\">БФД ОФД</span>"))
+        assertTrue(!html.contains("&lt;span"))
+        assertTrue(stripHtml(html).contains("БФД ОФД / ОФД БФД"))
+    }
+
+    @Test
     fun testRenderHtmlWithFallbackUrlAndAutonomous() {
         val renderer = ReceiptRendererApiImpl(StubQrCodeGenerator())
 
@@ -248,6 +290,9 @@ class ReceiptRendererApiImplTest {
         assertTrue(cleanHtml.contains("ЧЕК ВОЗВРАТА ПРОДАЖИ"))
         assertTrue(cleanHtml.contains("Автономды") && cleanHtml.contains("Офлайн"))
         assertTrue(cleanHtml.contains("Автономды режим / Автономный режим"))
+        // Фискальный признак выдаёт ОФД: у автономного чека его нет. Подставлять
+        // туда автономный признак нельзя — покупатель прочтёт его как фискальный.
+        assertFalse(cleanHtml.contains("Фискальный признак"))
         assertTrue(cleanHtml.contains("«Транстелеком» АҚ / АО «Транстелеком»"))
         assertTrue(cleanHtml.contains("o.oofd.kz"))
         // Check fallback url in qr code
@@ -1330,10 +1375,10 @@ class ReceiptRendererApiImplTest {
         kotlin.test.assertEquals("Same", t8)
 
         // Additional direct formatting boosters
-        kotlin.test.assertEquals("-5.00", ReceiptFormatter.formatCents(-500L))
-        kotlin.test.assertEquals("1.50", ReceiptFormatter.formatCents(150L))
+        kotlin.test.assertEquals("-5.00", ReceiptFormatter.formatTiyn(-500L))
+        kotlin.test.assertEquals("1.50", ReceiptFormatter.formatTiyn(150L))
         kotlin.test.assertEquals("&amp; &lt; &gt; &quot;", ReceiptFormatter.escape("& < > \""))
-        kotlin.test.assertEquals(-150L, ReceiptFormatter.moneyToCents(Money(-1, -50)))
+        kotlin.test.assertEquals(-150L, ReceiptFormatter.moneyToTiyn(Money(-1, -50)))
 
         // Cover VatGroup keys
         VatGroup.values().forEach { it.translationKey }

@@ -36,16 +36,19 @@ class ArchitectureTest {
             
             .layer("ReceiptRendererApi").definedBy("io.github.texport.superkassa.receiptrenderer.api..")
             .layer("ReceiptRendererImpl").definedBy("io.github.texport.superkassa.receiptrenderer.impl..")
+            
+            .layer("DatabaseApi").definedBy("io.github.texport.superkassa.coredatabase.api..")
+            .layer("DatabaseImpl").definedBy("io.github.texport.superkassa.coredatabase.impl..")
 
             .whereLayer("String").mayNotAccessAnyLayer()
             .whereLayer("Domain").mayOnlyAccessLayers("String")
-            .whereLayer("Data").mayOnlyAccessLayers("Domain", "String", "DeliveryApi", "OfflineQueueApi", "ReceiptRendererApi")
+            .whereLayer("Data").mayOnlyAccessLayers("Domain", "String", "DeliveryApi", "OfflineQueueApi", "ReceiptRendererApi", "DatabaseApi")
             .whereLayer("Presentation").mayOnlyAccessLayers("Domain", "String")
-            .whereLayer("Engine").mayOnlyAccessLayers("Domain", "String", "Presentation", "Data")
+            .whereLayer("Engine").mayOnlyAccessLayers("Domain", "String", "Presentation", "Data", "DeliveryImpl", "ReceiptRendererImpl", "DatabaseApi")
             
-            .whereLayer("DeliveryApi").mayOnlyAccessLayers("String", "DeliveryImpl")
-            .whereLayer("DeliveryImpl").mayOnlyAccessLayers("String", "DeliveryApi")
-            .whereLayer("DeliveryImpl").mayOnlyBeAccessedByLayers("DeliveryApi", "DeliveryImpl")
+            .whereLayer("DeliveryApi").mayOnlyAccessLayers("String", "Domain", "DeliveryImpl")
+            .whereLayer("DeliveryImpl").mayOnlyAccessLayers("String", "Domain", "DeliveryApi")
+            .whereLayer("DeliveryImpl").mayOnlyBeAccessedByLayers("DeliveryApi", "DeliveryImpl", "Engine")
             
             .whereLayer("OfflineQueueApi").mayOnlyAccessLayers("String", "OfflineQueueImpl")
             .whereLayer("OfflineQueueImpl").mayOnlyAccessLayers("String", "OfflineQueueApi")
@@ -53,7 +56,10 @@ class ArchitectureTest {
             
             .whereLayer("ReceiptRendererApi").mayOnlyAccessLayers("Domain", "String", "ReceiptRendererImpl")
             .whereLayer("ReceiptRendererImpl").mayOnlyAccessLayers("Domain", "String", "ReceiptRendererApi")
-            .whereLayer("ReceiptRendererImpl").mayOnlyBeAccessedByLayers("ReceiptRendererApi", "ReceiptRendererImpl")
+            .whereLayer("ReceiptRendererImpl").mayOnlyBeAccessedByLayers("ReceiptRendererApi", "ReceiptRendererImpl", "Engine")
+
+            .whereLayer("DatabaseApi").mayOnlyAccessLayers("Domain", "String", "OfflineQueueApi", "DatabaseImpl")
+            .whereLayer("DatabaseImpl").mayOnlyAccessLayers("Domain", "String", "OfflineQueueApi", "DatabaseApi")
             .check(importedClasses)
     }
 }

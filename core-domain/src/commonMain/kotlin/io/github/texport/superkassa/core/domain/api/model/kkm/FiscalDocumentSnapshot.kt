@@ -32,6 +32,8 @@ data class FiscalDocumentSnapshot(
     val shiftId: String,
     val docType: String,
     val docNo: Long?,
+    /** Сквозной номер печатного документа, присваиваемый самой кассой. */
+    val printedDocumentNumber: Long? = null,
     val shiftNo: Long?,
     val createdAt: Long,
     val totalAmount: Long?,
@@ -50,3 +52,30 @@ data class FiscalDocumentSnapshot(
     val factoryNumber: String? = null,
     val ofdProvider: String? = null
 )
+
+/**
+ * Стал ли документ фискальным.
+ *
+ * Документ, который ОФД отказался провести, остаётся в журнале без
+ * признака: ни фискального, ни автономного. Ни в счётчики, ни в денежный
+ * ящик он попадать не должен — ни при пробитии, ни при пересчёте. Иначе
+ * X-отчёт добавляет в кассу деньги по документам, которых не было.
+ *
+ * Признаком служит отсутствие всех следов сразу: ни фискального признака,
+ * ни автономного, ни отметки об отправке. Отказ ОФД — такой же «не
+ * провели», как и вечное ожидание отправки.
+ *
+ * Функция расширения, а не свойство: снимок отдаётся наружу, а вычисляемое
+ * свойство утекает в сериализацию лишним полем.
+ */
+fun FiscalDocumentSnapshot.becameFiscal(): Boolean =
+    fiscalSign != null ||
+        autonomousSign != null ||
+        isAutonomous ||
+        (ofdStatus != NEVER_ACCEPTED && ofdStatus != REJECTED)
+
+/** Документ ещё ни разу не был принят ОФД. */
+private const val NEVER_ACCEPTED = "PENDING"
+
+/** Документ отвергнут ОФД: фискальным он не стал. */
+private const val REJECTED = "FAILED"

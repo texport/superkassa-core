@@ -24,10 +24,22 @@ class OfflineQueueAdapterTest {
 
     @Test
     fun testCanSendDirectly() {
-        every { storage.hasPendingCommands("kkm-1", QueueLane.OFFLINE) } returns false
+        every { storage.getCommandsByStatus(any(), any(), any()) } returns emptyList()
         assertTrue(adapter.canSendDirectly("kkm-1"))
 
-        every { storage.hasPendingCommands("kkm-1", QueueLane.OFFLINE) } returns true
+        val mockCommand = QueueCommand(
+            id = "cmd-1",
+            cashboxId = "kkm-1",
+            lane = QueueLane.OFFLINE,
+            type = QueueCommandType.TICKET,
+            payloadRef = "doc-1",
+            createdAt = 100L,
+            status = QueueStatus.PENDING,
+            attempt = 1,
+            nextAttemptAt = null,
+            lastError = null
+        )
+        every { storage.getCommandsByStatus(any(), any(), any()) } returns listOf(mockCommand)
         assertFalse(adapter.canSendDirectly("kkm-1"))
     }
 
@@ -103,8 +115,8 @@ class OfflineQueueAdapterTest {
         every { lockPort.tryAcquire("kkm-1", "owner-1", any(), any()) } returns true
         every { lockPort.release("kkm-1", "owner-1") } returns true
 
-        // mock nextPending tasks in storage. If none, processBatch returns 0
-        every { storage.nextPending("kkm-1", QueueLane.OFFLINE, any()) } returns null
+        // mock getCommandsByStatus tasks in storage. If none, processBatch returns 0
+        every { storage.getCommandsByStatus(any(), any(), any()) } returns emptyList()
 
         val result = adapter.processOfflineBatch("kkm-1", 5)
         assertEquals(0, result)

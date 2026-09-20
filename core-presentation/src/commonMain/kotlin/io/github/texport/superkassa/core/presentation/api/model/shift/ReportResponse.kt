@@ -10,10 +10,17 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Schema(description = "Результат выполнения операции формирования отчета")
 data class ReportResponse(
-    @Schema(description = "Идентификатор сгенерированного фискального документа", example = "doc-uuid") val documentId: String,
-    @Schema(description = "Статус доставки отчета в ОФД/клиенту", example = "ONLINE_OK") val deliveryStatus: DeliveryStatus = DeliveryStatus.NOT_SENT,
-    @Schema(description = "Текст ошибки доставки, если отправка завершилась неудачно", example = "Network timeout") val deliveryError: String? = null,
-    @Schema(description = "Бинарное представление сгенерированного отчета", hidden = true) val deliveryPayload: ByteArray? = null
+    @Schema(description = "Идентификатор сгенерированного фискального документа", example = "doc-uuid") val documentId:
+    String,
+    @Schema(description = "Статус доставки отчета в ОФД/клиенту", example = "ONLINE_OK") val deliveryStatus:
+    DeliveryStatus = DeliveryStatus.NOT_SENT,
+    @Schema(
+        description = "Текст ошибки доставки, если отправка завершилась неудачно",
+        example = "Network timeout"
+    ) val deliveryError:
+    String? = null,
+    @Schema(description = "Бинарное представление сгенерированного отчета", hidden = true) val deliveryPayload:
+    ByteArray? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

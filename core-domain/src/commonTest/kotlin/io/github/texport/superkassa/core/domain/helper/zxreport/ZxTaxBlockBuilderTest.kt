@@ -22,9 +22,9 @@ class ZxTaxBlockBuilderTest {
             // В каждом налоге — полный набор операций ZX (SELL, SELL_RETURN, BUY, BUY_RETURN).
             assertEquals(4, tax.operations.size)
             tax.operations.forEach { op ->
-                assertEquals(0L, op.turnoverBills)
-                assertEquals(0L, op.turnoverWithoutTaxBills)
-                assertEquals(0L, op.taxSumBills)
+                assertEquals(0L, op.turnoverTiyn)
+                assertEquals(0L, op.turnoverWithoutTaxTiyn)
+                assertEquals(0L, op.taxSumTiyn)
             }
         }
     }
@@ -45,15 +45,15 @@ class ZxTaxBlockBuilderTest {
         assertEquals(100, vat16.taxType)
 
         val sellOp = vat16.operations.first { it.operation == "OPERATION_SELL" }
-        assertEquals(1_000L, sellOp.turnoverBills)
-        assertEquals(840L, sellOp.turnoverWithoutTaxBills)
-        assertEquals(160L, sellOp.taxSumBills)
+        assertEquals(1_000L, sellOp.turnoverTiyn)
+        assertEquals(840L, sellOp.turnoverWithoutTaxTiyn)
+        assertEquals(160L, sellOp.taxSumTiyn)
 
         // Для остальных операций по VAT_16 значения должны быть нулевыми.
         vat16.operations.filter { it.operation != "OPERATION_SELL" }.forEach { op ->
-            assertEquals(0L, op.turnoverBills)
-            assertEquals(0L, op.turnoverWithoutTaxBills)
-            assertEquals(0L, op.taxSumBills)
+            assertEquals(0L, op.turnoverTiyn)
+            assertEquals(0L, op.turnoverWithoutTaxTiyn)
+            assertEquals(0L, op.taxSumTiyn)
         }
     }
 }

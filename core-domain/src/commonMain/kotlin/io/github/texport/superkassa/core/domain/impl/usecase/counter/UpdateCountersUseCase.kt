@@ -41,14 +41,14 @@ class UpdateCountersUseCase(
      */
     fun execute(kkmId: String, shiftId: String, request: ReceiptRequest, isOffline: Boolean) {
         val operationKey = operationKey(request.operation)
-        val sumValue = request.total.bills
+        val sumValue = request.total.tiyn()
 
         // Суммы скидок/наценок/сдачи в тенге (только bills для счетчиков).
-        val totalItemDiscountBills = request.items.mapNotNull { it.discount?.bills }.sum()
-        val totalItemMarkupBills = request.items.mapNotNull { it.markup?.bills }.sum()
-        val discountBills = request.discount?.bills ?: totalItemDiscountBills
-        val markupBills = request.markup?.bills ?: totalItemMarkupBills
-        val changeBills = request.change?.bills ?: 0L
+        val totalItemDiscountTiyn = request.items.mapNotNull { it.discount?.tiyn() }.sum()
+        val totalItemMarkupTiyn = request.items.mapNotNull { it.markup?.tiyn() }.sum()
+        val discountTiyn = request.discount?.tiyn() ?: totalItemDiscountTiyn
+        val markupTiyn = request.markup?.tiyn() ?: totalItemMarkupTiyn
+        val changeTiyn = request.change?.tiyn() ?: 0L
 
         // Обновление операционных счетчиков.
         increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.OPERATION_COUNT.format(operationKey), 1)
@@ -58,15 +58,15 @@ class UpdateCountersUseCase(
             CounterScopes.SHIFT,
             shiftId,
             CounterKeyFormats.DISCOUNT_SUM.format(operationKey),
-            discountBills
+            discountTiyn
         )
-        increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.MARKUP_SUM.format(operationKey), markupBills)
+        increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.MARKUP_SUM.format(operationKey), markupTiyn)
 
         // Секционные счётчики по позициям чека.
         request.items.forEach { item ->
             val sectionCode = item.sectionCode.ifBlank { "001" }
             val countDelta = if (item.isStorno) -1L else 1L
-            val sumDelta = if (item.isStorno) -item.sum.bills else item.sum.bills
+            val sumDelta = if (item.isStorno) -item.sum.tiyn() else item.sum.tiyn()
             increment(
                 kkmId,
                 CounterScopes.SHIFT,
@@ -91,21 +91,21 @@ class UpdateCountersUseCase(
             CounterScopes.SHIFT,
             shiftId,
             CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey),
-            discountBills
+            discountTiyn
         )
         increment(
             kkmId,
             CounterScopes.SHIFT,
             shiftId,
             CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey),
-            markupBills
+            markupTiyn
         )
         increment(
             kkmId,
             CounterScopes.SHIFT,
             shiftId,
             CounterKeyFormats.TICKET_CHANGE_SUM.format(operationKey),
-            changeBills
+            changeTiyn
         )
 
         if (isOffline) {
@@ -133,7 +133,7 @@ class UpdateCountersUseCase(
                 CounterScopes.SHIFT,
                 shiftId,
                 CounterKeyFormats.PAYMENT_SUM.format(operationKey, payKey),
-                payment.sum.bills
+                payment.sum.tiyn()
             )
             increment(
                 kkmId,
@@ -145,9 +145,18 @@ class UpdateCountersUseCase(
         }
 
         // Кассовая сумма (наличные) и выручка по смене.
-        val cashBills = request.payments.filter { it.type == PaymentType.CASH }.sumOf { it.sum.bills }
-        if (cashBills != 0L) {
-            increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.CASH_SUM, cashBills)
+        // Знак операции для денежного ящика: продажа и возврат покупки кладут
+        // наличные в кассу, возврат продажи и покупка — выдают их из кассы.
+        // Совпадает с эталоном OperationCalculator.addTicket.
+        val cashDirection = when (request.operation) {
+            ReceiptOperationType.SELL, ReceiptOperationType.BUY_RETURN -> 1L
+            ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY -> -1L
+        }
+        // В тиынах: целые тенге теряли дробную часть каждого чека.
+        val cashTiyn = cashDirection *
+            request.payments.filter { it.type == PaymentType.CASH }.sumOf { it.sum.tiyn() }
+        if (cashTiyn != 0L) {
+            increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.CASH_SUM, cashTiyn)
         }
         val revenueDelta = when (request.operation) {
             ReceiptOperationType.SELL, ReceiptOperationType.BUY -> sumValue
@@ -179,16 +188,16 @@ class UpdateCountersUseCase(
                 CounterScopes.SHIFT,
                 shiftId,
                 CounterKeyFormats.TAX_TURNOVER.format(taxKey, operationKey),
-                line.taxBase.bills
+                line.taxBase.tiyn()
             )
             increment(
                 kkmId,
                 CounterScopes.SHIFT,
                 shiftId,
                 CounterKeyFormats.TAX_SUM.format(taxKey, operationKey),
-                line.taxSum.bills
+                line.taxSum.tiyn()
             )
-            val turnoverWithoutTax = line.taxBase.bills
+            val turnoverWithoutTax = line.taxBase.tiyn()
             increment(
                 kkmId,
                 CounterScopes.SHIFT,
@@ -201,14 +210,14 @@ class UpdateCountersUseCase(
         // Глобальные счетчики.
         increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.OPERATION_COUNT.format(operationKey), 1)
         increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.OPERATION_SUM.format(operationKey), sumValue)
-        increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.DISCOUNT_SUM.format(operationKey), discountBills)
-        increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.MARKUP_SUM.format(operationKey), markupBills)
+        increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.DISCOUNT_SUM.format(operationKey), discountTiyn)
+        increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.MARKUP_SUM.format(operationKey), markupTiyn)
 
         // Глобальные секционные счётчики по позициям чека.
         request.items.forEach { item ->
             val sectionCode = item.sectionCode.ifBlank { "001" }
             val countDelta = if (item.isStorno) -1L else 1L
-            val sumDelta = if (item.isStorno) -item.sum.bills else item.sum.bills
+            val sumDelta = if (item.isStorno) -item.sum.tiyn() else item.sum.tiyn()
             increment(
                 kkmId,
                 CounterScopes.GLOBAL,
@@ -233,21 +242,21 @@ class UpdateCountersUseCase(
             CounterScopes.GLOBAL,
             null,
             CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey),
-            discountBills
+            discountTiyn
         )
         increment(
             kkmId,
             CounterScopes.GLOBAL,
             null,
             CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey),
-            markupBills
+            markupTiyn
         )
         increment(
             kkmId,
             CounterScopes.GLOBAL,
             null,
             CounterKeyFormats.TICKET_CHANGE_SUM.format(operationKey),
-            changeBills
+            changeTiyn
         )
         if (isOffline) {
             increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.TICKET_OFFLINE_COUNT.format(operationKey), 1)
@@ -260,7 +269,7 @@ class UpdateCountersUseCase(
                 CounterScopes.GLOBAL,
                 null,
                 CounterKeyFormats.PAYMENT_SUM.format(operationKey, payKey),
-                payment.sum.bills
+                payment.sum.tiyn()
             )
             increment(
                 kkmId,
@@ -271,8 +280,8 @@ class UpdateCountersUseCase(
             )
         }
 
-        if (cashBills != 0L) {
-            increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.CASH_SUM, cashBills)
+        if (cashTiyn != 0L) {
+            increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.CASH_SUM, cashTiyn)
         }
         if (revenueDelta != 0L) {
             val currentRevenue = storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[CounterKeyFormats.REVENUE_SUM] ?: 0L
@@ -323,6 +332,8 @@ class UpdateCountersUseCase(
             PaymentType.CARD -> "PAYMENT_CARD"
             PaymentType.ELECTRONIC -> "PAYMENT_ELECTRONIC"
             PaymentType.MOBILE -> "PAYMENT_MOBILE"
+            PaymentType.CREDIT -> "PAYMENT_CREDIT"
+            PaymentType.TARE -> "PAYMENT_TARE"
         }
     }
 }

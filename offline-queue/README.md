@@ -1,6 +1,6 @@
 # superkassa-offline-queue
 
-[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/texport/superkassa-offline-queue/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/texport/superkassa-offline-queue/releases)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://github.com/texport/superkassa-offline-queue/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 

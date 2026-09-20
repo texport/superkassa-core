@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.impl.helper
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
+import io.github.texport.superkassa.core.domain.api.model.receipt.TicketAd
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
@@ -30,6 +32,29 @@ object OfdResponseParser {
         val zxReport = extractZxReport(responseJson) ?: return null
         return zxReport.getNestedInt("shiftNumber")
     }
+
+    /**
+     * Извлекает номер фискального документа (чека/отчета) из ответа ОФД.
+     */
+    fun extractDocNumber(responseJson: JsonObject?): Long? {
+        val payload = responseJson?.getNestedObject(listOf("payload"))
+        val ticket = payload?.getNestedObject(listOf("ticket"))
+        val report = payload?.getNestedObject(listOf("report"))
+        val command = payload?.getNestedObject(listOf("command"))
+        // Номер документа приходит числом не всегда: в схеме ОФД ticket_number
+        // объявлен строкой. Читать только как число значит терять его молча.
+        return numberAt(ticket, "ticketNumber")
+            ?: numberAt(ticket, "docNumber")
+            ?: numberAt(report, "reportNumber")
+            ?: numberAt(report, "docNumber")
+            ?: numberAt(command, "docNumber")
+            ?: numberAt(payload, "documentNumber")
+            ?: numberAt(payload, "docNumber")
+    }
+
+    /** Читает число по ключу, принимая и числовое, и строковое представление. */
+    private fun numberAt(source: JsonObject?, key: String): Long? =
+        source?.getNestedLong(key) ?: source?.getNestedString(key)?.trim()?.toLongOrNull()
 
     /**
      * Извлекает информацию об организации и точке продаж (сервисную информацию) из ответа ОФД.
@@ -138,6 +163,10 @@ object OfdResponseParser {
         return this[key]?.jsonPrimitive?.intOrNull
     }
 
+    private fun JsonObject.getNestedLong(key: String): Long? {
+        return this[key]?.jsonPrimitive?.longOrNull
+    }
+
     private fun JsonObject.getNestedObject(path: List<String>): JsonObject? {
         var current: JsonObject? = this
         for (key in path) {
@@ -213,14 +242,14 @@ object OfdResponseParser {
         val ntin = itemObj["ntin"]?.jsonPrimitive?.contentOrNull
         val idVal = element["id"]?.jsonPrimitive?.longOrNull ?: 0L
 
-        // Price mapping (converting money sum if any or default to 0.0)
+        // Price mapping: цена приходит парой bills/coins и остаётся точной.
         val sellPriceObj = itemObj["sellPrice"] as? JsonObject
         val priceVal = if (sellPriceObj != null) {
             val bills = sellPriceObj["bills"]?.jsonPrimitive?.longOrNull ?: 0L
             val coins = sellPriceObj["coins"]?.jsonPrimitive?.intOrNull ?: 0
-            bills.toDouble() + (coins.toDouble() / 100.0)
+            Decimal.ofScaled(bills * TIYN_IN_TENGE + coins, TIYN_SCALE)
         } else {
-            0.0
+            Decimal.ZERO
         }
 
         val measureUnitCode = itemObj["measureUnitCode"]?.jsonPrimitive?.contentOrNull
@@ -265,12 +294,31 @@ object OfdResponseParser {
      * @param responseJson JSON-объект ответа от ОФД.
      * @return Список рекламных текстов.
      */
-    fun extractTicketAds(responseJson: JsonObject?): List<String> {
+    fun extractTicketAds(responseJson: JsonObject?): List<TicketAd> {
         val payload = responseJson?.getNestedObject(listOf("payload")) ?: return emptyList()
         val service = payload.getNestedObject(listOf("service")) ?: return emptyList()
         val ticketAdsArray = service["ticketAds"]?.jsonArray ?: return emptyList()
-        return ticketAdsArray.mapNotNull {
-            it.jsonObject["text"]?.jsonPrimitive?.content
+        return ticketAdsArray.mapNotNull { element ->
+            val ad = element.jsonObject
+            val text = ad["text"]?.jsonPrimitive?.content ?: return@mapNotNull null
+            val info = ad["info"]?.jsonObject
+            TicketAd(
+                // Вид и версия нужны, чтобы в следующем запросе сказать ОФД,
+                // что у кассы уже есть: без них он присылал бы одно и то же
+                // на каждый чек либо не присылал вовсе.
+                type = info?.get("type")?.jsonPrimitive?.content ?: DEFAULT_AD_TYPE,
+                version = info?.get("version")?.jsonPrimitive?.content?.toLongOrNull() ?: 0L,
+                text = text
+            )
         }
     }
+
+    /** Вид объявления, если ОФД его не назвал: реклама самого оператора. */
+    private const val DEFAULT_AD_TYPE = "TICKET_AD_OFD"
 }
+
+/** Знаков после запятой у тенге. */
+private const val TIYN_SCALE: Int = 2
+
+/** Тиынов в тенге. */
+private const val TIYN_IN_TENGE: Long = 100

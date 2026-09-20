@@ -2,6 +2,7 @@ package io.github.texport.superkassa.core.domain.impl.usecase.queue
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
@@ -17,6 +18,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.queue.GetQueueStatusUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -88,14 +90,115 @@ class QueueUseCasesTest {
             resultCode = 0
         )
         every { sendFiscalCommand.execute("kkm-1", any(), "payload-1") } returns ofdResult
-        every { storage.findFiscalDocumentById("payload-1") } returns null
+        every { storage.findFiscalDocumentById("payload-1") } returns mockk(relaxed = true)
         every { clock.now() } returns 2000L
 
         val res = processQueueCommand.execute(mockCommand)
         assertEquals(QueueDispatchStatus.SENT, res.status)
         verify {
-            storage.updateReceiptStatus("payload-1", "fs-123", "as-123", "SENT", null, 2000L, false)
+            storage.updateReceiptStatus("payload-1", "fs-123", any(), "SENT", null, 2000L, any())
         }
+    }
+
+    @Test
+    fun testDeliveredCloseShiftLeavesTheQueueState() {
+        // Закрытие смены и отчёты досылаются той же очередью, что и чеки.
+        // Пока здесь стоял список из двух типов, Z-отчёт после досылки
+        // навсегда оставался «в очереди», хотя ОФД его принял.
+        val command = QueueTask(
+            id = "cmd-z", cashboxId = "kkm-1", lane = "OFFLINE", type = "CLOSE_SHIFT",
+            payloadRef = "payload-z", status = "PENDING", attempt = 1,
+            nextAttemptAt = null, lastError = null, createdAt = 1000L
+        )
+        every { sendFiscalCommand.execute("kkm-1", any(), "payload-z") } returns
+            OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        every { storage.findFiscalDocumentById("payload-z") } returns mockk(relaxed = true)
+        every { clock.now() } returns 2000L
+
+        val res = processQueueCommand.execute(command)
+
+        assertEquals(QueueDispatchStatus.SENT, res.status)
+        verify {
+            storage.updateReceiptStatus("payload-z", any(), any(), "SENT", null, 2000L, any())
+        }
+    }
+
+    @Test
+    fun testDrainRefusalBlocksTheKkm() {
+        // Спецификация CPCR, «Работа в автономном режиме»: при досылке
+        // накопленной очереди любой ответ, кроме OK, временной недоступности
+        // и неизвестной ошибки, обязан перевести кассу в блокировку.
+        // Код 13 раньше просто снимал документ с очереди.
+        val command = QueueTask(
+            id = "cmd-13", cashboxId = "kkm-1", lane = "OFFLINE", type = "TICKET",
+            payloadRef = "payload-13", status = "PENDING", attempt = 1,
+            nextAttemptAt = null, lastError = null, createdAt = 1000L
+        )
+        every { sendFiscalCommand.execute("kkm-1", any(), "payload-13") } returns
+            OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 13)
+        every { clock.now() } returns 2000L
+        every { storage.findKkmForUpdate("kkm-1") } returns kkmActive
+        val updated = slot<KkmInfo>()
+        every { storage.updateKkm(capture(updated)) } returns true
+
+        processQueueCommand.execute(command)
+
+        assertEquals(KkmState.BLOCKED.name, updated.captured.state)
+    }
+
+    @Test
+    fun testDrainMarksRejectedDocumentInsteadOfLeavingItPending() {
+        // Отказ ОФД при досылке снимал документ только с точки зрения кассы:
+        // задача повторялась дальше, а сам документ оставался «ожидает
+        // отправки» в журнале — навсегда, потому что ответ был окончательным.
+        val command = QueueTask(
+            id = "cmd-16", cashboxId = "kkm-1", lane = "OFFLINE", type = "TICKET",
+            payloadRef = "payload-16", status = "PENDING", attempt = 1,
+            nextAttemptAt = null, lastError = null, createdAt = 1000L
+        )
+        every { sendFiscalCommand.execute("kkm-1", any(), "payload-16") } returns
+            OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 16)
+        every { clock.now() } returns 2000L
+        every { storage.findKkmForUpdate("kkm-1") } returns kkmActive
+        every { storage.updateKkm(any()) } returns true
+        every { storage.findFiscalDocumentById("payload-16") } returns mockk(relaxed = true)
+        var status: String? = null
+        var recordedCode: Int? = null
+        every {
+            storage.updateReceiptStatus(any(), any(), any(), any(), any(), any(), any())
+        } answers {
+            status = arg<String>(3)
+            recordedCode = arg<Int?>(4)
+            true
+        }
+
+        val res = processQueueCommand.execute(command)
+
+        // Задача снимается с повтора, а документ помечается отвергнутым:
+        // код 16 — отказ по существу, и повторять его нечего.
+        assertEquals(QueueDispatchStatus.REJECTED, res.status)
+        assertEquals("FAILED", status)
+        assertEquals(16, recordedCode)
+    }
+
+    @Test
+    fun testDrainKeepsWorkingOnTemporaryUnavailability() {
+        // Обратная сторона того же правила: 254 и 255 блокировать нельзя,
+        // иначе обычная недоступность сервиса остановила бы кассу.
+        val command = QueueTask(
+            id = "cmd-254", cashboxId = "kkm-1", lane = "OFFLINE", type = "TICKET",
+            payloadRef = "payload-254", status = "PENDING", attempt = 1,
+            nextAttemptAt = null, lastError = null, createdAt = 1000L
+        )
+        every { sendFiscalCommand.execute("kkm-1", any(), "payload-254") } returns
+            OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 254)
+        every { clock.now() } returns 2000L
+        every { storage.findKkmForUpdate("kkm-1") } returns kkmActive
+
+        val res = processQueueCommand.execute(command)
+
+        assertEquals(QueueDispatchStatus.FAILED, res.status)
+        verify(exactly = 0) { storage.updateKkm(any()) }
     }
 
     @Test
@@ -121,9 +224,12 @@ class QueueUseCasesTest {
         every { clock.now() } returns 2000L
 
         val res = processQueueCommand.execute(mockCommand)
+        // Обмена не было: запрос не собрался и до ОФД не дошёл. Задача
+        // остаётся в очереди: причина бывает во состоянии кассы, а не
+        // в самом документе, и отбраковка теряла фискальный документ
+        // молча. Повтор ограничен числом попыток.
         assertEquals(QueueDispatchStatus.FAILED, res.status)
         assertEquals("Server error", res.errorMessage)
-        assertEquals(62000L, res.retryAt)
         assertEquals("Ошибка отправки в ОФД: Server error", res.errorRu)
         assertEquals("ОФД-ға жіберу қатесі: Server error", res.errorKk)
         assertEquals("OFD delivery failure: Server error", res.errorEn)
@@ -256,5 +362,108 @@ class QueueUseCasesTest {
 
         val count = retryFailedQueueItems.execute("kkm-1", "1234")
         assertEquals(1, count)
+    }
+
+    /**
+     * Отказ ОФД по существу повторять бессмысленно.
+     *
+     * Спецификация делит ответы кодом: 0 — принято, 254 и 255 — повторить,
+     * всё прочее — документ негоден. Пока терминального состояния не было,
+     * такая задача повторялась вечно: на стенде счётчик дошёл до 530.
+     */
+    @Test
+    fun `отвергнутый ОФД документ снимается с повтора`() {
+        val task = QueueTask(
+            id = "cmd-refused",
+            cashboxId = "kkm-1",
+            lane = "OFFLINE",
+            type = "TICKET",
+            payloadRef = "payload-1",
+            status = "PENDING",
+            attempt = 7,
+            nextAttemptAt = null,
+            lastError = null,
+            createdAt = 1000L
+        )
+        every { sendFiscalCommand.execute("kkm-1", any(), "payload-1") } returns
+            OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 16)
+        every { clock.now() } returns 2000L
+
+        val result = processQueueCommand.execute(task)
+
+        assertEquals(QueueDispatchStatus.REJECTED, result.status)
+        assertEquals(null, result.retryAt)
+    }
+
+    @Test
+    fun `состояние очереди показывает документы, отправка которых прекращена`() {
+        // Отбракованная задача из очереди уходит, а документ остаётся
+        // неотправленным: без отдельного числа касса выглядела чистой.
+        val rejected = QueueTask(
+            id = "cmd-rejected", cashboxId = "kkm-1", lane = "OFFLINE", type = "REPORT",
+            payloadRef = "payload-x", status = "REJECTED", attempt = 1,
+            nextAttemptAt = null, lastError = "no request built", createdAt = 1000L
+        )
+        val pending = QueueTask(
+            id = "cmd-pending", cashboxId = "kkm-1", lane = "OFFLINE", type = "TICKET",
+            payloadRef = "payload-1", status = "PENDING", attempt = 0,
+            nextAttemptAt = null, lastError = null, createdAt = 1100L
+        )
+        every { storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 500, 0) } returns listOf(rejected, pending)
+
+        val status = GetQueueStatusUseCase(storage).execute("kkm-1")
+
+        assertEquals(1, status.pendingCount)
+        assertEquals(1, status.rejectedCount)
+    }
+
+    @Test
+    fun `несобранный запрос остаётся в очереди, а не уходит в отбраковку`() {
+        // X-отчёт, снятый без связи, терялся молча: запрос собирался
+        // из открытой смены, после её закрытия не собирался вовсе,
+        // и задача уходила в отбраковку навсегда.
+        val task = QueueTask(
+            id = "cmd-unbuilt",
+            cashboxId = "kkm-1",
+            lane = "OFFLINE",
+            type = "REPORT",
+            payloadRef = "payload-x",
+            status = "PENDING",
+            attempt = 1,
+            nextAttemptAt = null,
+            lastError = null,
+            createdAt = 1000L
+        )
+        every { sendFiscalCommand.execute("kkm-1", any(), "payload-x") } returns
+            OfdCommandResult(status = OfdCommandStatus.FAILED, errorMessage = "no request built")
+        every { clock.now() } returns 2000L
+
+        val result = processQueueCommand.execute(task)
+
+        assertEquals(QueueDispatchStatus.FAILED, result.status)
+    }
+
+    @Test
+    fun `временная недоступность ОФД остаётся поводом для повтора`() {
+        val task = QueueTask(
+            id = "cmd-busy",
+            cashboxId = "kkm-1",
+            lane = "OFFLINE",
+            type = "TICKET",
+            payloadRef = "payload-1",
+            status = "PENDING",
+            attempt = 1,
+            nextAttemptAt = null,
+            lastError = null,
+            createdAt = 1000L
+        )
+        every { sendFiscalCommand.execute("kkm-1", any(), "payload-1") } returns
+            OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 254)
+        every { clock.now() } returns 2000L
+
+        val result = processQueueCommand.execute(task)
+
+        assertEquals(QueueDispatchStatus.FAILED, result.status)
+        assertEquals(32000L, result.retryAt)
     }
 }

@@ -18,7 +18,8 @@ object OfdMoneyPlacementRequestBuilder {
      * @param token Сессионный токен авторизации устройства.
      * @param reqNum Порядковый номер запроса ККМ.
      * @param docType Тип документа операции ("CASH_IN" для внесения, "CASH_OUT" для изъятия).
-     * @param amountBills Сумма операции в тиынах/копейках.
+     * @param amountBills Целые тенге суммы операции.
+     * @param amountCoins Тиыны суммы операции.
      * @param createdAtMillis Время создания документа в миллисекундах.
      * @param serviceBlock Сервисный блок метаданных ККМ.
      * @return JSON-запрос для отправки в ОФД.
@@ -31,8 +32,12 @@ object OfdMoneyPlacementRequestBuilder {
         reqNum: Int,
         docType: String,
         amountBills: Long,
+        amountCoins: Int,
         createdAtMillis: Long,
-        serviceBlock: JsonObject
+        serviceBlock: JsonObject,
+        printedDocumentNumber: Long? = null,
+        frShiftNumber: Int? = null,
+        isOffline: Boolean = false
     ): JsonObject {
         val operation = when (docType) {
             "CASH_IN" -> "MONEY_PLACEMENT_DEPOSIT"
@@ -61,7 +66,14 @@ object OfdMoneyPlacementRequestBuilder {
                         buildJsonObject {
                             put("dateTime", OfdCommonRequestHelper.toDateTime(createdAtMillis))
                             put("operation", JsonPrimitive(operation))
-                            put("sum", OfdCommonRequestHelper.moneyObject(amountBills, 0))
+                            put("sum", OfdCommonRequestHelper.moneyObject(amountBills, amountCoins))
+                            // Внесение и изъятие, сделанные в разрыве связи, помечаются
+                            // так же, как отчёт и закрытие смены: без этого ОФД видел
+                            // автономную операцию обычной сетевой.
+                            put("isOffline", JsonPrimitive(isOffline))
+                            // Номер печатного документа и номер смены ведёт касса.
+                            printedDocumentNumber?.let { put("printedDocumentNumber", JsonPrimitive(it)) }
+                            frShiftNumber?.let { put("frShiftNumber", JsonPrimitive(it)) }
                             put(
                                 "operator",
                                 buildJsonObject {

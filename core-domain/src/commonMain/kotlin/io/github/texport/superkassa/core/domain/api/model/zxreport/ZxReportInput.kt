@@ -7,8 +7,8 @@ package io.github.texport.superkassa.core.domain.api.model.zxreport
  * @property shiftNumber Номер кассовой смены.
  * @property openShiftTimeMillis Время открытия кассовой смены (в миллисекундах).
  * @property closeShiftTimeMillis Время закрытия кассовой смены (в миллисекундах, null для X-отчета).
- * @property cashSumBills Текущая сумма наличных денег в кассе (в целых тенге).
- * @property revenueBills Целая часть суммы выручки за смену (тенге).
+ * @property cashSumTiyn Текущая сумма наличных денег в кассе, в тиынах.
+ * @property revenueTiyn Целая часть суммы выручки за смену (тенге).
  * @property revenueCoins Дробная часть суммы выручки за смену (тиыны).
  * @property nonNullableSums Необнуляемые суммы на момент формирования отчета (накапливаемый итог).
  * @property startShiftNonNullableSums Необнуляемые суммы на момент открытия смены.
@@ -26,8 +26,8 @@ data class ZxReportInput(
     val shiftNumber: Int,
     val openShiftTimeMillis: Long,
     val closeShiftTimeMillis: Long?,
-    val cashSumBills: Long,
-    val revenueBills: Long,
+    val cashSumTiyn: Long,
+    val revenueTiyn: Long,
     val revenueCoins: Int,
     val nonNullableSums: List<Pair<String, Long>>,
     val startShiftNonNullableSums: List<Pair<String, Long>>,

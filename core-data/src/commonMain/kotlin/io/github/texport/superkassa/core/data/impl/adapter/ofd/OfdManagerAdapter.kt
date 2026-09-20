@@ -131,7 +131,7 @@ internal class OfdManagerAdapter(
             if (response.isFailure) {
                 val exception = response.exceptionOrNull()
                 val error = exception?.message ?: "unknown"
-                
+
                 val exName = exception?.let { it::class.simpleName } ?: ""
                 val causeName = exception?.cause?.let { it::class.simpleName } ?: ""
                 val isNetworkError = exName.contains("IOException") ||
@@ -148,7 +148,7 @@ internal class OfdManagerAdapter(
                 val sendFailMsg = "OFD SEND FAILED: commandType=${command.commandType}, " +
                     "kkmId=${command.kkmId}, error=$error"
                 logger.warn(sendFailMsg)
-                
+
                 return OfdCommandResult(
                     status = if (isNetworkError) OfdCommandStatus.TIMEOUT else OfdCommandStatus.FAILED,
                     errorMessage = CoreStrings.ofdRequestFailedData(error)
@@ -165,7 +165,7 @@ internal class OfdManagerAdapter(
             val fiscalSign = OfdResponseUtils.extractFiscalSign(responseJson)
 
             if (resultCode != null) lastNoConnectionMillis.remove(throttleKey)
-            
+
             val status = when (resultCode) {
                 0 -> OfdCommandStatus.OK
                 254, 255 -> OfdCommandStatus.TIMEOUT
@@ -206,16 +206,20 @@ internal class OfdManagerAdapter(
                 "commandType=${command.commandType}, payloadRef=${command.payloadRef}: " +
                 "${ex.message ?: "unknown"}"
             logger.warn(protoErrorMsg)
+            // Кода результата здесь нет: ОФД отказал на уровне протокола
+            // и своего кода не присылал. Прежде подставлялось `-1`, и кассир
+            // читал в журнале «Код отказа −1» — число, которого в CPCR нет.
+            // Пусто честнее: отказ объясняют слова, а не выдуманный код.
             OfdCommandResult(
                 status = OfdCommandStatus.FAILED,
-                resultCode = -1,
+                resultCode = null,
                 errorMessage = ex.message
             )
         } catch (ex: Exception) {
             val exName = ex::class.simpleName ?: ""
             val causeName = ex.cause?.let { it::class.simpleName } ?: ""
             val errorMsg = ex.message ?: "unknown"
-            
+
             val isNetworkError = exName.contains("IOException") ||
                 causeName.contains("IOException") ||
                 exName.contains("Timeout") ||
@@ -228,9 +232,9 @@ internal class OfdManagerAdapter(
             } else {
                 logger.error("OFD request failed with unexpected error", ex)
             }
-            
+
             lastNoConnectionMillis[throttleKey] = now
-            
+
             OfdCommandResult(
                 status = if (isNetworkError) OfdCommandStatus.TIMEOUT else OfdCommandStatus.FAILED,
                 errorMessage = CoreStrings.ofdRequestFailedData(errorMsg)
@@ -238,12 +242,11 @@ internal class OfdManagerAdapter(
         }
     }
 
+    /** Адрес отправки берётся из перечисления провайдеров по контуру команды. */
     private fun resolveEndpoint(command: OfdCommandRequest): NetworkEndpoint? {
         val provider = OfdProvider.findProvider(command.ofdProviderId) ?: return null
-        val environment = OfdEnvironment.entries.firstOrNull {
-            it.name.equals(command.ofdEnvironmentId, ignoreCase = true)
-        } ?: return null
-        val endpoint = provider.endpoints[environment] ?: return null
+        val environment = OfdEnvironment.findEnvironment(command.ofdEnvironmentId) ?: return null
+        val endpoint = provider.endpoint(environment) ?: return null
         return NetworkEndpoint(endpoint.host, endpoint.port)
     }
 

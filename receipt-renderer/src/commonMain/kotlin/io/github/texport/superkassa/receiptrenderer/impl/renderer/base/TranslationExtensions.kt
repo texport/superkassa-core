@@ -9,6 +9,7 @@ val VatGroup.translationKey: String
         VatGroup.VAT_0 -> "vat_0"
         VatGroup.VAT_5 -> "vat_5"
         VatGroup.VAT_10 -> "vat_10"
+        VatGroup.VAT_12 -> "vat_12"
         VatGroup.VAT_16 -> "vat_16"
     }
 
@@ -18,6 +19,8 @@ val PaymentType.translationKey: String
         PaymentType.CARD -> "card"
         PaymentType.ELECTRONIC -> "electronic"
         PaymentType.MOBILE -> "mobile"
+        PaymentType.CREDIT -> "credit"
+        PaymentType.TARE -> "tare"
     }
 
 val ReceiptOperationType.translationKey: String

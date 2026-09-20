@@ -236,16 +236,17 @@ class PrintUseCasesTest {
     }
 
     @Test
-    fun testGetPrintHtmlDocumentUnsupportedType() {
+    fun testGetPrintHtmlDocumentUnsupportedTypeRendersFallback() {
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns kkm
         every { authorizeUserUseCase.requireRole("kkm-1", "1234", setOf(UserRole.CASHIER, UserRole.ADMIN)) } returns mockk()
 
         val unsupportedDoc = snapshot.copy(docType = "UNSUPPORTED")
         every { storage.findFiscalDocumentById("doc-1") } returns unsupportedDoc
+        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns null
+        every { receiptRenderPort.renderCashOperationHtml(unsupportedDoc, kkm, null) } returns "<html>unsupported</html>"
 
-        assertFailsWith<NotFoundException> {
-            getPrintHtml.execute("kkm-1", PrintDocumentType.DOCUMENT, "doc-1", null, "1234")
-        }
+        val res = getPrintHtml.execute("kkm-1", PrintDocumentType.DOCUMENT, "doc-1", null, "1234")
+        assertEquals("<html>unsupported</html>", res)
     }
 
     @Test

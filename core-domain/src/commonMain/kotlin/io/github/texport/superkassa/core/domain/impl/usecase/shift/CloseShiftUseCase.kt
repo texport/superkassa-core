@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.shift
 
+import io.github.texport.superkassa.core.domain.impl.helper.common.assignPrintedDocumentNumber
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
@@ -22,6 +23,7 @@ import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
+import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 
 /**
  * Сценарий (Use Case) закрытия смены контрольно-кассовой машины (ККМ) и генерации Z-отчета.
@@ -51,6 +53,8 @@ class CloseShiftUseCase(
     private val clock: ClockPort,
     private val authorizeUser: AuthorizeUserUseCase
 ) {
+    private val logger = getLogger(CloseShiftUseCase::class)
+
     /**
      * Выполняет процедуру закрытия смены.
      *
@@ -61,9 +65,11 @@ class CloseShiftUseCase(
      * @throws ConflictException если смена на ККМ не открыта.
      */
     fun execute(kkmId: String, pin: String): ReportResult {
+        logger.debug("Начало процедуры закрытия смены для ККМ: {}", kkmId)
         return storage.inTransaction {
             // Ищем ККМ в базе данных с блокировкой, если не найдена — выбрасываем исключение
             val kkm = storage.findKkmForUpdate(kkmId) ?: throw ValidationException(CoreStrings.kkmNotFound(), "KKM_NOT_FOUND")
+            logger.debug("ККМ найдена. Состояние: {}", kkm.state)
 
             // ККМ не должна находиться в режиме программирования/настройки
             requireNotProgramming(kkm)
@@ -77,13 +83,16 @@ class CloseShiftUseCase(
                     CoreStrings.shiftNotOpen(),
                     "SHIFT_NOT_OPEN"
                 )
+            logger.debug("Найдена открытая смена: {}", shift.id)
 
             // Генерируем ID для фискального документа закрытия смены
             val documentId = idGenerator.nextId()
+            logger.debug("Сгенерирован documentId для закрытия смены: {}", documentId)
             val now = clock.now()
 
             // Сохраняем фискальный документ закрытия смены (Z-отчет)
             storage.saveShiftDocument(kkmId, "SHIFT_CLOSE", documentId, shift.id, now)
+            assignPrintedDocumentNumber(storage, kkmId, documentId)
 
             // Проверяем, нужно ли отправлять документ через офлайн-очередь (например, если нет связи)
             val hasQueue = !queue.canSendDirectly(kkmId)
@@ -108,12 +117,13 @@ class CloseShiftUseCase(
                 } else {
                     // Если связь есть, отправляем команду закрытия смены напрямую в ОФД
                     val result = sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.CLOSE_SHIFT, documentId)
+                    logger.debug("Результат отправки CLOSE_SHIFT в ОФД: {}", result.status)
                     val (status, ofdStatusText) = when (result.status) {
                         OfdCommandStatus.OK -> DeliveryStatus.ONLINE_OK to "SENT"
                         OfdCommandStatus.TIMEOUT -> DeliveryStatus.OFFLINE_QUEUED to "PENDING"
                         OfdCommandStatus.FAILED -> DeliveryStatus.ONLINE_ERROR to "FAILED"
                     }
-                    
+
                     storage.updateReceiptStatus(
                         documentId = documentId,
                         fiscalSign = result.fiscalSign,
@@ -138,12 +148,18 @@ class CloseShiftUseCase(
             // Выполняем автоизъятие, если оно включено и в кассе есть наличные
             val globalCounters = storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)
             val currentCash = globalCounters[CounterKeyFormats.CASH_SUM] ?: 0L
+            logger.debug("Текущая сумма наличных: {}. Автоизъятие включено: {}", currentCash, kkm.autoCashout)
             if (kkm.autoCashout && currentCash > 0L) {
+                logger.debug("Выполняется автоизъятие на сумму {}", currentCash)
                 val cashOutDocId = idGenerator.nextId()
                 storage.saveCashOperation(
                     kkmId = kkmId,
                     type = "CASH_OUT",
-                    amount = Money(currentCash, 0),
+                    // cash.sum хранится в тиынах, а Money(bills, coins) первым
+                    // берёт тенге: Money(currentCash, 0) записывал бы автоизъятие
+                    // в сто раз больше — 9 720 ₸ ящика ушли бы документом
+                    // на 972 000 ₸ и в ОФД.
+                    amount = Money.fromTiyn(currentCash),
                     documentId = cashOutDocId,
                     shiftId = shift.id,
                     createdAt = now
@@ -151,6 +167,7 @@ class CloseShiftUseCase(
                 storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.CASH_SUM, 0L)
                 storage.upsertCounter(kkmId, CounterScopes.SHIFT, shift.id, CounterKeyFormats.CASH_SUM, 0L)
                 storage.saveShiftDocument(kkmId, "CASH_OUT", cashOutDocId, shift.id, now)
+                assignPrintedDocumentNumber(storage, kkmId, cashOutDocId)
 
                 val placementCommand = OfflineQueueCommandRequest(
                     kkmId = kkmId,
@@ -160,7 +177,9 @@ class CloseShiftUseCase(
                 if (queue.canSendDirectly(kkmId)) {
                     try {
                         sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.MONEY_PLACEMENT, cashOutDocId)
+                        logger.debug("Автоизъятие успешно отправлено в ОФД")
                     } catch (e: Exception) {
+                        logger.error("Ошибка при отправке автоизъятия в ОФД: ${e.message}", e)
                         // игнорируем ошибку отправки автоизъятия при закрытии смены
                     }
                 } else {
@@ -170,13 +189,14 @@ class CloseShiftUseCase(
 
             // Фиксируем закрытие смены в локальной базе данных
             storage.closeShift(shift.id, ShiftStatus.CLOSED, now, documentId)
+            logger.debug("Смена {} успешно закрыта в БД", shift.id)
 
             // Возвращаем результат генерации Z-отчета и его отправки
             ReportResult(
                 documentId = documentId,
                 deliveryStatus = deliveryStatus,
                 deliveryError = deliveryError
-            )
+            ).also { logger.debug("Процедура закрытия смены завершена с результатом: {}", it) }
         }
     }
 

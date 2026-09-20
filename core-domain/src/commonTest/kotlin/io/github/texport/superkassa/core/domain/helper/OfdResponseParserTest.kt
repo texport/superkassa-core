@@ -366,8 +366,8 @@ class OfdResponseParserTest {
         }
         val ads = OfdResponseParser.extractTicketAds(json)
         assertEquals(2, ads.size)
-        assertEquals("Ad Text 1", ads[0])
-        assertEquals("Ad Text 2", ads[1])
+        assertEquals("Ad Text 1", ads[0].text)
+        assertEquals("Ad Text 2", ads[1].text)
 
         // Empty/Null cases
         assertTrue(OfdResponseParser.extractTicketAds(null).isEmpty())

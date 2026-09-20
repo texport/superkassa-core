@@ -54,7 +54,7 @@ class RetryFailedQueueItemsUseCase(
         val openShift = storage.findOpenShift(kkmId)
         if (openShift != null) {
             throw ConflictException(
-                CoreStrings.kkmDeleteShiftOpen(),
+                CoreStrings.queueRetryShiftOpen(),
                 "QUEUE_MANAGEMENT_SHIFT_OPEN"
             )
         }

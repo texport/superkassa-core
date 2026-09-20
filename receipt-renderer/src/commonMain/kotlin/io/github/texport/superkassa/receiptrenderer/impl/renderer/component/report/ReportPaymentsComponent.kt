@@ -15,7 +15,7 @@ internal object ReportPaymentsComponent {
             val opLabel = translateInlineKey(op.operation.toOperationKey())
             val payRows = op.payments.joinToString("") { pay ->
                 val payLabel = t(pay.payment.toPaymentKey())
-                val formattedSum = formatAmount(pay.sumBills)
+                val formattedSum = formatAmount(pay.sumTiyn)
                 """
                 <tr>
                     <td class="tax-details-cell" style="padding-left: 8px;">&#8226; $payLabel (${pay.count})</td>
@@ -31,7 +31,7 @@ internal object ReportPaymentsComponent {
                 """.trimIndent()
             }
 
-            val totalSumStr = formatAmount(op.ticketsSumBills)
+            val totalSumStr = formatAmount(op.ticketsSumTiyn)
             """
             <fieldset class="tax-row-card dashed">
                 <legend class="card-label">$opLabel</legend>

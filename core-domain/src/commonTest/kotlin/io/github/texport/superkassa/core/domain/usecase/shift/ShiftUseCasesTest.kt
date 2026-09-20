@@ -183,6 +183,41 @@ class ShiftUseCasesTest {
         }
     }
 
+    /**
+     * Автоизъятие записывает то, что в ящике, а не в сто раз больше.
+     *
+     * Счётчик `cash.sum` хранится в тиынах, а `Money(bills, coins)` первым
+     * берёт тенге. `Money(currentCash, 0)` превращал 9 720 ₸ ящика
+     * в документ на 972 000 ₸ — и такой уходил в ОФД.
+     */
+    @Test
+    fun testCloseShiftAutoCashoutTakesWhatIsInTheDrawer() {
+        every { storage.findKkm("kkm-1") } returns kkm.copy(autoCashout = true)
+        val shift = ShiftInfo(id = "shift-1", kkmId = "kkm-1", shiftNo = 6L, status = ShiftStatus.OPEN, openedAt = 1000L)
+        every { storage.findOpenShift("kkm-1") } returns shift
+        every { idGenerator.nextId() } returns "doc-1"
+        every { clock.now() } returns 2000L
+        every { queue.canSendDirectly("kkm-1") } returns true
+        every {
+            sendFiscalCommandUseCase.execute("kkm-1", any(), any())
+        } returns OfdCommandResult(status = OfdCommandStatus.OK)
+        every { storage.loadCounters("kkm-1", CounterScopes.GLOBAL, null) } returns
+            mapOf(CounterKeyFormats.CASH_SUM to 972_000L)
+
+        closeShift.execute("kkm-1", "1234")
+
+        verify {
+            storage.saveCashOperation(
+                kkmId = "kkm-1",
+                type = "CASH_OUT",
+                amount = Money(bills = 9_720, coins = 0),
+                documentId = any(),
+                shiftId = "shift-1",
+                createdAt = 2000L
+            )
+        }
+    }
+
     @Test
     fun testCloseShiftKkmNotFound() {
         every { storage.findKkm("kkm-1") } returns null
@@ -278,38 +313,38 @@ class ShiftUseCasesTest {
     fun testRecalculateShiftCountersSuccess() {
         val shift = ShiftInfo(id = "shift-1", kkmId = "kkm-1", shiftNo = 6L, status = ShiftStatus.CLOSED, openedAt = 1000L)
         every { storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1") } returns mapOf(
-            CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL") to 10000L
+            CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL") to 1_000_000L
         )
 
         // Mock document page 1
         val checkDoc1 = FiscalDocumentSnapshot(
             id = "doc-check-1", cashboxId = "kkm-1", shiftId = "shift-1",
             docType = "CHECK", docNo = 1L, shiftNo = 6L, createdAt = 1100L,
-            totalAmount = 5000L, currency = "KZT", fiscalSign = "fs1", autonomousSign = "as1",
+            totalAmount = 500_000L, currency = "KZT", fiscalSign = "fs1", autonomousSign = "as1",
             isAutonomous = false, ofdStatus = "DELIVERED", deliveredAt = 1200L
         )
         val checkDoc2 = FiscalDocumentSnapshot(
             id = "doc-check-2", cashboxId = "kkm-1", shiftId = "shift-1",
             docType = "CHECK", docNo = 2L, shiftNo = 6L, createdAt = 1300L,
-            totalAmount = 3000L, currency = "KZT", fiscalSign = "fs2", autonomousSign = "as2",
+            totalAmount = 300_000L, currency = "KZT", fiscalSign = "fs2", autonomousSign = "as2",
             isAutonomous = true, ofdStatus = "TIMEOUT", deliveredAt = null
         )
         val cashInDoc = FiscalDocumentSnapshot(
             id = "doc-cashin", cashboxId = "kkm-1", shiftId = "shift-1",
             docType = "CASH_IN", docNo = 3L, shiftNo = 6L, createdAt = 1400L,
-            totalAmount = 2000L, currency = "KZT", fiscalSign = "fs3", autonomousSign = "as3",
+            totalAmount = 200_000L, currency = "KZT", fiscalSign = "fs3", autonomousSign = "as3",
             isAutonomous = false, ofdStatus = "DELIVERED", deliveredAt = 1500L
         )
         val cashOutDoc = FiscalDocumentSnapshot(
             id = "doc-cashout", cashboxId = "kkm-1", shiftId = "shift-1",
             docType = "CASH_OUT", docNo = 4L, shiftNo = 6L, createdAt = 1600L,
-            totalAmount = 1000L, currency = "KZT", fiscalSign = "fs4", autonomousSign = "as4",
+            totalAmount = 100_000L, currency = "KZT", fiscalSign = "fs4", autonomousSign = "as4",
             isAutonomous = false, ofdStatus = "DELIVERED", deliveredAt = 1700L
         )
         val unknownDoc = FiscalDocumentSnapshot(
             id = "doc-unknown", cashboxId = "kkm-1", shiftId = "shift-1",
             docType = "UNKNOWN", docNo = 5L, shiftNo = 6L, createdAt = 1800L,
-            totalAmount = 1000L, currency = "KZT", fiscalSign = null, autonomousSign = null,
+            totalAmount = 100_000L, currency = "KZT", fiscalSign = null, autonomousSign = null,
             isAutonomous = false, ofdStatus = null, deliveredAt = null
         )
 
@@ -362,24 +397,24 @@ class ShiftUseCasesTest {
         }
 
         // Assert some key values in the result map
-        // Cash in register: initial = 0L, cash payment in check 1 = +5000L, cashInDoc = +2000L, cashOutDoc = -1000L -> total 6000L
-        assertEquals(6000L, result[CounterKeyFormats.CASH_SUM])
+        // Наличные: 0 + 5000 (оплата) + 2000 (внесение) - 1000 (изъятие) = 6000 тенге
+        assertEquals(600_000L, result[CounterKeyFormats.CASH_SUM])
 
         // Check SELL count and sum
         assertEquals(1L, result[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL")])
-        assertEquals(5000L, result[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
+        assertEquals(500_000L, result[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
 
         // Check SELL_RETURN count and sum
         assertEquals(1L, result[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL_RETURN")])
-        assertEquals(3000L, result[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL_RETURN")])
+        assertEquals(300_000L, result[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL_RETURN")])
 
         // Check start and end shift values
-        assertEquals(10000L, result[CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL")])
-        // Non-nullable sum = start + opSum = 10000L + 5000L = 15000L
-        assertEquals(15000L, result[CounterKeyFormats.NON_NULLABLE_SUM.format("OPERATION_SELL")])
+        assertEquals(1_000_000L, result[CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL")])
+        // Necoнуляемая сумма = начало смены + оборот = 10000 + 5000 тенге
+        assertEquals(1_500_000L, result[CounterKeyFormats.NON_NULLABLE_SUM.format("OPERATION_SELL")])
 
-        // Revenue sum: SELL = +5000L, SELL_RETURN = -3000L -> total = 2000L
-        assertEquals(2000L, result[CounterKeyFormats.REVENUE_SUM])
+        // Выручка: продажа +5000, возврат продажи -3000 тенге -> 2000 тенге
+        assertEquals(200_000L, result[CounterKeyFormats.REVENUE_SUM])
         assertEquals(0L, result[CounterKeyFormats.REVENUE_IS_NEGATIVE])
     }
 
@@ -420,7 +455,7 @@ class ShiftUseCasesTest {
         val returnDoc = FiscalDocumentSnapshot(
             id = "doc-return", cashboxId = "kkm-1", shiftId = "shift-1",
             docType = "CHECK", docNo = 1L, shiftNo = 6L, createdAt = 1100L,
-            totalAmount = 5000L, currency = "KZT", fiscalSign = "fs", autonomousSign = "as",
+            totalAmount = 500_000L, currency = "KZT", fiscalSign = "fs", autonomousSign = "as",
             isAutonomous = false, ofdStatus = "DELIVERED", deliveredAt = 1200L
         )
 
@@ -440,7 +475,7 @@ class ShiftUseCasesTest {
         every { storage.findFiscalDocumentWithReceiptPayload("doc-return") } returns (returnDoc to request)
 
         val result = recalculateShiftCounters.execute("kkm-1", shift)
-        assertEquals(-5000L, result[CounterKeyFormats.REVENUE_SUM])
+        assertEquals(-500_000L, result[CounterKeyFormats.REVENUE_SUM])
         assertEquals(1L, result[CounterKeyFormats.REVENUE_IS_NEGATIVE])
     }
 }

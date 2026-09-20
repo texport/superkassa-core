@@ -203,9 +203,12 @@ class DomainExceptionTest {
         // userNameRequired
         assertEquals("Имя пользователя обязательно", CoreStrings.userNameRequired().ru)
 
-        // userRoleRequired
+        // userRoleRequired: роль называется словом, а не именем перечисления
         val roleRequired = CoreStrings.userRoleRequired(UserRole.ADMIN.name)
-        assertTrue(roleRequired.ru.contains("ADMIN"))
+        assertEquals("Нужен хотя бы один администратор", roleRequired.ru)
+        assertEquals("Кем дегенде бір әкімші қажет", roleRequired.kk)
+        assertTrue(!roleRequired.ru.contains("ADMIN"), "имя перечисления в тексте кассира")
+        assertEquals("At least one cashier required", CoreStrings.userRoleRequired("CASHIER").en)
 
         // userPinConflict
         assertEquals("PIN уже используется", CoreStrings.userPinConflict().ru)
@@ -214,13 +217,13 @@ class DomainExceptionTest {
         assertEquals("Нужно передать хотя бы одно поле для обновления пользователя", CoreStrings.userUpdateEmpty().ru)
 
         // kkmDeleteRequiresProgramming
-        assertEquals("ККМ должна быть в режиме PROGRAMMING", CoreStrings.kkmDeleteRequiresProgramming().ru)
+        assertEquals("Касса не в режиме программирования. Удаление невозможно.", CoreStrings.kkmDeleteRequiresProgramming().ru)
 
         // kkmDeleteShiftOpen
-        assertEquals("Смена не закрыта", CoreStrings.kkmDeleteShiftOpen().ru)
+        assertEquals("Нельзя удалить кассу с открытой сменой. Сначала закройте смену.", CoreStrings.kkmDeleteShiftOpen().ru)
 
         // kkmDeleteQueueNotEmpty
-        assertEquals("Очередь не пустая", CoreStrings.kkmDeleteQueueNotEmpty().ru)
+        assertEquals("Нельзя удалить кассу, пока есть неотправленные документы в ОФД.", CoreStrings.kkmDeleteQueueNotEmpty().ru)
 
         // kkmSyncShiftOpen
         assertEquals("Смена не закрыта", CoreStrings.kkmSyncShiftOpen().ru)
@@ -233,6 +236,13 @@ class DomainExceptionTest {
 
         // kkmBlocked
         assertEquals("ККМ заблокирована по требованию ОФД", CoreStrings.kkmBlocked().ru)
+        // Блокировка называет причину и действие: снимаются они разным,
+        // и угадывать это у прилавка кассир не должен.
+        assertTrue(CoreStrings.kkmBlocked(OPEN_SHIFT_TIMEOUT_BLOCK).ru.contains("Z-отчётом"))
+        assertTrue(CoreStrings.kkmBlocked(INVALID_TOKEN_BLOCK).ru.contains("Токен"))
+        assertTrue(CoreStrings.kkmBlocked(AUTONOMOUS_LIMIT_BLOCK).ru.contains("Автономная"))
+        assertEquals(CoreStrings.kkmBlocked().ru, CoreStrings.kkmBlocked(null).ru)
+        assertEquals(CoreStrings.kkmBlocked().ru, CoreStrings.kkmBlocked(UNKNOWN_BLOCK).ru)
 
         // kkmSettingsRequiresProgramming
         assertEquals("ККМ должна быть в режиме PROGRAMMING", CoreStrings.kkmSettingsRequiresProgramming().ru)
@@ -272,3 +282,15 @@ class DomainExceptionTest {
         assertEquals("ОКВЭД обязателен", CoreStrings.okvedRequired().ru)
     }
 }
+
+/** Смена открыта дольше допустимого: ответ ОФД 11. */
+private const val OPEN_SHIFT_TIMEOUT_BLOCK = 1011
+
+/** Недействительный токен: ответ ОФД 2. */
+private const val INVALID_TOKEN_BLOCK = 1002
+
+/** Слишком долгая автономная работа: код самой кассы. */
+private const val AUTONOMOUS_LIMIT_BLOCK = 2001
+
+/** Код, которого касса не знает: остаётся общая формулировка. */
+private const val UNKNOWN_BLOCK = 1099

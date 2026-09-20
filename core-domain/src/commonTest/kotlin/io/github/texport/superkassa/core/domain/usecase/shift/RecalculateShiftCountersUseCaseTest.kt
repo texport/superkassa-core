@@ -2,6 +2,7 @@ package io.github.texport.superkassa.core.domain.impl.usecase.shift
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
@@ -9,6 +10,7 @@ import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.api.model.receipt.PaymentType
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDocumentTypes
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptPayment
@@ -188,13 +190,13 @@ class RecalculateShiftCountersUseCaseTest {
         }
 
         assertEquals(1L, rebuilt[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL")])
-        assertEquals(2160L, rebuilt[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
-        assertEquals(100L, rebuilt[CounterKeyFormats.DISCOUNT_SUM.format("OPERATION_SELL")])
-        assertEquals(50L, rebuilt[CounterKeyFormats.MARKUP_SUM.format("OPERATION_SELL")])
+        assertEquals(216_000L, rebuilt[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
+        assertEquals(10_000L, rebuilt[CounterKeyFormats.DISCOUNT_SUM.format("OPERATION_SELL")])
+        assertEquals(5_000L, rebuilt[CounterKeyFormats.MARKUP_SUM.format("OPERATION_SELL")])
         assertEquals(1L, rebuilt[CounterKeyFormats.TICKET_OFFLINE_COUNT.format("OPERATION_SELL_RETURN")])
         assertEquals(1L, rebuilt[CounterKeyFormats.TICKET_OFFLINE_COUNT.format("OPERATION_BUY_RETURN")])
 
-        val expectedRevenue = 2160L - 600L + 960L - 520L
+        val expectedRevenue = 216_000L - 60_000L + 96_000L - 52_000L
         assertEquals(expectedRevenue, rebuilt[CounterKeyFormats.REVENUE_SUM])
         assertEquals(0L, rebuilt[CounterKeyFormats.REVENUE_IS_NEGATIVE])
         assertTrue((rebuilt[CounterKeyFormats.TAX_SUM.format("VAT_16", "OPERATION_SELL")] ?: 0L) > 0L)
@@ -293,11 +295,11 @@ class RecalculateShiftCountersUseCaseTest {
             updater.execute(kkmId, shift.id, request, isOffline = isOffline)
 
             opCounts[operationKey] = (opCounts[operationKey] ?: 0L) + 1L
-            opSums[operationKey] = (opSums[operationKey] ?: 0L) + total
+            opSums[operationKey] = (opSums[operationKey] ?: 0L) + total * 100L
             expectedRevenue +=
                 when (operation) {
-                    ReceiptOperationType.SELL, ReceiptOperationType.BUY -> total
-                    ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY_RETURN -> -total
+                    ReceiptOperationType.SELL, ReceiptOperationType.BUY -> total * 100L
+                    ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY_RETURN -> -total * 100L
                 }
         }
 
@@ -312,5 +314,232 @@ class RecalculateShiftCountersUseCaseTest {
 
         assertEquals(expectedRevenue, rebuilt[CounterKeyFormats.REVENUE_SUM] ?: 0L)
         assertEquals(if (expectedRevenue < 0) 1L else 0L, rebuilt[CounterKeyFormats.REVENUE_IS_NEGATIVE] ?: 0L)
+    }
+
+    @Test
+    fun `rebuildShiftCounters preserves OFD initial shift counters snapshot when no local docs exist`() {
+        val storage = TestStoragePort()
+        val recalculator = RecalculateShiftCountersUseCase(storage)
+        val kkmId = "kkm-ofd-1"
+        val shift = ShiftInfo(
+            id = "shift-ofd-1",
+            kkmId = kkmId,
+            shiftNo = 5L,
+            status = ShiftStatus.OPEN,
+            openedAt = 1_700_000_000_000L
+        )
+        storage.createShift(shift)
+
+        // Имитируем начальный слепок счетчиков, полученный от ОФД при добавлении существующей ККМ
+        storage.upsertCounter(kkmId, CounterScopes.SHIFT, shift.id, "start_shift_cash.sum", 50_000L)
+        storage.upsertCounter(kkmId, CounterScopes.SHIFT, shift.id, CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL"), 179_440_00L)
+        storage.upsertCounter(kkmId, CounterScopes.SHIFT, shift.id, CounterKeyFormats.NON_NULLABLE_SUM.format("OPERATION_SELL"), 179_440_00L)
+        storage.upsertCounter(kkmId, CounterScopes.SHIFT, shift.id, CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL"), 7L)
+        storage.upsertCounter(kkmId, CounterScopes.SHIFT, shift.id, CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL"), 120_000_00L)
+
+        val rebuilt = recalculator.execute(kkmId, shift)
+
+        // Проверяем, что стартовые необнуляемые суммы и счетчики ОФД не затерлись нулевыми значениями
+        assertEquals(50_000L, rebuilt["start_shift_cash.sum"])
+        assertEquals(179_440_00L, rebuilt[CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL")])
+        assertEquals(179_440_00L, rebuilt[CounterKeyFormats.NON_NULLABLE_SUM.format("OPERATION_SELL")])
+    }
+
+    @Test
+    fun `rebuildShiftCounters correctly aggregates stored local receipt docs with BUY and SELL docTypes`() {
+        val storage = TestStoragePort()
+        val recalculator = RecalculateShiftCountersUseCase(storage)
+        val kkmId = "kkm-doctypes-1"
+        val shift = ShiftInfo(
+            id = "shift-dt-1",
+            kkmId = kkmId,
+            shiftNo = 2L,
+            status = ShiftStatus.OPEN,
+            openedAt = 1_700_000_000_000L
+        )
+        storage.createShift(shift)
+
+        val sellReq = ReceiptRequest(
+            kkmId = kkmId,
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            items = listOf(ReceiptItem("Sell Item", "001", 1, Money(5000, 0), Money(5000, 0), vatGroup = VatGroup.VAT_16)),
+            payments = listOf(ReceiptPayment(PaymentType.CASH, Money(5000, 0))),
+            total = Money(5000, 0),
+            idempotencyKey = "idem-sell",
+            taxRegime = TaxRegime.VAT_PAYER,
+            defaultVatGroup = VatGroup.VAT_16
+        )
+        storage.saveReceipt(sellReq, "doc-sell-1", shift.id, shift.openedAt + 100)
+        // Проведённый чек несёт фискальный признак: без него пересчёт
+        // справедливо считает документ непроведённым и в счётчики не берёт.
+        storage.updateReceiptStatus(
+            documentId = "doc-sell-1",
+            fiscalSign = "fs-doc-sell-1",
+            autonomousSign = null,
+            ofdStatus = "SENT",
+            deliveredAt = shift.openedAt + 100 + 1,
+            isAutonomous = false
+        )
+
+        val buyReq = ReceiptRequest(
+            kkmId = kkmId,
+            pin = "1111",
+            operation = ReceiptOperationType.BUY,
+            items = listOf(ReceiptItem("Buy Item", "001", 1, Money(2000, 0), Money(2000, 0), vatGroup = VatGroup.VAT_16)),
+            payments = listOf(ReceiptPayment(PaymentType.CARD, Money(2000, 0))),
+            total = Money(2000, 0),
+            idempotencyKey = "idem-buy",
+            taxRegime = TaxRegime.VAT_PAYER,
+            defaultVatGroup = VatGroup.VAT_16
+        )
+        storage.saveReceipt(buyReq, "doc-buy-1", shift.id, shift.openedAt + 200)
+        // Проведённый чек несёт фискальный признак: без него пересчёт
+        // справедливо считает документ непроведённым и в счётчики не берёт.
+        storage.updateReceiptStatus(
+            documentId = "doc-buy-1",
+            fiscalSign = "fs-doc-buy-1",
+            autonomousSign = null,
+            ofdStatus = "SENT",
+            deliveredAt = shift.openedAt + 200 + 1,
+            isAutonomous = false
+        )
+
+        val rebuilt = recalculator.execute(kkmId, shift)
+
+        assertEquals(1L, rebuilt[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL")])
+        assertEquals(500_000L, rebuilt[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
+        assertEquals(1L, rebuilt[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_BUY")])
+        assertEquals(200_000L, rebuilt[CounterKeyFormats.OPERATION_SUM.format("OPERATION_BUY")])
+    }
+
+    /**
+     * Чек, который узел отказался провести, остаётся в журнале без признаков
+     * и с состоянием доставки PENDING. При пробитии он в счётчики не попал,
+     * и пересчёт обязан вести себя так же: иначе X-отчёт добавлял бы в кассу
+     * деньги по чекам, которых не было.
+     */
+    @Test
+    fun `непроведённый чек в пересчёт не попадает`() {
+        val storage = TestStoragePort()
+        val recalculator = RecalculateShiftCountersUseCase(storage)
+        val kkmId = "kkm-refused-1"
+        val shift = ShiftInfo(
+            id = "shift-refused-1",
+            kkmId = kkmId,
+            shiftNo = 3L,
+            status = ShiftStatus.OPEN,
+            openedAt = 1_700_000_000_000L
+        )
+        storage.createShift(shift)
+
+        val refused = ReceiptRequest(
+            kkmId = kkmId,
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            items = listOf(ReceiptItem("Item", "001", 1, Money(1000, 0), Money(1000, 0))),
+            payments = listOf(ReceiptPayment(PaymentType.CASH, Money(1000, 0))),
+            total = Money(1000, 0),
+            idempotencyKey = "idem-refused"
+        )
+        storage.saveReceipt(refused, "doc-refused", shift.id, shift.openedAt + 100)
+
+        val rebuilt = recalculator.execute(kkmId, shift)
+
+        assertNull(rebuilt[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
+        assertEquals(0L, rebuilt[CounterKeyFormats.CASH_SUM])
+    }
+
+    /**
+     * Тип документа-чека называет операцию: SALE, RETURN, BUY, BUY_RETURN.
+     * Пересчёт знал только прежние названия и продажу с возвратом продажи
+     * пропускал: X-отчёт показывал пустую кассу при полном ящике.
+     */
+    @Test
+    fun `пересчёт видит чек продажи под его нынешним типом документа`() {
+        val storage = TestStoragePort()
+        val recalculator = RecalculateShiftCountersUseCase(storage)
+        val kkmId = "kkm-sale-doctype"
+        val shift = ShiftInfo(
+            id = "shift-sale-doctype",
+            kkmId = kkmId,
+            shiftNo = 6L,
+            status = ShiftStatus.OPEN,
+            openedAt = 1_700_000_000_000L
+        )
+        storage.createShift(shift)
+
+        val sale = ReceiptRequest(
+            kkmId = kkmId,
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            items = listOf(ReceiptItem("Item", "001", 1, Money(1000, 0), Money(1000, 0))),
+            payments = listOf(ReceiptPayment(PaymentType.CASH, Money(1000, 0))),
+            total = Money(1000, 0),
+            idempotencyKey = "idem-sale-doctype"
+        )
+        storage.saveReceipt(sale, "doc-sale", shift.id, shift.openedAt + 100)
+        storage.updateReceiptStatus(
+            documentId = "doc-sale",
+            fiscalSign = "fs-doc-sale",
+            autonomousSign = null,
+            ofdStatus = "SENT",
+            deliveredAt = shift.openedAt + 101,
+            isAutonomous = false
+        )
+
+        assertEquals(ReceiptDocumentTypes.SALE, storage.findFiscalDocumentById("doc-sale")?.docType)
+
+        val rebuilt = recalculator.execute(kkmId, shift)
+
+        assertEquals(1L, rebuilt[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL")])
+        assertEquals(100_000L, rebuilt[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
+        assertEquals(100_000L, rebuilt[CounterKeyFormats.CASH_SUM])
+    }
+
+    /**
+     * Наличные в ящике живут в двух областях сразу: сменной и глобальной.
+     * Пересчёт переписывал только сменную, и после него кассир видел в ящике
+     * одно, а в журнале другое.
+     */
+    @Test
+    fun `пересчёт приводит глобальный счётчик наличных к согласию со сменой`() {
+        val storage = TestStoragePort()
+        val updater = UpdateCountersUseCase(storage)
+        val recalculator = RecalculateShiftCountersUseCase(storage)
+        val kkmId = "kkm-global-cash"
+        val shift = ShiftInfo(
+            id = "shift-global-cash",
+            kkmId = kkmId,
+            shiftNo = 4L,
+            status = ShiftStatus.OPEN,
+            openedAt = 1_700_000_000_000L
+        )
+        storage.createShift(shift)
+
+        val request = ReceiptRequest(
+            kkmId = kkmId,
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            items = listOf(ReceiptItem("Item", "001", 1, Money(5000, 0), Money(5000, 0))),
+            payments = listOf(ReceiptPayment(PaymentType.CASH, Money(5000, 0))),
+            total = Money(5000, 0),
+            idempotencyKey = "idem-global-cash"
+        )
+        // Чек прошёл по счётчикам обеих областей...
+        updater.execute(kkmId, shift.id, request, isOffline = false)
+        // ...но фискальным так и не стал: признака у документа нет.
+        storage.saveReceipt(request, "doc-global-cash", shift.id, shift.openedAt + 100)
+
+        assertEquals(500_000L, storage.loadCounters(kkmId, CounterScopes.SHIFT, shift.id)[CounterKeyFormats.CASH_SUM])
+        assertEquals(500_000L, storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[CounterKeyFormats.CASH_SUM])
+
+        val rebuilt = recalculator.execute(kkmId, shift)
+
+        assertEquals(0L, rebuilt[CounterKeyFormats.CASH_SUM])
+        assertEquals(
+            0L,
+            storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[CounterKeyFormats.CASH_SUM]
+        )
     }
 }

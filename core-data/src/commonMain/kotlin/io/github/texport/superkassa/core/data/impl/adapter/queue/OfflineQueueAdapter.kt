@@ -12,6 +12,8 @@ import io.github.texport.superkassa.offlinequeue.api.port.LeaseLockPort
 import io.github.texport.superkassa.offlinequeue.api.port.QueueCommandHandlerPort
 import io.github.texport.superkassa.offlinequeue.api.port.QueueStoragePort
 
+import io.github.texport.superkassa.core.domain.impl.logging.getLogger
+
 /**
  * Адаптер оффлайн-очереди на базе библиотеки superkassa-offline-queue.
  * Настраивается и создается как Spring-бин в superkassa-server.
@@ -22,6 +24,8 @@ internal class OfflineQueueAdapter(
     handler: QueueCommandHandlerPort,
     ownerId: String
 ) : OfflineQueuePort {
+    private val logger = getLogger(OfflineQueueAdapter::class)
+
     private val queueService: OfflineQueueApi = createOfflineQueueApi(
         storage = storage,
         lockPort = lockPort,
@@ -34,7 +38,11 @@ internal class OfflineQueueAdapter(
      * то есть новые команды можно слать в ОФД напрямую, не ставя в очередь.
      * @param kkmId ID кассы.
      */
-    override fun canSendDirectly(kkmId: String): Boolean = !queueService.hasOfflineQueue(kkmId)
+    override fun canSendDirectly(kkmId: String): Boolean {
+        val hasQueue = queueService.hasOfflineQueue(kkmId)
+        logger.debug("OfflineQueueAdapter.canSendDirectly: kkmId='{}', hasOfflineQueue={}", kkmId, hasQueue)
+        return !hasQueue
+    }
 
     /**
      * Помещает команду в оффлайн-очередь для последующей фоновой отправки.

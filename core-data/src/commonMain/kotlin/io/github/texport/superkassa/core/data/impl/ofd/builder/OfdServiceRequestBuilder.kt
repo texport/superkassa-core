@@ -1,5 +1,8 @@
 package io.github.texport.superkassa.core.data.impl.ofd.builder
 
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import io.github.texport.superkassa.core.domain.api.model.receipt.TicketAd
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -33,12 +36,33 @@ object OfdServiceRequestBuilder {
         factoryNumber: String,
         systemId: String,
         offlineBeginMillis: Long,
-        offlineEndMillis: Long
+        offlineEndMillis: Long,
+        knownTicketAds: List<TicketAd> = emptyList()
     ): JsonObject {
         val begin = OfdCommonRequestHelper.toDateTime(offlineBeginMillis)
         val end = OfdCommonRequestHelper.toDateTime(offlineEndMillis)
         return buildJsonObject {
             put("getRegInfo", JsonPrimitive(true))
+            // Версии объявлений, которые есть у кассы, — по строке на каждый
+            // вид, как требует спецификация («n == TicketAdTypeEnum::size»).
+            // Ноль означает, что объявления этого вида у кассы нет: без него
+            // ОФД нечего сравнивать и первое объявление не приходит никогда.
+            put(
+                "ticketAdInfos",
+                buildJsonArray {
+                    TICKET_AD_TYPES.forEach { type ->
+                        add(
+                            buildJsonObject {
+                                put("type", JsonPrimitive(type))
+                                put(
+                                    "version",
+                                    JsonPrimitive(knownTicketAds.firstOrNull { it.type == type }?.version ?: 0L)
+                                )
+                            }
+                        )
+                    }
+                }
+            )
             put(
                 "offlinePeriod",
                 buildJsonObject {
@@ -147,3 +171,12 @@ object OfdServiceRequestBuilder {
         }
     }
 }
+
+/** Виды рекламных текстов чека по CPCR, п. 4.11. */
+private val TICKET_AD_TYPES = listOf(
+    "TICKET_AD_OFD",
+    "TICKET_AD_ORG",
+    "TICKET_AD_POS",
+    "TICKET_AD_KKM",
+    "TICKET_AD_INFO"
+)

@@ -20,12 +20,12 @@ internal object ReportTaxesComponent {
                     rows = listOf(
                         io.github.texport.superkassa.receiptrenderer.impl.renderer.component.common.CardComponent.Row(
                             label = t("sum_tax"),
-                            value = formatAmount(op.taxSumBills),
+                            value = formatAmount(op.taxSumTiyn),
                             valueClass = "tax-sum-cell bold"
                         ),
                         io.github.texport.superkassa.receiptrenderer.impl.renderer.component.common.CardComponent.Row(
                             label = t("turnover"),
-                            value = formatAmount(op.turnoverBills)
+                            value = formatAmount(op.turnoverTiyn)
                         )
                     )
                 )

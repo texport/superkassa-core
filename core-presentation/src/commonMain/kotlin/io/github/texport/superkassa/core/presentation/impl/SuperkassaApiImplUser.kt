@@ -10,6 +10,15 @@ fun SuperkassaApiImpl.listUsersImpl(kkmId: String, pin: String): List<UserRespon
     return storage.listUsers(kkmId).map { UserMapper.toResponse(it) }
 }
 
+/**
+ * Отвечает, кто вошёл по этому пину.
+ */
+fun SuperkassaApiImpl.currentUserImpl(kkmId: String, pin: String): UserResponse {
+    authorization.requireKkm(kkmId)
+    val user = authorization.identify(kkmId, pin)
+    return UserMapper.toResponse(user)
+}
+
 fun SuperkassaApiImpl.createUserImpl(kkmId: String, pin: String, request: UserCreateRequest): UserResponse {
     val user = createUserUseCase.execute(
         kkmId,

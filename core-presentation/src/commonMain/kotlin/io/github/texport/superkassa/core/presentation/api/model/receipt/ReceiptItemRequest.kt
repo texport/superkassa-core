@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.api.model.receipt
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import io.github.texport.superkassa.core.presentation.api.annotations.DecimalMax
 import io.github.texport.superkassa.core.presentation.api.annotations.DecimalMin
@@ -24,19 +25,19 @@ data class ReceiptItemRequest(
     @Schema(description = "Наценка на позицию: процент (0–100). Взаимоисключающе с markupSum.", example = "0")
     @field:DecimalMin("0", message = "Процент наценки не может быть отрицательным")
     @field:DecimalMax("100", message = "Процент наценки не может быть больше 100")
-    val markupPercent: Double? = null,
+    val markupPercent: Decimal? = null,
     @Schema(description = "Наценка на позицию: сумма в тенге. Взаимоисключающе с markupPercent.", example = "0")
     @field:DecimalMin("0", message = "Сумма наценки не может быть отрицательной")
-    val markupSum: Double? = null,
+    val markupSum: Decimal? = null,
     @Schema(description = "Скидка на позицию: процент (0–100). Взаимоисключающе с discountSum.", example = "10")
     @field:DecimalMin("0", message = "Процент скидки не может быть отрицательным")
     @field:DecimalMax("100", message = "Процент скидки не может быть больше 100")
-    val discountPercent: Double? = null,
+    val discountPercent: Decimal? = null,
     @Schema(description = "Скидка на позицию: сумма в тенге. Взаимоисключающе с discountPercent.", example = "30.10")
     @field:DecimalMin("0", message = "Сумма скидки не может быть отрицательной")
-    val discountSum: Double? = null,
+    val discountSum: Decimal? = null,
     @Schema(
-        description = "Код единицы измерения (ОКЕИ). Только код (796, 116...). По умолчанию — штука (796). См. GET /units-of-measurement.",
+        description = "Код единицы измерения (ИС ЭСФ). Только код (796, 116...). По умолчанию — штука (796). См. GET /units-of-measurement.",
         example = "796"
     )
     val measureUnitCode: String? = null,
@@ -50,17 +51,23 @@ data class ReceiptItemRequest(
     @field:Size(min = 3, max = 128)
     @ItemNameValid
     val name: String,
+    @Schema(
+        description = "Наименование на казахском. Печатается на чеке рядом с русским; " +
+            "в ОФД не передаётся — у позиции чека в CPCR одно имя.",
+        example = "Қой еті"
+    )
+    val nameKk: String? = null,
     @Schema(description = "НТИН (протокол ОФД ntin)", example = "123456789012")
     val ntin: String? = null,
     @Schema(description = "Цена за единицу (в тенге)", example = "150.50")
     @field:NotNull
     @field:DecimalMin("0.01", message = "Цена должна быть положительной")
-    val price: Double,
+    val price: Decimal,
     @Schema(description = "Количество", example = "2")
     @field:NotNull
     @field:Positive(message = "Количество должно быть больше 0")
     @field:Max(999_999_999)
-    val quantity: Double,
+    val quantity: Decimal,
     @Schema(
         description = "Группа НДС для позиции. Допустимые значения: NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16. Если не указана — используется defaultVatGroup кассы.",
         allowableValues = ["NO_VAT", "VAT_0", "VAT_5", "VAT_10", "VAT_16"],

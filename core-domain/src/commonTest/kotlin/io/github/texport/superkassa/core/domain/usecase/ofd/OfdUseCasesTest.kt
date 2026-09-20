@@ -6,6 +6,7 @@ import io.mockk.verify
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import io.github.texport.superkassa.core.string.api.CoreStrings
+import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
@@ -24,6 +25,8 @@ import io.github.texport.superkassa.core.domain.impl.usecase.kkm.EnforceAutonomo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
+import io.mockk.slot
 
 class OfdUseCasesTest {
 
@@ -86,6 +89,64 @@ class OfdUseCasesTest {
     }
 
     @Test
+    fun testCorrectTokenReleasesTheTokenBlock() {
+        // CPCR, код 2: касса блокируется до момента ввода корректного токена.
+        // Раньше токен принимался, а блокировка оставалась навсегда.
+        val blocked = kkm.copy(state = KkmState.BLOCKED.name, blockReasonCode = 1002)
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
+        every { clock.now() } returns 2000L
+        every { tokenCodec.parseToken("new-token") } returns 9999L
+        every { tokenCodec.encodeToken(9999L) } returns "new-token-base64"
+        every { storage.updateKkmToken("kkm-1", "new-token-base64", 2000L) } returns true
+        every { storage.findKkmForUpdate("kkm-1") } returns blocked
+        every { storage.findOpenShift("kkm-1") } returns null
+        val updated = slot<KkmInfo>()
+        every { storage.updateKkm(capture(updated)) } returns true
+
+        updateOfdToken.execute("kkm-1", "1234", "new-token")
+
+        assertEquals(KkmState.IDLE.name, updated.captured.state)
+        assertEquals(null, updated.captured.blockReasonCode)
+    }
+
+    @Test
+    fun testTokenEnteredInProgrammingClearsTheReason() {
+        // Токен вводят в режиме программирования: касса числится PROGRAMMING,
+        // а не BLOCKED. Пока проверялось состояние, причина блокировки
+        // оставалась на записи и возвращала кассу в блокировку при выходе.
+        val programming = kkm.copy(state = KkmState.PROGRAMMING.name, blockReasonCode = 1002)
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
+        every { clock.now() } returns 2000L
+        every { tokenCodec.parseToken("new-token") } returns 9999L
+        every { tokenCodec.encodeToken(9999L) } returns "new-token-base64"
+        every { storage.updateKkmToken("kkm-1", "new-token-base64", 2000L) } returns true
+        every { storage.findKkmForUpdate("kkm-1") } returns programming
+        val updated = slot<KkmInfo>()
+        every { storage.updateKkm(capture(updated)) } returns true
+
+        updateOfdToken.execute("kkm-1", "1234", "new-token")
+
+        assertEquals(KkmState.PROGRAMMING.name, updated.captured.state)
+        assertEquals(null, updated.captured.blockReasonCode)
+    }
+
+    @Test
+    fun testCorrectTokenDoesNotReleaseOtherBlocks() {
+        // Касса, снятая с учёта, вводом токена не оживает.
+        val deregistered = kkm.copy(state = KkmState.BLOCKED.name, blockReasonCode = 1018)
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
+        every { clock.now() } returns 2000L
+        every { tokenCodec.parseToken("new-token") } returns 9999L
+        every { tokenCodec.encodeToken(9999L) } returns "new-token-base64"
+        every { storage.updateKkmToken("kkm-1", "new-token-base64", 2000L) } returns true
+        every { storage.findKkmForUpdate("kkm-1") } returns deregistered
+
+        updateOfdToken.execute("kkm-1", "1234", "new-token")
+
+        verify(exactly = 0) { storage.updateKkm(any()) }
+    }
+
+    @Test
     fun testUpdateOfdTokenBlankToken() {
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns kkm
         every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
@@ -131,6 +192,39 @@ class OfdUseCasesTest {
 
         val res = sendFiscalCommand.execute("kkm-1", OfdCommandType.TICKET, "doc-1")
         assertEquals(expectedResult, res)
+    }
+
+    /**
+     * Сверка забирает и регистрационный номер, а не одну организацию.
+     *
+     * Подпись кнопки обещает «организация, адрес и регистрационные номера»,
+     * а номер оставался прежним — тем, который кассир видит в списке касс
+     * и на чеке.
+     */
+    @Test
+    fun `сверка обновляет регистрационный и заводской номера`() {
+        every {
+            kkmCommonHelper.requireSyncAllowed("kkm-1", "1234", false, authorizeUserUseCase, queue)
+        } returns kkm
+        every { idGenerator.nextId() } returns "req-id-2"
+        every { kkmCommonHelper.sendOfdCommand(kkm, OfdCommandType.INFO, "req-id-2") } returns
+            OfdCommandResult(
+                status = OfdCommandStatus.OK,
+                resultCode = 0,
+                responseJson = Json.parseToJsonElement(
+                    "{\"payload\":{\"service\":{\"regInfo\":{\"kkm\":" +
+                        "{\"fnsKkmId\":\"KGD-2000042\",\"serialNumber\":\"SN-2000042\"}}}}}"
+                ).jsonObject
+            )
+        every { clock.now() } returns 1000L
+        every { storage.findKkmForUpdate("kkm-1") } returns kkm
+        val saved = slot<KkmInfo>()
+        every { storage.updateKkm(capture(saved)) } returns true
+
+        syncOfdServiceInfo.execute("kkm-1", "1234")
+
+        assertEquals("KGD-2000042", saved.captured.registrationNumber)
+        assertEquals("SN-2000042", saved.captured.factoryNumber)
     }
 
     @Test
@@ -287,7 +381,7 @@ class OfdUseCasesTest {
     }
 
     @Test
-    fun testSyncOfdCountersIsClosedShiftLocalOpenShiftExists() {
+    fun testSyncOfdCountersRefusesWhenOfdShiftClosedButLocalShiftOpen() {
         every { kkmCommonHelper.requireSyncAllowed("kkm-1", "1234", true, authorizeUserUseCase, queue) } returns kkm
         every { idGenerator.nextId() } returns "req-id-1"
         val expectedResult = OfdCommandResult(
@@ -305,10 +399,45 @@ class OfdUseCasesTest {
         every { storage.findOpenShift("kkm-1") } returns localOpenShift
         every { storage.findKkm("kkm-1") } returns kkm
 
-        val res = syncOfdCounters.execute("kkm-1", "1234")
-        assertEquals(expectedResult, res)
-        verify {
-            storage.closeShift("shift-1", ShiftStatus.CLOSED, 1000L, null)
+        val failure = assertFailsWith<ConflictException> { syncOfdCounters.execute("kkm-1", "1234") }
+        assertEquals("KKM_SYNC_SHIFT_DIVERGED", failure.code)
+        verify(exactly = 0) {
+            storage.closeShift(any(), any(), any(), any())
+        }
+    }
+
+    /**
+     * Сверка не ставит смене время закрытия из ответа ОФД.
+     *
+     * На стенде смена 7 открылась 03:23:54 и получила закрытие 02:40:53 —
+     * время Z-отчёта предыдущей смены. Отчёт по ней не снимался.
+     */
+    @Test
+    fun testSyncOfdCountersNeverClosesShiftWithTimeFromOfdDocument() {
+        every { kkmCommonHelper.requireSyncAllowed("kkm-1", "1234", true, authorizeUserUseCase, queue) } returns kkm
+        every { idGenerator.nextId() } returns "req-id-1"
+        val closedEarlierThanOpened =
+            "{\"payload\":{\"report\":{\"reportType\":\"REPORT_Z\",\"zxReport\":{\"shiftNumber\":6," +
+                "\"closeShiftTime\":{\"date\":{\"year\":2026,\"month\":9,\"day\":20}," +
+                "\"time\":{\"hour\":2,\"minute\":40,\"second\":53}}," +
+                "\"cashSum\":{\"bills\":0},\"revenue\":{\"sum\":{\"bills\":0},\"isNegative\":false}," +
+                "\"nonNullableSums\":[]}}}}"
+        val expectedResult = OfdCommandResult(
+            status = OfdCommandStatus.OK,
+            resultCode = 0,
+            responseJson = Json.parseToJsonElement(closedEarlierThanOpened).jsonObject
+        )
+        every { kkmCommonHelper.sendOfdCommand(kkm, OfdCommandType.INFO, "req-id-1") } returns expectedResult
+        every { clock.now() } returns 1000L
+        val openedLater = io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo(
+            id = "shift-7", kkmId = "kkm-1", shiftNo = 7L, status = ShiftStatus.OPEN, openedAt = 2000L, closedAt = null
+        )
+        every { storage.findOpenShift("kkm-1") } returns openedLater
+        every { storage.findKkm("kkm-1") } returns kkm
+
+        assertFailsWith<ConflictException> { syncOfdCounters.execute("kkm-1", "1234") }
+        verify(exactly = 0) {
+            storage.closeShift(any(), any(), any(), any())
         }
     }
 
@@ -420,7 +549,7 @@ class OfdUseCasesTest {
     }
 
     @Test
-    fun testSyncOfdCountersWithCloseShiftTime() {
+    fun testSyncOfdCountersNeverAdoptsCloseShiftTimeFromOfd() {
         every { kkmCommonHelper.requireSyncAllowed("kkm-1", "1234", true, authorizeUserUseCase, queue) } returns kkm
         every { idGenerator.nextId() } returns "req-id-1"
         val expectedResult = OfdCommandResult(
@@ -438,10 +567,10 @@ class OfdUseCasesTest {
         every { storage.findOpenShift("kkm-1") } returns localOpenShift
         every { storage.findKkm("kkm-1") } returns kkm
 
-        val res = syncOfdCounters.execute("kkm-1", "1234")
-        assertEquals(expectedResult, res)
-        verify {
-            storage.closeShift("shift-1", ShiftStatus.CLOSED, match { it > 0L }, null)
+        val failure = assertFailsWith<ConflictException> { syncOfdCounters.execute("kkm-1", "1234") }
+        assertEquals("KKM_SYNC_SHIFT_DIVERGED", failure.code)
+        verify(exactly = 0) {
+            storage.closeShift(any(), any(), any(), any())
         }
     }
 

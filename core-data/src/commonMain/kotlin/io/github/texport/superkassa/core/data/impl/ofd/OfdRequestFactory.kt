@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.data.impl.ofd
 
+import io.github.texport.superkassa.core.domain.api.model.receipt.TicketAd
 import io.github.texport.superkassa.core.data.impl.ofd.builder.OfdMoneyPlacementRequestBuilder
 import io.github.texport.superkassa.core.data.impl.ofd.builder.OfdReportRequestBuilder
 import io.github.texport.superkassa.core.data.impl.ofd.builder.OfdServiceRequestBuilder
@@ -35,14 +36,16 @@ object OfdRequestFactory {
         factoryNumber: String,
         systemId: String,
         offlineBeginMillis: Long,
-        offlineEndMillis: Long
+        offlineEndMillis: Long,
+        knownTicketAds: List<TicketAd> = emptyList()
     ): JsonObject = OfdServiceRequestBuilder.buildServicePayload(
         serviceInfo,
         registrationNumber,
         factoryNumber,
         systemId,
         offlineBeginMillis,
-        offlineEndMillis
+        offlineEndMillis,
+        knownTicketAds
     )
 
     /**
@@ -99,7 +102,10 @@ object OfdRequestFactory {
         token: Long,
         reqNum: Int,
         request: ReceiptRequest,
-        serviceBlock: JsonObject? = null
+        serviceBlock: JsonObject? = null,
+        frShiftNumber: Int? = null,
+        offlineTicketNumber: Int? = null,
+        printedDocumentNumber: Long? = null
     ): JsonObject = OfdTicketRequestBuilder.buildTicketRequest(
         ofdId,
         protocolVersion,
@@ -107,7 +113,7 @@ object OfdRequestFactory {
         token,
         reqNum,
         request,
-        serviceBlock
+        serviceBlock, frShiftNumber, offlineTicketNumber, printedDocumentNumber
     )
 
     /**
@@ -119,7 +125,8 @@ object OfdRequestFactory {
      * @param token Сессионный токен.
      * @param reqNum Номер запроса.
      * @param docType Тип операции ("CASH_IN" для внесения, "CASH_OUT" для изъятия).
-     * @param amountBills Сумма операции в минимальных денежных единицах (тиын/копейки).
+     * @param amountBills Целые тенге суммы операции.
+     * @param amountCoins Тиыны суммы операции.
      * @param createdAtMillis Время создания документа ККМ в миллисекундах.
      * @param serviceBlock Сервисный блок ОФД.
      * @return JSON-объект запроса для операции с наличными.
@@ -132,10 +139,15 @@ object OfdRequestFactory {
         reqNum: Int,
         docType: String,
         amountBills: Long,
+        amountCoins: Int,
         createdAtMillis: Long,
-        serviceBlock: JsonObject
+        serviceBlock: JsonObject,
+        printedDocumentNumber: Long? = null,
+        frShiftNumber: Int? = null,
+        isOffline: Boolean = false
     ): JsonObject = OfdMoneyPlacementRequestBuilder.buildMoneyPlacementRequest(
-        ofdId, protocolVersion, deviceId, token, reqNum, docType, amountBills, createdAtMillis, serviceBlock
+        ofdId, protocolVersion, deviceId, token, reqNum, docType, amountBills, amountCoins,
+        createdAtMillis, serviceBlock, printedDocumentNumber, frShiftNumber, isOffline
     )
 
     /**
@@ -159,7 +171,9 @@ object OfdRequestFactory {
         reqNum: Int,
         reportType: String,
         zxReport: ZxReportInput,
-        serviceBlock: JsonObject
+        serviceBlock: JsonObject,
+        isOffline: Boolean = false,
+        printedDocumentNumber: Long? = null
     ): JsonObject = OfdReportRequestBuilder.buildReportRequest(
         ofdId,
         protocolVersion,
@@ -168,7 +182,7 @@ object OfdRequestFactory {
         reqNum,
         reportType,
         zxReport,
-        serviceBlock
+        serviceBlock, isOffline, printedDocumentNumber
     )
 
     /**
@@ -194,9 +208,11 @@ object OfdRequestFactory {
         closeTimeMillis: Long,
         frShiftNumber: Int,
         zxReport: JsonObject,
-        serviceBlock: JsonObject
+        serviceBlock: JsonObject,
+        isOffline: Boolean = false,
+        printedDocumentNumber: Long? = null
     ): JsonObject = OfdReportRequestBuilder.buildCloseShiftRequest(
-        ofdId, protocolVersion, deviceId, token, reqNum, closeTimeMillis, frShiftNumber, zxReport, serviceBlock
+        ofdId, protocolVersion, deviceId, token, reqNum, closeTimeMillis, frShiftNumber, zxReport, serviceBlock, isOffline, printedDocumentNumber
     )
 
     /**

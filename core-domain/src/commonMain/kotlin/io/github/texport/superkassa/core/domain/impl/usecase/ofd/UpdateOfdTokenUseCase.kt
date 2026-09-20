@@ -6,6 +6,7 @@ import io.github.texport.superkassa.core.domain.api.port.internal.TokenCodecPort
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
 
 /**
  * Сценарий (Use Case) обновления токена авторизации ОФД.
@@ -47,10 +48,53 @@ class UpdateOfdTokenUseCase(
         val parsed = tokenCodec.parseToken(token)
 
         // Кодируем токен в Base64 и сохраняем информацию в базу данных ККМ
-        return storage.updateKkmToken(
+        val saved = storage.updateKkmToken(
             id = kkmId,
             tokenEncryptedBase64 = tokenCodec.encodeToken(parsed),
             updatedAt = clock.now()
         )
+        if (saved) {
+            releaseTokenBlock(kkmId)
+        }
+        return saved
+    }
+
+    /**
+     * Снимает блокировку, наложенную из-за неверного токена.
+     *
+     * Спецификация CPCR, код 2: «Отправка данных невозможна, необходимо
+     * произвести сброс токена. Устройство блокируется до момента ввода
+     * корректного токена». Раньше касса принимала верный токен и оставалась
+     * заблокированной навсегда — выхода из этого состояния не было вовсе.
+     *
+     * Блокировки по другим причинам вводом токена не снимаются: касса,
+     * снятая с учёта или заблокированная сервером, так не оживает.
+     */
+    private fun releaseTokenBlock(kkmId: String) {
+        val kkm = storage.findKkmForUpdate(kkmId) ?: return
+        // Причина блокировки, а не состояние: токен вводят в режиме
+        // программирования, и в этот момент касса числится не BLOCKED,
+        // а PROGRAMMING. Пока проверялось состояние, замена токена
+        // из настроек причину не снимала.
+        if (kkm.blockReasonCode != INVALID_TOKEN_BLOCK) {
+            return
+        }
+        if (kkm.state == KkmState.PROGRAMMING.name) {
+            storage.updateKkm(kkm.copy(updatedAt = clock.now(), blockReasonCode = null))
+            return
+        }
+        val hasOpenShift = storage.findOpenShift(kkmId) != null
+        storage.updateKkm(
+            kkm.copy(
+                updatedAt = clock.now(),
+                state = if (hasOpenShift) KkmState.ACTIVE.name else KkmState.IDLE.name,
+                blockReasonCode = null
+            )
+        )
+    }
+
+    private companion object {
+        /** Блокировка по ответу ОФД «неверный токен»: код ответа плюс тысяча. */
+        const val INVALID_TOKEN_BLOCK = 1002
     }
 }

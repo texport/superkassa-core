@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.impl.helper.tax
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
@@ -59,19 +60,22 @@ class TaxCalculator {
             // Необлагаемый оборот (NO_VAT) и ставка НДС 0% (VAT_0) здесь отсекаются, так как для них
             // налоговые начисления и налогооблагаемый оборот не рассчитываются.
             if (percent > 0) {
-                val groupTotal = groupItems.sumOf { item ->
-                    val itemTotal = item.sum.bills.toDouble() + item.sum.coins / 100.0
-                    if (item.isStorno) -itemTotal else itemTotal
+                val groupTotalTiyn = groupItems.sumOf { item ->
+                    if (item.isStorno) -item.sum.tiyn() else item.sum.tiyn()
                 }
-                if (groupTotal > 0.0) {
-                    val vatAmount = groupTotal - groupTotal / (1.0 + percent / 100.0)
-                    val baseAmount = groupTotal - vatAmount
+                if (groupTotalTiyn > 0) {
+                    // Налог выделяется из суммы с налогом: ставка задана
+                    // в тысячных, поэтому доля считается целыми тиынами
+                    // и округляется к ближайшему один раз, а не на каждом
+                    // делении в плавающей точке.
+                    val rate = vatGroup.percentThousandths.toLong()
+                    val vatTiyn = Decimal.roundedDiv(groupTotalTiyn * rate, PERCENT_THOUSANDTHS + rate)
                     taxLines.add(
                         TaxLine(
                             vatGroup = vatGroup,
                             percent = percent,
-                            taxBase = Money.fromTenge(baseAmount),
-                            taxSum = Money.fromTenge(vatAmount)
+                            taxBase = Money.fromTiyn(groupTotalTiyn - vatTiyn),
+                            taxSum = Money.fromTiyn(vatTiyn)
                         )
                     )
                 }
@@ -81,3 +85,6 @@ class TaxCalculator {
         return TicketTaxResult(taxLines)
     }
 }
+
+/** Сто процентов в тысячных долях. */
+private const val PERCENT_THOUSANDTHS: Long = 100_000

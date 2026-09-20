@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.api.model.kkm
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryStatus
@@ -83,11 +84,11 @@ class KkmModelTest {
 
     @Test
     fun testCashOperationRequest() {
-        val req1 = CashOperationRequest("1111", 500.0, "key-1")
+        val req1 = CashOperationRequest("1111", Decimal.parse("500.0"), "key-1")
         val req1Copy = req1.copy()
-        val reqSame = CashOperationRequest("1111", 500.0, "key-1")
+        val reqSame = CashOperationRequest("1111", Decimal.parse("500.0"), "key-1")
         val reqDiffPin = req1.copy(pin = "2222")
-        val reqDiffAmount = req1.copy(amount = 600.0)
+        val reqDiffAmount = req1.copy(amount = Decimal.parse("600.0"))
         val reqDiffKey = req1.copy(idempotencyKey = "key-2")
 
         assertEquals(req1, req1)

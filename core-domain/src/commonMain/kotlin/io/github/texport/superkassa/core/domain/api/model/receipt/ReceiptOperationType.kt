@@ -1,8 +1,11 @@
 package io.github.texport.superkassa.core.domain.api.model.receipt
 
+import kotlinx.serialization.Serializable
+
 /**
  * Типы фискальных операций чека (продажа, возврат, покупка, возврат покупки).
  */
+@Serializable
 enum class ReceiptOperationType {
     /** Продажа товара/услуги клиенту. */
     SELL,

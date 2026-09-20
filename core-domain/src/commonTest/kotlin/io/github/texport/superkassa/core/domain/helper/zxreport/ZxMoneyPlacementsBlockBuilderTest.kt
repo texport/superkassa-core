@@ -17,13 +17,13 @@ class ZxMoneyPlacementsBlockBuilderTest {
         val deposit = result.first { it.operation == "MONEY_PLACEMENT_DEPOSIT" }
         assertEquals(0L, deposit.operationsTotalCount)
         assertEquals(0L, deposit.operationsCount)
-        assertEquals(0L, deposit.operationsSumBills)
+        assertEquals(0L, deposit.operationsSumTiyn)
         assertEquals(0L, deposit.offlineCount)
 
         val withdrawal = result.first { it.operation == "MONEY_PLACEMENT_WITHDRAWAL" }
         assertEquals(0L, withdrawal.operationsTotalCount)
         assertEquals(0L, withdrawal.operationsCount)
-        assertEquals(0L, withdrawal.operationsSumBills)
+        assertEquals(0L, withdrawal.operationsSumTiyn)
         assertEquals(0L, withdrawal.offlineCount)
     }
 
@@ -46,13 +46,13 @@ class ZxMoneyPlacementsBlockBuilderTest {
         val deposit = result.first { it.operation == "MONEY_PLACEMENT_DEPOSIT" }
         assertEquals(10L, deposit.operationsTotalCount)
         assertEquals(8L, deposit.operationsCount)
-        assertEquals(5000L, deposit.operationsSumBills)
+        assertEquals(5000L, deposit.operationsSumTiyn)
         assertEquals(2L, deposit.offlineCount)
 
         val withdrawal = result.first { it.operation == "MONEY_PLACEMENT_WITHDRAWAL" }
         assertEquals(5L, withdrawal.operationsTotalCount)
         assertEquals(4L, withdrawal.operationsCount)
-        assertEquals(3000L, withdrawal.operationsSumBills)
+        assertEquals(3000L, withdrawal.operationsSumTiyn)
         assertEquals(1L, withdrawal.offlineCount)
     }
 
@@ -65,11 +65,11 @@ class ZxMoneyPlacementsBlockBuilderTest {
 
         val result = ZxMoneyPlacementsBlockBuilder.build(counters)
         val deposit = result.first { it.operation == "MONEY_PLACEMENT_DEPOSIT" }
-        assertEquals(Long.MAX_VALUE, deposit.operationsSumBills)
+        assertEquals(Long.MAX_VALUE, deposit.operationsSumTiyn)
         assertEquals(0L, deposit.operationsCount)
 
         val withdrawal = result.first { it.operation == "MONEY_PLACEMENT_WITHDRAWAL" }
         assertEquals(999999L, withdrawal.operationsCount)
-        assertEquals(0L, withdrawal.operationsSumBills)
+        assertEquals(0L, withdrawal.operationsSumTiyn)
     }
 }

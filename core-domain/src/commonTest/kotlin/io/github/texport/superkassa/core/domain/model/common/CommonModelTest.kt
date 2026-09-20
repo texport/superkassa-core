@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.api.model.common
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,11 +34,11 @@ class CommonModelTest {
         assertTrue(m1.toString().contains("bills=100"))
 
         // fromTenge helper
-        val mFromTenge1 = Money.fromTenge(1234.56)
+        val mFromTenge1 = Money.fromTenge(Decimal.parse("1234.56"))
         assertEquals(1234L, mFromTenge1.bills)
         assertEquals(56, mFromTenge1.coins)
 
-        val mFromTenge2 = Money.fromTenge(1234.00)
+        val mFromTenge2 = Money.fromTenge(Decimal.parse("1234.00"))
         assertEquals(1234L, mFromTenge2.bills)
         assertEquals(0, mFromTenge2.coins)
     }

@@ -23,11 +23,11 @@ object ZxOperationsBlockBuilder {
      * @return Пара (сумма выручки в минимальных денежных единицах, остаток в монетах - всегда 0).
      */
     fun resolveRevenue(counters: Map<String, Long>): Pair<Long, Int> {
-        val revenueBillsCounter = counters[CounterKeyFormats.REVENUE_SUM]
+        val revenueTiynCounter = counters[CounterKeyFormats.REVENUE_SUM]
         val isNegativeFlag = counters[CounterKeyFormats.REVENUE_IS_NEGATIVE] == 1L
 
-        if (revenueBillsCounter != null) {
-            val abs = kotlin.math.abs(revenueBillsCounter)
+        if (revenueTiynCounter != null) {
+            val abs = kotlin.math.abs(revenueTiynCounter)
             val signed = if (isNegativeFlag) -abs else abs
             return signed to 0
         }
@@ -62,7 +62,7 @@ object ZxOperationsBlockBuilder {
         for (op in operationsList()) {
             val count = counters[CounterKeyFormats.OPERATION_COUNT.format(op)] ?: 0L
             val sum = counters[CounterKeyFormats.OPERATION_SUM.format(op)] ?: 0L
-            result += OperationAggregate(operation = op, count = count, sumBills = sum)
+            result += OperationAggregate(operation = op, count = count, sumTiyn = sum)
         }
         return result
     }
@@ -105,7 +105,7 @@ object ZxOperationsBlockBuilder {
                 val sumKey = CounterKeyFormats.SECTION_OPERATION_SUM.format(sectionCode, op)
                 val count = counters[countKey] ?: 0L
                 val sum = counters[sumKey] ?: 0L
-                OperationAggregate(operation = op, count = count, sumBills = sum)
+                OperationAggregate(operation = op, count = count, sumTiyn = sum)
             }
             result += SectionAggregate(sectionCode = sectionCode, operations = ops)
         }
@@ -123,7 +123,7 @@ object ZxOperationsBlockBuilder {
         for (op in operationsList()) {
             val sum = counters[CounterKeyFormats.DISCOUNT_SUM.format(op)] ?: 0L
             val count = counters[CounterKeyFormats.OPERATION_COUNT.format(op)] ?: 0L
-            result += OperationAggregate(operation = op, count = count, sumBills = sum)
+            result += OperationAggregate(operation = op, count = count, sumTiyn = sum)
         }
         return result
     }
@@ -139,7 +139,7 @@ object ZxOperationsBlockBuilder {
         for (op in operationsList()) {
             val sum = counters[CounterKeyFormats.MARKUP_SUM.format(op)] ?: 0L
             val count = counters[CounterKeyFormats.OPERATION_COUNT.format(op)] ?: 0L
-            result += OperationAggregate(operation = op, count = count, sumBills = sum)
+            result += OperationAggregate(operation = op, count = count, sumTiyn = sum)
         }
         return result
     }
@@ -164,7 +164,7 @@ object ZxOperationsBlockBuilder {
             result += OperationAggregate(
                 operation = op,
                 count = count,
-                sumBills = adjustedSum
+                sumTiyn = adjustedSum
             )
         }
         return result

@@ -35,7 +35,7 @@ class UserUseCasesTest {
         every { authorizeUserUseCase.requireKkm(any(), any()) } answers { authorizeUserUseCase.requireKkm(firstArg()) }
         every { authorizeUserUseCase.requireRole(any(), any(), any(), any()) } answers { authorizeUserUseCase.requireRole(firstArg(), secondArg(), thirdArg()) }
         every { pinHasher.hash(any()) } answers { "hash-" + firstArg<String>() }
-        every { storage.findUserByPin(any(), any()) } answers { KkmUser("admin", "Admin", UserRole.ADMIN, "admin-pin", 0L) }
+        every { storage.findUserByPin(any(), any()) } answers { KkmUser("admin", "Admin", UserRole.ADMIN, 0L) }
     }
 
     @Test
@@ -45,7 +45,7 @@ class UserUseCasesTest {
         every { idGenerator.nextId() } returns "user-1"
         every { clock.now() } returns 1000L
         every { pinHasher.hash("user-pin") } returns "hash-1"
-        every { storage.createUser("kkm-1", "user-1", "John", UserRole.ADMIN, "user-pin", "hash-1", 1000L) } returns true
+        every { storage.createUser("kkm-1", "user-1", "John", UserRole.ADMIN, "hash-1", 1000L) } returns true
 
         val user = createUser.execute("kkm-1", "admin-pin", "John", UserRole.ADMIN, "user-pin")
         assertEquals("user-1", user.id)
@@ -70,7 +70,7 @@ class UserUseCasesTest {
         every { idGenerator.nextId() } returns "user-1"
         every { clock.now() } returns 1000L
         every { pinHasher.hash("user-pin") } returns "hash-1"
-        every { storage.createUser(any(), any(), any(), any(), any(), any(), any()) } returns false
+        every { storage.createUser(any(), any(), any(), any(), any(), any()) } returns false
 
         assertFailsWith<ConflictException> {
             createUser.execute("kkm-1", "admin-pin", "John", UserRole.ADMIN, "user-pin")
@@ -79,17 +79,15 @@ class UserUseCasesTest {
 
     @Test
     fun testUpdateUserSuccess() {
-        val existing = KkmUser("user-1", "John", UserRole.CASHIER, "1111", 500L)
+        val existing = KkmUser("user-1", "John", UserRole.CASHIER, 500L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(existing)
-        every { pinHasher.hash("2222") } returns "hash-2"
-        every { storage.updateUser("kkm-1", "user-1", "John New", UserRole.ADMIN, "2222", "hash-2") } returns true
+        every { storage.updateUser("kkm-1", "user-1", "John New", UserRole.ADMIN, "hash-2222") } returns true
 
         val user = updateUser.execute("kkm-1", "user-1", "admin-pin", "John New", UserRole.ADMIN, "2222")
         assertEquals("John New", user.name)
         assertEquals(UserRole.ADMIN, user.role)
-        assertEquals("2222", user.pin)
     }
 
     @Test
@@ -104,8 +102,8 @@ class UserUseCasesTest {
 
     @Test
     fun testDeleteUserSuccess() {
-        val target = KkmUser("user-2", "Cashier", UserRole.CASHIER, "1111", 500L)
-        val other = KkmUser("user-1", "Cashier 2", UserRole.CASHIER, "2222", 600L)
+        val target = KkmUser("user-2", "Cashier", UserRole.CASHIER, 500L)
+        val other = KkmUser("user-1", "Cashier 2", UserRole.CASHIER, 600L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(target, other)
@@ -116,7 +114,7 @@ class UserUseCasesTest {
 
     @Test
     fun testDeleteUserRoleRequired() {
-        val target = KkmUser("user-1", "Admin", UserRole.ADMIN, "1111", 500L)
+        val target = KkmUser("user-1", "Admin", UserRole.ADMIN, 500L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(target)
@@ -149,8 +147,8 @@ class UserUseCasesTest {
 
     @Test
     fun testDeleteUserDbFailure() {
-        val target = KkmUser("user-2", "Cashier", UserRole.CASHIER, "1111", 500L)
-        val other = KkmUser("user-1", "Cashier 2", UserRole.CASHIER, "2222", 600L)
+        val target = KkmUser("user-2", "Cashier", UserRole.CASHIER, 500L)
+        val other = KkmUser("user-1", "Cashier 2", UserRole.CASHIER, 600L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(target, other)
@@ -174,7 +172,7 @@ class UserUseCasesTest {
 
     @Test
     fun testUpdateUserBlankName() {
-        val existing = KkmUser("user-1", "John", UserRole.CASHIER, "1111", 500L)
+        val existing = KkmUser("user-1", "John", UserRole.CASHIER, 500L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(existing)
@@ -186,7 +184,7 @@ class UserUseCasesTest {
 
     @Test
     fun testUpdateUserBlankPin() {
-        val existing = KkmUser("user-1", "John", UserRole.CASHIER, "1111", 500L)
+        val existing = KkmUser("user-1", "John", UserRole.CASHIER, 500L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(existing)
@@ -198,12 +196,11 @@ class UserUseCasesTest {
 
     @Test
     fun testUpdateUserConflict() {
-        val existing = KkmUser("user-1", "John", UserRole.CASHIER, "1111", 500L)
+        val existing = KkmUser("user-1", "John", UserRole.CASHIER, 500L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(existing)
-        every { pinHasher.hash("2222") } returns "hash-2"
-        every { storage.updateUser("kkm-1", "user-1", "John New", UserRole.ADMIN, "2222", "hash-2") } returns false
+        every { storage.updateUser("kkm-1", "user-1", "John New", UserRole.ADMIN, "hash-2222") } returns false
 
         assertFailsWith<ConflictException> {
             updateUser.execute("kkm-1", "user-1", "admin-pin", "John New", UserRole.ADMIN, "2222")
@@ -212,7 +209,7 @@ class UserUseCasesTest {
 
     @Test
     fun testUpdateUserPartialUpdatesAndNullFallbacks() {
-        val existing = KkmUser("user-1", "John", UserRole.CASHIER, "1111", 500L)
+        val existing = KkmUser("user-1", "John", UserRole.CASHIER, 500L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(existing)
@@ -224,17 +221,15 @@ class UserUseCasesTest {
 
     @Test
     fun testUpdateUserOnlyOneFieldChanged() {
-        val existing = KkmUser("user-1", "John", UserRole.CASHIER, "1111", 500L)
+        val existing = KkmUser("user-1", "John", UserRole.CASHIER, 500L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(existing)
-        every { pinHasher.hash("5555") } returns "hash-existing"
-        every { storage.updateUser("kkm-1", "user-1", "John", UserRole.CASHIER, "5555", "hash-existing") } returns true
+        every { storage.updateUser("kkm-1", "user-1", "John", UserRole.CASHIER, "hash-5555") } returns true
 
         val user = updateUser.execute("kkm-1", "user-1", "admin-pin", null, null, "5555")
         assertEquals("John", user.name)
         assertEquals(UserRole.CASHIER, user.role)
-        assertEquals("5555", user.pin)
     }
 
     @Test
@@ -252,7 +247,7 @@ class UserUseCasesTest {
 
     @Test
     fun testUpdateUserDefaultPin() {
-        val existing = KkmUser("user-1", "John", UserRole.CASHIER, "1111", 500L)
+        val existing = KkmUser("user-1", "John", UserRole.CASHIER, 500L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(existing)
@@ -267,11 +262,11 @@ class UserUseCasesTest {
 
     @Test
     fun testCashierCanUpdateOwnPinButNotRole() {
-        val existing = KkmUser("cashier-1", "Cashier", UserRole.CASHIER, "2222", 500L)
+        val existing = KkmUser("cashier-1", "Cashier", UserRole.CASHIER, 500L)
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { storage.findUserByPin("kkm-1", "hash-2222") } returns existing
         every { storage.listUsers("kkm-1") } returns listOf(existing)
-        every { storage.updateUser("kkm-1", "cashier-1", "Cashier New", UserRole.CASHIER, "3333", any()) } returns true
+        every { storage.updateUser("kkm-1", "cashier-1", "Cashier New", UserRole.CASHIER, any()) } returns true
 
         val res = updateUser.execute("kkm-1", "cashier-1", "2222", "Cashier New", UserRole.CASHIER, "3333")
         assertEquals("Cashier New", res.name)
@@ -280,7 +275,7 @@ class UserUseCasesTest {
             updateUser.execute("kkm-1", "cashier-1", "2222", "Cashier New", UserRole.ADMIN, "3333")
         }
 
-        val other = KkmUser("admin-1", "Admin", UserRole.ADMIN, "1111", 500L)
+        val other = KkmUser("admin-1", "Admin", UserRole.ADMIN, 500L)
         every { storage.listUsers("kkm-1") } returns listOf(existing, other)
         assertFailsWith<ForbiddenException> {
             updateUser.execute("kkm-1", "admin-1", "2222", "Admin New", UserRole.ADMIN, "4444")

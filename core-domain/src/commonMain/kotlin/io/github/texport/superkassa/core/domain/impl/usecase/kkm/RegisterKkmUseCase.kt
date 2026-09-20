@@ -4,11 +4,13 @@ import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
+import io.github.texport.superkassa.core.domain.api.model.auth.StandardPin
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmMode
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
@@ -20,21 +22,10 @@ import io.github.texport.superkassa.core.domain.api.port.integration.inTransacti
 import io.github.texport.superkassa.core.domain.api.port.internal.TokenCodecPort
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
 import io.github.texport.superkassa.core.domain.impl.helper.OfdResponseParser
+import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 
 /**
  * Сценарий регистрации, инициализации и подключения ККМ к системе.
- *
- * Поддерживает два варианта инициализации:
- * 1. Стандартная инициализация с ручным вводом всех реквизитов ([initKkm]).
- * 2. Упрощенная инициализация с автоматическим запросом параметров из ОФД ([initKkmSimple]).
- *
- * @property storage Порт для доступа к хранилищу данных.
- * @property ofdConfig Порт для работы с конфигурацией провайдеров ОФД.
- * @property tokenCodec Порт для шифрования и дешифрования токенов доступа ОФД.
- * @property idGenerator Порт для генерации уникальных идентификаторов.
- * @property clock Порт для работы с системным временем.
- * @property kkmCommonHelper Общий помощник для операций над ККМ.
- * @property initializeKkmRegistrationUseCase Вспомогательный сценарий для начальной инициализации состояния регистрации ККМ.
  */
 class RegisterKkmUseCase(
     private val storage: StoragePort,
@@ -45,9 +36,9 @@ class RegisterKkmUseCase(
     private val kkmCommonHelper: KkmCommonHelper,
     private val initializeKkmRegistrationUseCase: InitializeKkmRegistrationUseCase
 ) {
+    private val logger = getLogger(RegisterKkmUseCase::class)
     private val registeredMode = KkmMode.REGISTRATION.name
     private val registeredState = KkmState.ACTIVE.name
-    private val defaultAdminPin = "0000"
 
     /**
      * Стандартная инициализация ККМ с явным указанием заводского номера, регистрационного номера КГД и ОФД-реквизитов.
@@ -62,6 +53,7 @@ class RegisterKkmUseCase(
      * @param manufactureYear Год выпуска устройства.
      * @param serviceInfo Дополнительные метаданные сервиса (если null, используются дефолтные).
      * @param okved Код ОКВЭД организации.
+     * @param adminPin Пин администратора новой кассы; `null` — прежний стандартный.
      * @return Зарегистрированная информация о ККМ [KkmInfo].
      * @throws ValidationException Если не заполнен идентификатор системы ОФД или не валиден ОКВЭД.
      * @throws ForbiddenException Если передан неверный ПИН-код администратора.
@@ -77,10 +69,13 @@ class RegisterKkmUseCase(
         factoryNumber: String,
         manufactureYear: Int,
         serviceInfo: OfdServiceInfo?,
-        okved: String?
+        okved: String?,
+        adminPin: String? = null
     ): KkmInfo {
+        logger.info("initKkm: starting registration for systemId='$ofdSystemId', factoryNumber='$factoryNumber'")
         kkmCommonHelper.ensureSystemTimeValid()
         requireBootstrapAdminPin(pin)
+        requireUsableAdminPin(adminPin)
         if (ofdSystemId.isBlank()) {
             throw ValidationException(CoreStrings.kkmSystemIdRequired(), "KKM_SYSTEM_ID_REQUIRED")
         }
@@ -128,6 +123,7 @@ class RegisterKkmUseCase(
                 factoryNumber = factoryNumber,
                 ofdTag = ofdTag,
                 okvedOverride = okved,
+                adminPin = adminPin,
                 updateKkm = { updatedKkm ->
                     val created = storage.createKkm(updatedKkm)
                     if (!created) {
@@ -148,8 +144,10 @@ class RegisterKkmUseCase(
      * @param ofdToken Начальный токен доступа ОФД.
      * @param defaultVatGroup Группа НДС по умолчанию.
      * @param okved Опциональный код ОКВЭД.
+     * @param adminPin Пин администратора новой кассы; `null` — прежний стандартный.
      * @return Зарегистрированная информация о ККМ [KkmInfo].
-     * @throws ValidationException Если не заполнен идентификатор системы ОФД, не валиден ОКВЭД или команды ОФД завершились ошибкой.
+     * @throws ValidationException Если не заполнен идентификатор системы ОФД, не валиден ОКВЭД
+     * или команды ОФД завершились ошибкой.
      * @throws ForbiddenException Если передан неверный ПИН-код администратора.
      * @throws ConflictException Если касса с таким ОФД ID или регистрационным номером уже существует.
      */
@@ -160,11 +158,15 @@ class RegisterKkmUseCase(
         ofdSystemId: String,
         ofdToken: String,
         defaultVatGroup: VatGroup,
-        okved: String?
+        okved: String?,
+        adminPin: String? = null
     ): KkmInfo {
+        logger.info("initKkmSimple: start initialization for systemId='$ofdSystemId', ofdId='$ofdId'")
         kkmCommonHelper.ensureSystemTimeValid()
         requireBootstrapAdminPin(pin)
+        requireUsableAdminPin(adminPin)
         if (ofdSystemId.isBlank()) {
+            logger.warn("initKkmSimple: ofdSystemId is blank")
             throw ValidationException(CoreStrings.kkmSystemIdRequired(), "KKM_SYSTEM_ID_REQUIRED")
         }
         val now = clock.now()
@@ -172,6 +174,7 @@ class RegisterKkmUseCase(
 
         val existingBySystem = storage.findKkmBySystemId(ofdSystemId)
         if (existingBySystem != null) {
+            logger.warn("initKkmSimple: systemId '$ofdSystemId' already exists in DB")
             throw ConflictException(
                 CoreStrings.kkmSystemIdExists(ofdSystemId),
                 "KKM_SYSTEM_ID_EXISTS"
@@ -180,6 +183,7 @@ class RegisterKkmUseCase(
 
         val kkmId = idGenerator.nextId()
         val initialToken = tokenCodec.parseToken(ofdToken)
+        logger.debug("initKkmSimple: generated kkmId='$kkmId', sending OFD SYSTEM command...")
 
         // Создаем временную ККМ для отправки запросов инициализации в ОФД
         val tempKkm = KkmInfo(
@@ -209,15 +213,22 @@ class RegisterKkmUseCase(
             ofdProviderOverride = ofdTag
         )
 
+        logger.debug("initKkmSimple: OFD SYSTEM result status='${systemResult.status}'")
+
         if (systemResult.status != OfdCommandStatus.OK) {
+            logger.error(
+                "initKkmSimple: OFD SYSTEM command failed for systemId='$ofdSystemId': " +
+                    describeFailure(systemResult)
+            )
             throw ValidationException(
-                CoreStrings.ofdRequestFailed(systemResult.errorMessage),
+                CoreStrings.ofdRequestFailed(describeFailure(systemResult)),
                 "OFD_COMMAND_FAILED"
             )
         }
 
         // 2. Отправляем информационную (INFO) команду для получения актуальных регистрационных данных
         val infoToken = systemResult.responseToken ?: initialToken
+        logger.debug("initKkmSimple: sending OFD INFO command...")
         val infoResult = kkmCommonHelper.sendOfdCommand(
             kkm = tempKkm,
             commandType = OfdCommandType.INFO,
@@ -229,9 +240,15 @@ class RegisterKkmUseCase(
             ofdProviderOverride = ofdTag
         )
 
+        logger.debug("initKkmSimple: OFD INFO result status='${infoResult.status}'")
+
         if (infoResult.status != OfdCommandStatus.OK) {
+            logger.error(
+                "initKkmSimple: OFD INFO command failed for systemId='$ofdSystemId': " +
+                    describeFailure(infoResult)
+            )
             throw ValidationException(
-                CoreStrings.ofdRequestFailed(infoResult.errorMessage),
+                CoreStrings.ofdRequestFailed(describeFailure(infoResult)),
                 "OFD_COMMAND_FAILED"
             )
         }
@@ -280,14 +297,14 @@ class RegisterKkmUseCase(
             defaultVatGroup = defaultVatGroup
         )
 
-        // В рамках одной транзакции сохраняем ККМ, обновляем счетчики и создаем дефолтных пользователей (кассиров)
+        // В рамках одной транзакции сохраняем ККМ, обновляем счётчики и заводим администратора
         storage.inTransaction {
             val created = storage.createKkm(finalKkm)
             if (!created) {
                 throw ConflictException(CoreStrings.kkmExists(), "KKM_EXISTS")
             }
             initializeKkmRegistrationUseCase.updateCountersFromOfdInfo(finalKkm.id, infoResult.responseJson)
-            initializeKkmRegistrationUseCase.ensureDefaultUsers(finalKkm.id, clock.now())
+            initializeKkmRegistrationUseCase.ensureAdministrator(finalKkm.id, clock.now(), adminPin)
         }
 
         return finalKkm
@@ -297,11 +314,23 @@ class RegisterKkmUseCase(
      * Проверяет, соответствует ли переданный ПИН-код коду начальной настройки администратора.
      *
      * @param pin ПИН-код для проверки.
-     * @throws ForbiddenException Если ПИН-код не совпадает со значением по умолчанию "0000".
+     * @throws ForbiddenException Если ПИН-код не совпадает с кодом начальной настройки.
      */
     private fun requireBootstrapAdminPin(pin: String) {
-        if (pin != defaultAdminPin) {
+        if (pin != StandardPin.BOOTSTRAP) {
             throw ForbiddenException(CoreStrings.userForbidden(), "USER_FORBIDDEN")
+        }
+    }
+
+    /**
+     * Проверяет, что пин администратора новой кассы позволит в неё войти.
+     *
+     * @param adminPin Пин администратора, заданный при заведении кассы.
+     * @throws ValidationException Если пин стандартный: с ним касса останется недоступной.
+     */
+    private fun requireUsableAdminPin(adminPin: String?) {
+        if (adminPin != null && StandardPin.isStandard(adminPin)) {
+            throw ValidationException(CoreStrings.defaultPinNotAllowed(), "DEFAULT_PIN_NOT_ALLOWED")
         }
     }
 
@@ -327,5 +356,23 @@ class RegisterKkmUseCase(
             throw ValidationException(CoreStrings.okvedRequired(), "OKVED_REQUIRED")
         }
         return resolved
+    }
+
+    /**
+     * Складывает описание отказа ОФД из того, что он действительно прислал.
+     *
+     * Сетевое поле errorMessage пусто, когда ОФД ответил и отказал по существу:
+     * причина тогда лежит в коде и тексте результата. Раньше в журнал и
+     * оператору уходило пустое место, и отличить отказ стенда от обрыва связи
+     * было нельзя.
+     */
+    private fun describeFailure(result: OfdCommandResult): String {
+        val parts = listOfNotNull(
+            result.status.name,
+            result.resultCode?.let { "code=$it" },
+            result.resultText?.takeIf { it.isNotBlank() },
+            result.errorMessage?.takeIf { it.isNotBlank() }
+        )
+        return parts.joinToString(", ")
     }
 }

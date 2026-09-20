@@ -14,10 +14,17 @@ import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserU
  * @property authorizeUserUseCase Сценарий проверки существования ККМ и авторизации.
  * @property kkmCommonHelper Вспомогательный класс общего функционала работы с ККМ.
  */
+import io.github.texport.superkassa.core.domain.impl.logging.getLogger
+
+/**
+ * Сценарий (Use Case) отправки фискальной команды напрямую в ОФД.
+ */
 class SendFiscalCommandUseCase(
     private val authorizeUserUseCase: AuthorizeUserUseCase,
     private val kkmCommonHelper: KkmCommonHelper
 ) {
+    private val logger = getLogger(SendFiscalCommandUseCase::class)
+
     /**
      * Выполняет отправку фискальной команды в ОФД.
      *
@@ -27,9 +34,20 @@ class SendFiscalCommandUseCase(
      * @return [OfdCommandResult] Результат выполнения команды ОФД.
      */
     fun execute(kkmId: String, commandType: OfdCommandType, payloadRef: String): OfdCommandResult {
-        // Проверяем существование ККМ
-        val kkm = authorizeUserUseCase.requireKkm(kkmId)
-        // Отправляем команду выбранного типа в ОФД
-        return kkmCommonHelper.sendOfdCommand(kkm = kkm, commandType = commandType, payloadRef = payloadRef)
+        logger.info(
+            "SendFiscalCommandUseCase: sending command '{}' for kkmId='{}', payloadRef='{}'",
+            commandType,
+            kkmId,
+            payloadRef
+        )
+        return try {
+            val kkm = authorizeUserUseCase.requireKkm(kkmId)
+            val result = kkmCommonHelper.sendOfdCommand(kkm = kkm, commandType = commandType, payloadRef = payloadRef)
+            logger.info("SendFiscalCommandUseCase: command '{}' result status='{}'", commandType, result.status)
+            result
+        } catch (e: Exception) {
+            logger.error("SendFiscalCommandUseCase: command '$commandType' failed for kkmId='$kkmId'", e)
+            throw e
+        }
     }
 }

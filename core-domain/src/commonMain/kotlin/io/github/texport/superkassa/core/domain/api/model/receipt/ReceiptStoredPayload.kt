@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.api.model.receipt
 
+import kotlinx.serialization.Serializable
+
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
@@ -23,6 +25,7 @@ import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
  * @property customerBin БИН/ИИН покупателя.
  * @property ticketTaxes Строки распределения налогов по чеку.
  */
+@Serializable
 data class ReceiptStoredPayload(
     val kkmId: String,
     val operation: ReceiptOperationType,
@@ -31,13 +34,18 @@ data class ReceiptStoredPayload(
     val total: Money,
     val taken: Money? = null,
     val change: Money? = null,
+    val idempotencyKey: String = "",
     val parentTicket: ParentTicket? = null,
+    /** Отраслевые реквизиты чека, если отрасль объявлена. */
+    val domain: ReceiptDomain? = null,
     val taxRegime: TaxRegime = TaxRegime.NO_VAT,
     val defaultVatGroup: VatGroup = VatGroup.NO_VAT,
     val discount: Money? = null,
     val markup: Money? = null,
     val customerBin: String? = null,
-    val ticketTaxes: List<TaxLine>? = null
+    val ticketTaxes: List<TaxLine>? = null,
+    /** Кто оформил чек: имя, а не пин — пин на диск не пишется. */
+    val operatorName: String? = null
 ) {
     /**
      * Преобразует сохраненные данные обратно в структуру запроса чека.
@@ -45,6 +53,7 @@ data class ReceiptStoredPayload(
     fun toReceiptRequest(): ReceiptRequest = ReceiptRequest(
         kkmId = kkmId,
         pin = "",
+        operatorName = operatorName,
         operation = operation,
         items = items,
         payments = payments,
@@ -53,6 +62,7 @@ data class ReceiptStoredPayload(
         change = change,
         idempotencyKey = "",
         parentTicket = parentTicket,
+        domain = domain,
         taxRegime = taxRegime,
         defaultVatGroup = defaultVatGroup,
         discount = discount,
@@ -68,12 +78,15 @@ data class ReceiptStoredPayload(
         fun fromReceiptRequest(request: ReceiptRequest): ReceiptStoredPayload = ReceiptStoredPayload(
             kkmId = request.kkmId,
             operation = request.operation,
+            operatorName = request.operatorName,
             items = request.items,
             payments = request.payments,
             total = request.total,
             taken = request.taken,
             change = request.change,
+            idempotencyKey = request.idempotencyKey,
             parentTicket = request.parentTicket,
+            domain = request.domain,
             taxRegime = request.taxRegime,
             defaultVatGroup = request.defaultVatGroup ?: VatGroup.NO_VAT,
             discount = request.discount,

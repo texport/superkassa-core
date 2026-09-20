@@ -42,15 +42,30 @@ internal class SaleReceiptRenderer(
         fun t(key: String): String = translate(key, lang)
         fun translateInlineKey(key: String): String = translateInline(key, lang)
 
-        val sign = doc.fiscalSign ?: doc.autonomousSign ?: "-"
+        // У автономного чека фискального признака нет: его выдаёт ОФД. Раньше
+        // в эту строку подставлялся автономный признак — время в миллисекундах,
+        // и покупатель читал тринадцать цифр эпохи как фискальный признак.
+        // Автономный чек опознаётся своим номером документа и строкой
+        // «Автономный режим», как и на кассах парка.
+        val sign = doc.fiscalSign
         val totalStr = receipt.total.formatted()
         val opTitleKey = operationTitleKey(receipt.operation)
 
+        // КГД требует QR-код на каждом чеке. Сетевому ссылку присылает ОФД,
+        // автономному касса собирает её сама — иначе чек, пробитый в разрыве
+        // связи, уходит покупателю без кода вовсе.
         val receiptUrl = doc.receiptUrl?.trim()?.takeIf { it.isNotEmpty() }
+            ?: OfflineReceiptLink.of(doc, ReceiptFormatter.moneyToTiyn(receipt.total))
         val qrDataUri = receiptUrl?.let { qrCodeGenerator.generatePngDataUri(it, DocumentConstants.QR_CODE_SIZE_PX) }
 
-        val itemsSumCents = receipt.items.sumOf { ReceiptFormatter.moneyToCents(it.sum) }
-        val itemsSumStr = ReceiptFormatter.formatCents(itemsSumCents)
+        // Сторно-позиция отменяет ранее пробитую: в промежуточный итог она
+        // входит со знаком минус. Со сложением итог расходился с чеком
+        // ровно на удвоенную сумму отмены.
+        val itemsSumTiyn = receipt.items.sumOf {
+            val sum = ReceiptFormatter.moneyToTiyn(it.sum)
+            if (it.isStorno) -sum else sum
+        }
+        val itemsSumStr = ReceiptFormatter.formatTiyn(itemsSumTiyn)
 
         val itemsHtml = SaleItemsComponent.render(
             items = receipt.items,
@@ -58,7 +73,8 @@ internal class SaleReceiptRenderer(
             taxRegime = receipt.taxRegime,
             receiptDiscount = receipt.discount,
             t = { t(it) },
-            translateInlineKey = { translateInlineKey(it) }
+            translateInlineKey = { translateInlineKey(it) },
+            namePair = { ru, kk -> translate(ru, kk, lang) }
         )
 
         val paymentsHtml = PaymentsListComponent.render(
@@ -84,7 +100,9 @@ internal class SaleReceiptRenderer(
             t = { t(it) }
         )
 
-        val ofdProviderName = (doc.ofdProvider ?: "-").escaped()
+        // На чеке печатается имя оператора, а не служебный тег: покупателю
+        // «BFD:DEV» не говорит ничего, а по названию он знает, кому жаловаться.
+        val ofdProviderName = providerName(doc.ofdProvider, lang)
 
         val additionalMeta = MetadataBuilder { translateInlineKey(it) }.apply {
             add("buyer_bin_iin", receipt.customerBin)
@@ -169,4 +187,26 @@ internal class SaleReceiptRenderer(
     }
 
     private fun operationTitleKey(type: ReceiptOperationType): String = type.translationKey
+
+    /**
+     * Название ОФД по его тегу.
+     *
+     * @param tag тег вида `BFD:DEV`.
+     * @param lang язык чека.
+     * @return имя оператора либо сам тег, если такого оператора нет в реестре.
+     */
+    private fun providerName(tag: String?, lang: ReceiptLanguage): String {
+        val id = tag?.substringBefore(TAG_SEPARATOR) ?: return DASH
+        val provider = OfdProvider.findProvider(id) ?: return tag.escaped()
+        // Экранируется имя, а не результат: на двух языках `translate` отдаёт
+        // готовую двухэтажную разметку, и её экранирование печатало на чеке
+        // сам тег `<span class=...>` вместо названия оператора.
+        return translate(provider.nameRu.escaped(), provider.nameKk.escaped(), lang)
+    }
 }
+
+/** Разделитель тега провайдера и окружения. */
+private const val TAG_SEPARATOR = ':'
+
+/** Прочерк там, где сведений нет. */
+private const val DASH = "-"

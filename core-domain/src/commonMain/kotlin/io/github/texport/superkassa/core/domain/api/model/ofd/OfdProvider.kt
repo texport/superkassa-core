@@ -34,7 +34,41 @@ enum class OfdProvider(
                 checkDomain = "consumer.oofd.kz"
             )
         )
+    ),
+
+    /** ТОО «БФД» */
+    BFD(
+        id = "BFD",
+        nameRu = "ОФД БФД",
+        nameKk = "БФД ОФД",
+        website = "ofd.example.kz",
+        endpoints = mapOf(
+            // Стенд разработки БФД: сервис приёма данных от касс в контуре
+            // ECC, доступен по VPN. Чеки проверяются на receipt.ecc.kz.
+            OfdEnvironment.DEV to OfdEndpoint(
+                host = "192.168.10.123",
+                port = 7778,
+                checkDomain = "receipt.ecc.kz"
+            ),
+            // Локальный стенд сервиса приёма на машине в сети разработчика.
+            OfdEnvironment.TEST to OfdEndpoint(
+                host = "192.168.50.35",
+                port = 17700,
+                checkDomain = "receipt.example.kz"
+            )
+        )
     );
+
+    /** Принимает ли провайдер этот контур: адрес известен только для перечисленных. */
+    fun supports(environment: OfdEnvironment): Boolean = endpoints.containsKey(environment)
+
+    /**
+     * Адрес, по которому касса отправляет команды в этом контуре.
+     *
+     * @param environment контур ОФД.
+     * @return точка подключения либо `null`, если для контура адреса нет.
+     */
+    fun endpoint(environment: OfdEnvironment): OfdEndpoint? = endpoints[environment]
 
     companion object {
         /**

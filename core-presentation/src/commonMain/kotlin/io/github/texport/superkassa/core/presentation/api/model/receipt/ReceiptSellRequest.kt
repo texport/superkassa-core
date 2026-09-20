@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.api.model.receipt
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import io.github.texport.superkassa.core.presentation.api.annotations.Valid
 import io.github.texport.superkassa.core.presentation.api.annotations.DecimalMax
@@ -23,19 +24,19 @@ data class ReceiptSellRequest(
     @Schema(description = "Наценка на весь чек: процент (0–100). Взаимоисключающе с markupSum.", example = "0")
     @field:DecimalMin("0")
     @field:DecimalMax("100")
-    val markupPercent: Double? = null,
+    val markupPercent: Decimal? = null,
     @Schema(description = "Наценка на весь чек: сумма в тенге. Взаимоисключающе с markupPercent.", example = "0")
     @field:DecimalMin("0")
-    val markupSum: Double? = null,
+    val markupSum: Decimal? = null,
     @Schema(description = "Скидка на весь чек: процент (0–100). Взаимоисключающе с discountSum.", example = "5")
     @field:DecimalMin("0")
     @field:DecimalMax("100")
-    val discountPercent: Double? = null,
+    val discountPercent: Decimal? = null,
     @Schema(description = "Скидка на весь чек: сумма в тенге. Взаимоисключающе с discountPercent.", example = "50.00")
     @field:DecimalMin("0")
-    val discountSum: Double? = null,
+    val discountSum: Decimal? = null,
     @Schema(description = "Сдача (в тенге, опционально)", example = "499.25")
-    val change: Double? = null,
+    val change: Decimal? = null,
     @Schema(
         description = "Группа НДС на весь чек. Если не указана — используется настройка ККМ (defaultVatGroup). " +
             "Допустимые значения: NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16. Отдельная позиция может переопределить через vatGroup.",
@@ -45,8 +46,10 @@ data class ReceiptSellRequest(
     @Schema(description = "Способы оплаты. Допустимые типы: CASH, CARD, ELECTRONIC.")
     @field:NotEmpty(message = "Укажите хотя бы один способ оплаты")
     val payments: List<@Valid ReceiptPaymentRequest>,
+    /** Отраслевые реквизиты чека. */
+    val domain: ReceiptDomainRequest? = null,
     @Schema(description = "Получено от покупателя (в тенге, опционально)", example = "2000.00")
-    val taken: Double? = null,
+    val taken: Decimal? = null,
     @Schema(description = "БИН/ИИН покупателя (по требованию)", example = "123456789012")
     val customerBin: String? = null
 ) {

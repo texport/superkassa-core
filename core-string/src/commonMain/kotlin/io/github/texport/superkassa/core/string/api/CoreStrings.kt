@@ -40,15 +40,32 @@ object CoreStrings {
     fun kkmDeleteRequiresProgramming(): TrilingualMessage = CoreStringsImpl.kkmDeleteRequiresProgramming()
     fun kkmDeleteShiftOpen(): TrilingualMessage = CoreStringsImpl.kkmDeleteShiftOpen()
     fun kkmDeleteQueueNotEmpty(): TrilingualMessage = CoreStringsImpl.kkmDeleteQueueNotEmpty()
+    fun queueRetryShiftOpen(): TrilingualMessage = CoreStringsImpl.queueRetryShiftOpen()
+    fun kkmSettingsShiftOpen(): TrilingualMessage = CoreStringsImpl.kkmSettingsShiftOpen()
+    fun kkmSettingsQueueNotEmpty(): TrilingualMessage = CoreStringsImpl.kkmSettingsQueueNotEmpty()
+    fun cashSumNegative(): TrilingualMessage = CoreStringsImpl.cashSumNegative()
+    fun insufficientCash(): TrilingualMessage = CoreStringsImpl.insufficientCash()
+    fun printDocumentIdRequired(): TrilingualMessage = CoreStringsImpl.printDocumentIdRequired()
+    fun printShiftIdRequired(): TrilingualMessage = CoreStringsImpl.printShiftIdRequired()
+    fun cashierCannotChangeRole(): TrilingualMessage = CoreStringsImpl.cashierCannotChangeRole()
+    fun shiftNotFound(): TrilingualMessage = CoreStringsImpl.shiftNotFound()
+    fun paymentTypeNotSupported(payment: String, protocolVersion: String): TrilingualMessage =
+        CoreStringsImpl.paymentTypeNotSupported(payment, protocolVersion)
+    fun kkmDeleteAutonomousNotAllowed(): TrilingualMessage = CoreStringsImpl.kkmDeleteAutonomousNotAllowed()
     fun kkmSyncShiftOpen(): TrilingualMessage = CoreStringsImpl.kkmSyncShiftOpen()
     fun kkmSyncQueueNotEmpty(): TrilingualMessage = CoreStringsImpl.kkmSyncQueueNotEmpty()
+    fun kkmSyncShiftDiverged(shiftNo: Long): TrilingualMessage =
+        CoreStringsImpl.kkmSyncShiftDiverged(shiftNo)
     fun kkmAutonomousTooLong(): TrilingualMessage = CoreStringsImpl.kkmAutonomousTooLong()
     fun kkmBlocked(): TrilingualMessage = CoreStringsImpl.kkmBlocked()
+
+    /** Блокировка с причиной и с тем, что делать; код — из состояния кассы. */
+    fun kkmBlocked(code: Int?): TrilingualMessage = CoreStringsImpl.kkmBlockedWithReason(code)
     fun kkmSettingsRequiresProgramming(): TrilingualMessage = CoreStringsImpl.kkmSettingsRequiresProgramming()
     fun kkmInProgramming(): TrilingualMessage = CoreStringsImpl.kkmInProgramming()
     fun unauthorized(): TrilingualMessage = CoreStringsImpl.unauthorized()
     fun ofdRequestFailed(details: String?): TrilingualMessage = CoreStringsImpl.ofdRequestFailed(details)
-    
+
     // --- OFD Code Handling (CPCR 2.0.3) ---
     fun blockReason(code: Int): TrilingualMessage = CoreStringsImpl.blockReason(code)
     fun documentFailedReason(ofdErrorCode: Int): TrilingualMessage = CoreStringsImpl.documentFailedReason(ofdErrorCode)
@@ -59,6 +76,22 @@ object CoreStrings {
     fun nomenclatureNotFound(barcode: String): TrilingualMessage = CoreStringsImpl.nomenclatureNotFound(barcode)
     fun parentTicketRequiredForReturns(): TrilingualMessage = CoreStringsImpl.parentTicketRequiredForReturns()
     fun receiptDiscountScopesConflict(): TrilingualMessage = CoreStringsImpl.receiptDiscountScopesConflict()
+
+    /** Скидка и наценка на сам чек вместе: сервис приёма принимает одно из двух. */
+    fun receiptDiscountAndMarkupConflict(): TrilingualMessage =
+        CoreStringsImpl.receiptDiscountAndMarkupConflict()
+
+    /** Возврат больше остатка по чеку-основанию. */
+    fun refundExceedsBasis(left: String): TrilingualMessage = CoreStringsImpl.refundExceedsBasis(left)
+
+    /** По чеку-основанию уже возвращено всё. */
+    fun refundAlreadyFull(): TrilingualMessage = CoreStringsImpl.refundAlreadyFull()
+    fun receiptVatNotAllowed(group: String): TrilingualMessage =
+        CoreStringsImpl.receiptVatNotAllowed(group)
+    fun paymentsTotalMismatch(paid: String, total: String): TrilingualMessage =
+        CoreStringsImpl.paymentsTotalMismatch(paid, total)
+    fun documentNotFiscalized(): TrilingualMessage = CoreStringsImpl.documentNotFiscalized()
+    fun deliveryChannelsNotConfigured(): TrilingualMessage = CoreStringsImpl.deliveryChannelsNotConfigured()
 
     // --- Технические ошибки инфраструктуры (Data/Infrastructure Errors) ---
     fun ofdRequestFailedData(details: String?): String = CoreStringsImpl.ofdRequestFailedData(details)
@@ -82,6 +115,7 @@ object CoreStrings {
     fun userRole(code: String): TrilingualMessage = CoreStringsImpl.userRole(code)
     fun taxRegime(code: String): TrilingualMessage = CoreStringsImpl.taxRegime(code)
     fun vatGroup(code: String): TrilingualMessage = CoreStringsImpl.vatGroup(code)
+    fun receiptDomainType(code: String): TrilingualMessage = CoreStringsImpl.receiptDomainType(code)
     fun unitOfMeasurement(code: String): TrilingualMessage = CoreStringsImpl.unitOfMeasurement(code)
     fun paperWidth(code: String): TrilingualMessage = CoreStringsImpl.paperWidth(code)
     fun brandingColor(code: String): TrilingualMessage = CoreStringsImpl.brandingColor(code)

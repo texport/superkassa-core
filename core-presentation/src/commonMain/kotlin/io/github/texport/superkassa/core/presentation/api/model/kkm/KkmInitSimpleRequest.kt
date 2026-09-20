@@ -33,5 +33,11 @@ data class KkmInitSimpleRequest(
     )
     val defaultVatGroup: VatGroup = VatGroup.NO_VAT,
     @Schema(description = "Ручной ввод ОКЭД при отсутствии данных от ОФД", example = "47111")
-    val okved: String? = null
+    val okved: String? = null,
+    @Schema(
+        description = "Пин администратора новой кассы. Без него касса заводится со стандартным " +
+            "пином, а войти с ним узел не даёт — открыть такую кассу будет нельзя.",
+        example = "4821"
+    )
+    val adminPin: String? = null
 )

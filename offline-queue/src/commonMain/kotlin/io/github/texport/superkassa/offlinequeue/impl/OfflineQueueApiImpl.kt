@@ -58,7 +58,22 @@ internal class OfflineQueueApiImpl(
      * @return true, если есть ожидающие оффлайн-команды, иначе false.
      */
     override fun hasOfflineQueue(cashboxId: String): Boolean {
-        return storage.hasPendingCommands(cashboxId, QueueLane.OFFLINE)
+        val now = timeProvider.now()
+        val commands = storage.getCommandsByStatus(
+            cashboxId,
+            QueueLane.OFFLINE,
+            setOf(QueueStatus.PENDING, QueueStatus.FAILED, QueueStatus.IN_PROGRESS)
+        )
+        // Брошенная задача — тоже неотправленная. Пока её здесь не было,
+        // касса с одними брошенными задачами считалась пустой, обход
+        // очереди для неё не запускался, и вернуть их было некому.
+        return commands.any {
+            when (it.status) {
+                QueueStatus.PENDING -> true
+                QueueStatus.IN_PROGRESS -> abandoned(it, now)
+                else -> it.nextAttemptAt != null
+            }
+        }
     }
 
     /**
@@ -89,7 +104,23 @@ internal class OfflineQueueApiImpl(
         }
         var success = false
         try {
-            val next = storage.nextPending(cashboxId, lane, now)
+            val candidates = storage.getCommandsByStatus(
+                cashboxId,
+                lane,
+                setOf(QueueStatus.PENDING, QueueStatus.FAILED, QueueStatus.IN_PROGRESS)
+            )
+            // Спецификация CPCR требует досылать накопленные сообщения строго
+            // в том порядке, в каком они попали в очередь. Поэтому берётся
+            // именно голова очереди: раньше задача, ожидающая повтора,
+            // пропускалась, и более поздний чек уходил в ОФД впереди неё.
+            val head = candidates.minByOrNull { it.createdAt }
+            val next = head?.takeIf {
+                when (it.status) {
+                    QueueStatus.PENDING -> true
+                    QueueStatus.IN_PROGRESS -> abandoned(it, now)
+                    else -> it.nextAttemptAt != null && it.nextAttemptAt <= now
+                }
+            }
             if (next != null) {
                 logger.trace("Processing next pending command. id={}", next.id)
                 success = processCommand(next, now)
@@ -102,6 +133,25 @@ internal class OfflineQueueApiImpl(
             }
         }
         return success
+    }
+
+    /**
+     * Задача, брошенная умершим обработчиком.
+     *
+     * `IN_PROGRESS` ставится перед самой отправкой, и если процесс в этот
+     * момент оборвался, задача оставалась в нём навсегда: выборка её
+     * не брала, повтор не назначался, документ до ОФД не доходил никогда.
+     * На стенде так осталось шесть чеков после обычного перезапуска узла.
+     *
+     * Брошенной задача считается не сразу: живой обработчик продлевает
+     * аренду, пока работает, поэтому ждём двух её сроков. Взять задачу
+     * у живого обработчика значило бы отправить документ дважды.
+     */
+    private fun abandoned(command: QueueCommand, now: Long): Boolean {
+        // Захват без времени — из версии, которая его не записывала:
+        // живой обработчик время ставит всегда, значит эта задача брошена.
+        val claimedAt = command.nextAttemptAt ?: return true
+        return now - claimedAt >= leaseMs * ABANDONED_LEASES
     }
 
     private fun processCommand(next: QueueCommand, now: Long): Boolean {
@@ -169,6 +219,17 @@ internal class OfflineQueueApiImpl(
                 )
                     .also { if (it) logger.warn("Queue command failed. id={}, retryAt={}", command.id, retryAt) }
             }
+            DispatchStatus.REJECTED -> {
+                // Времени следующей попытки нет намеренно: её не будет.
+                storage.updateStatus(
+                    command.id,
+                    QueueStatus.REJECTED,
+                    attempt,
+                    result.error?.compact(),
+                    null
+                )
+                    .also { if (it) logger.warn("Queue command rejected for good. id={}", command.id) }
+            }
         }
         if (!updated) {
             logger.warn("Queue command status update failed. id={}, status={}", command.id, dispatchStatus)
@@ -184,3 +245,6 @@ internal class OfflineQueueApiImpl(
         }
     }
 }
+
+/** Сколько сроков аренды ждать, прежде чем счесть задачу брошенной. */
+private const val ABANDONED_LEASES = 2

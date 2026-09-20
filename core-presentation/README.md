@@ -1,6 +1,6 @@
 # superkassa-core-presentation
 
-[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/texport/superkassa-core/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/texport/superkassa-core/releases)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](https://github.com/texport/superkassa-core/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 

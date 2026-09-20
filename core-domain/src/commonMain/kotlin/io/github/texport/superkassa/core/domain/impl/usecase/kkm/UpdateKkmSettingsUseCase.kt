@@ -48,6 +48,29 @@ class UpdateKkmSettingsUseCase(
     }
 
     /**
+     * Задаёт название кассы.
+     *
+     * Название — не фискальный реквизит: оно не попадает в чек и не уходит
+     * в ОФД, поэтому режим программирования для него не требуется. Иначе
+     * владелец не мог бы назвать кассу, не остановив ею работу.
+     *
+     * Пустая строка означает «названия нет»: касса снова показывается
+     * регистрационным номером.
+     *
+     * @param kkm Текущая информация о ККМ.
+     * @param name Новое название или `null`, чтобы его снять.
+     * @return Обновленная информация о ККМ.
+     */
+    fun updateName(kkm: KkmInfo, name: String?): KkmInfo {
+        val updated = kkm.copy(
+            updatedAt = clock.now(),
+            name = name?.trim()?.takeIf { it.isNotEmpty() }
+        )
+        storage.updateKkm(updated)
+        return updated
+    }
+
+    /**
      * Обновляет налоговые настройки ККМ (режим налогообложения и группу НДС по умолчанию).
      *
      * Налоговые настройки могут быть изменены только если:
@@ -72,13 +95,13 @@ class UpdateKkmSettingsUseCase(
         val openShift = storage.findOpenShift(kkm.id)
         if (openShift != null) {
             throw ConflictException(
-                CoreStrings.kkmDeleteShiftOpen(),
+                CoreStrings.kkmSettingsShiftOpen(),
                 "KKM_TAX_SETTINGS_SHIFT_OPEN"
             )
         }
         if (!queue.canSendDirectly(kkm.id)) {
             throw ConflictException(
-                CoreStrings.kkmDeleteQueueNotEmpty(),
+                CoreStrings.kkmSettingsQueueNotEmpty(),
                 "KKM_TAX_SETTINGS_QUEUE_NOT_EMPTY"
             )
         }
@@ -102,7 +125,14 @@ class UpdateKkmSettingsUseCase(
      */
     fun updateBranding(kkm: KkmInfo, branding: ReceiptBranding): KkmInfo {
         requireProgramming(kkm, "KKM_BRANDING_SETTINGS_REQUIRES_PROGRAMMING")
-        val updated = kkm.copy(updatedAt = clock.now(), branding = branding)
+        // Тексты оператора принадлежат ОФД: их присылает служебный ответ вместе
+        // с версией, по которой сервер решает, что обновилось. Сохранение
+        // настроек кассой их не трогает — иначе чек остаётся без обязательной
+        // рекламы до следующего обмена, а версию можно было бы подделать.
+        val updated = kkm.copy(
+            updatedAt = clock.now(),
+            branding = branding.copy(ofdTicketAds = kkm.branding.ofdTicketAds)
+        )
         storage.updateKkm(updated)
         return updated
     }

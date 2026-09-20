@@ -32,7 +32,8 @@ internal class OfflineQueueApiImpl(
         val status = getQueueStatusUseCase.execute(request.kkmId)
         return QueueStatusResponse(
             hasPendingItems = status.hasPendingItems,
-            pendingCount = status.pendingCount
+            pendingCount = status.pendingCount,
+            rejectedCount = status.rejectedCount
         )
     }
 

@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.counter
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
@@ -43,9 +44,9 @@ class UpdateCountersUseCaseTest {
         val global = storage.loadCounters("kkm-1", CounterScopes.GLOBAL, null)
 
         assertEquals(1L, shift["operation.OPERATION_SELL.count"])
-        assertEquals(1000L, shift["operation.OPERATION_SELL.sum"])
+        assertEquals(100_000L, shift["operation.OPERATION_SELL.sum"])
         assertEquals(1L, global["operation.OPERATION_SELL.count"])
-        assertEquals(1000L, global["operation.OPERATION_SELL.sum"])
+        assertEquals(100_000L, global["operation.OPERATION_SELL.sum"])
     }
 
     @Test
@@ -68,15 +69,15 @@ class UpdateCountersUseCaseTest {
         val global = storage.loadCounters("kkm-1", CounterScopes.GLOBAL, null)
 
         assertEquals(1L, shift["operation.OPERATION_SELL_RETURN.count"])
-        assertEquals(500L, shift["operation.OPERATION_SELL_RETURN.sum"])
+        assertEquals(50_000L, shift["operation.OPERATION_SELL_RETURN.sum"])
         assertEquals(1L, shift["ticket.OPERATION_SELL_RETURN.payment.PAYMENT_CARD.count"])
-        assertEquals(500L, shift["ticket.OPERATION_SELL_RETURN.payment.PAYMENT_CARD.sum"])
+        assertEquals(50_000L, shift["ticket.OPERATION_SELL_RETURN.payment.PAYMENT_CARD.sum"])
         assertEquals(1L, shift["ticket.OPERATION_SELL_RETURN.offline_count"])
         
         // Revenue delta is negative for return operations
-        assertEquals(-500L, shift["revenue.sum"])
+        assertEquals(-50_000L, shift["revenue.sum"])
         assertEquals(1L, shift["revenue.is_negative"])
-        assertEquals(-500L, global["revenue.sum"])
+        assertEquals(-50_000L, global["revenue.sum"])
         assertEquals(1L, global["revenue.is_negative"])
     }
 
@@ -98,10 +99,10 @@ class UpdateCountersUseCaseTest {
 
         val shift = storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1")
         assertEquals(1L, shift["operation.OPERATION_BUY.count"])
-        assertEquals(1200L, shift["operation.OPERATION_BUY.sum"])
+        assertEquals(120_000L, shift["operation.OPERATION_BUY.sum"])
         assertEquals(1L, shift["ticket.OPERATION_BUY.payment.PAYMENT_MOBILE.count"])
-        assertEquals(1200L, shift["ticket.OPERATION_BUY.payment.PAYMENT_MOBILE.sum"])
-        assertEquals(1200L, shift["revenue.sum"])
+        assertEquals(120_000L, shift["ticket.OPERATION_BUY.payment.PAYMENT_MOBILE.sum"])
+        assertEquals(120_000L, shift["revenue.sum"])
         assertEquals(0L, shift["revenue.is_negative"])
     }
 
@@ -123,10 +124,10 @@ class UpdateCountersUseCaseTest {
 
         val shift = storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1")
         assertEquals(1L, shift["operation.OPERATION_BUY_RETURN.count"])
-        assertEquals(300L, shift["operation.OPERATION_BUY_RETURN.sum"])
+        assertEquals(30_000L, shift["operation.OPERATION_BUY_RETURN.sum"])
         assertEquals(1L, shift["ticket.OPERATION_BUY_RETURN.payment.PAYMENT_ELECTRONIC.count"])
-        assertEquals(300L, shift["ticket.OPERATION_BUY_RETURN.payment.PAYMENT_ELECTRONIC.sum"])
-        assertEquals(-300L, shift["revenue.sum"])
+        assertEquals(30_000L, shift["ticket.OPERATION_BUY_RETURN.payment.PAYMENT_ELECTRONIC.sum"])
+        assertEquals(-30_000L, shift["revenue.sum"])
         assertEquals(1L, shift["revenue.is_negative"])
     }
 
@@ -168,35 +169,35 @@ class UpdateCountersUseCaseTest {
 
         // General operations
         assertEquals(1L, shift["operation.OPERATION_SELL.count"])
-        assertEquals(4660L, shift["operation.OPERATION_SELL.sum"])
-        assertEquals(100L, shift["operation.OPERATION_SELL.discount_sum"])
-        assertEquals(50L, shift["operation.OPERATION_SELL.markup_sum"])
+        assertEquals(466_000L, shift["operation.OPERATION_SELL.sum"])
+        assertEquals(10_000L, shift["operation.OPERATION_SELL.discount_sum"])
+        assertEquals(5_000L, shift["operation.OPERATION_SELL.markup_sum"])
 
         // Ticket operations
         assertEquals(1L, shift["ticket.OPERATION_SELL.total_count"])
         assertEquals(1L, shift["ticket.OPERATION_SELL.count"])
-        assertEquals(4660L, shift["ticket.OPERATION_SELL.sum"])
-        assertEquals(100L, shift["ticket.OPERATION_SELL.discount_sum"])
-        assertEquals(50L, shift["ticket.OPERATION_SELL.markup_sum"])
-        assertEquals(500L, shift["ticket.OPERATION_SELL.change_sum"])
+        assertEquals(466_000L, shift["ticket.OPERATION_SELL.sum"])
+        assertEquals(10_000L, shift["ticket.OPERATION_SELL.discount_sum"])
+        assertEquals(5_000L, shift["ticket.OPERATION_SELL.markup_sum"])
+        assertEquals(50_000L, shift["ticket.OPERATION_SELL.change_sum"])
 
         // Section operations
         assertEquals(1L, shift["section.001.operation.OPERATION_SELL.count"])
-        assertEquals(1160L, shift["section.001.operation.OPERATION_SELL.sum"])
+        assertEquals(116_000L, shift["section.001.operation.OPERATION_SELL.sum"])
         assertEquals(1L, shift["section.002.operation.OPERATION_SELL.count"])
-        assertEquals(2000L, shift["section.002.operation.OPERATION_SELL.sum"])
+        assertEquals(200_000L, shift["section.002.operation.OPERATION_SELL.sum"])
         assertEquals(1L, shift["section.003.operation.OPERATION_SELL.count"])
-        assertEquals(1500L, shift["section.003.operation.OPERATION_SELL.sum"])
+        assertEquals(150_000L, shift["section.003.operation.OPERATION_SELL.sum"])
 
         // Cash flow sum
-        assertEquals(3160L, shift["cash.sum"])
-        assertEquals(3160L, global["cash.sum"])
+        assertEquals(316_000L, shift["cash.sum"])
+        assertEquals(316_000L, global["cash.sum"])
 
         // Tax counters
         // VAT_16 turnovers: base = 1000, tax = 160, base without tax = 1000
-        assertEquals(1000L, shift["tax.VAT_16.OPERATION_SELL.turnover"])
-        assertEquals(160L, shift["tax.VAT_16.OPERATION_SELL.sum"])
-        assertEquals(1000L, shift["tax.VAT_16.OPERATION_SELL.turnover_without_tax"])
+        assertEquals(100_000L, shift["tax.VAT_16.OPERATION_SELL.turnover"])
+        assertEquals(16_000L, shift["tax.VAT_16.OPERATION_SELL.sum"])
+        assertEquals(100_000L, shift["tax.VAT_16.OPERATION_SELL.turnover_without_tax"])
     }
 
     private fun runAndVerifyScenario(
@@ -238,43 +239,51 @@ class UpdateCountersUseCaseTest {
             PaymentType.CARD -> "PAYMENT_CARD"
             PaymentType.ELECTRONIC -> "PAYMENT_ELECTRONIC"
             PaymentType.MOBILE -> "PAYMENT_MOBILE"
+            PaymentType.CREDIT -> "PAYMENT_CREDIT"
+            PaymentType.TARE -> "PAYMENT_TARE"
         }
 
+        val totalTiyn = Money(totalAmount, 0).tiyn()
         val expectedShift = mutableMapOf<String, Long>()
         expectedShift["operation.$opKey.count"] = 1L
-        expectedShift["operation.$opKey.sum"] = totalAmount
+        expectedShift["operation.$opKey.sum"] = totalTiyn
         expectedShift["operation.$opKey.discount_sum"] = 0L
         expectedShift["operation.$opKey.markup_sum"] = 0L
         expectedShift["section.$sectionCode.operation.$opKey.count"] = 1L
-        expectedShift["section.$sectionCode.operation.$opKey.sum"] = totalAmount
+        expectedShift["section.$sectionCode.operation.$opKey.sum"] = totalTiyn
         expectedShift["ticket.$opKey.total_count"] = 1L
         expectedShift["ticket.$opKey.count"] = 1L
-        expectedShift["ticket.$opKey.sum"] = totalAmount
+        expectedShift["ticket.$opKey.sum"] = totalTiyn
         expectedShift["ticket.$opKey.discount_sum"] = 0L
         expectedShift["ticket.$opKey.markup_sum"] = 0L
         expectedShift["ticket.$opKey.change_sum"] = 0L
         if (isOffline) {
             expectedShift["ticket.$opKey.offline_count"] = 1L
         }
-        expectedShift["non_nullable.$opKey.sum"] = totalAmount
-        expectedShift["ticket.$opKey.payment.$payKey.sum"] = totalAmount
+        expectedShift["non_nullable.$opKey.sum"] = totalTiyn
+        expectedShift["ticket.$opKey.payment.$payKey.sum"] = totalTiyn
         expectedShift["ticket.$opKey.payment.$payKey.count"] = 1L
         if (paymentType == PaymentType.CASH) {
-            expectedShift["cash.sum"] = totalAmount
+            // Продажа и возврат покупки кладут наличные в кассу, возврат продажи
+            // и покупка — выдают их. Знак совпадает с эталоном OperationCalculator.
+            expectedShift["cash.sum"] = when (op) {
+                ReceiptOperationType.SELL, ReceiptOperationType.BUY_RETURN -> totalTiyn
+                ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY -> -totalTiyn
+            }
         }
         val revSum = when(op) {
-            ReceiptOperationType.SELL, ReceiptOperationType.BUY -> totalAmount
-            ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY_RETURN -> -totalAmount
+            ReceiptOperationType.SELL, ReceiptOperationType.BUY -> totalTiyn
+            ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY_RETURN -> -totalTiyn
         }
         expectedShift["revenue.sum"] = revSum
         expectedShift["revenue.is_negative"] = if (revSum < 0) 1L else 0L
 
         if (vatGroup != null) {
-            val percent = vatGroup.percent
-            val vatAmountDouble = totalAmount - totalAmount / (1.0 + percent / 100.0)
-            val baseAmountDouble = totalAmount - vatAmountDouble
-            val vatSum = Money.fromTenge(vatAmountDouble).bills
-            val taxBase = Money.fromTenge(baseAmountDouble).bills
+            // Ожидание считается тем же целочисленным правилом, что и касса:
+            // налог выделяется из суммы с налогом ставкой в тысячных.
+            val rate = vatGroup.percentThousandths.toLong()
+            val vatSum = Decimal.roundedDiv(totalTiyn * rate, 100_000L + rate)
+            val taxBase = totalTiyn - vatSum
             val taxKey = vatGroup.name
             expectedShift["tax.$taxKey.$opKey.turnover"] = taxBase
             expectedShift["tax.$taxKey.$opKey.sum"] = vatSum
@@ -508,11 +517,10 @@ private class InMemoryStoragePort : StoragePort {
 
     override fun deleteKkm(id: String): Boolean = kkms.remove(id) != null
 
-    override fun hasOfflineQueue(kkmId: String): Boolean = false
 
     override fun enqueueQueueTask(dto: QueueTask): Boolean = true
     override fun listQueueTasksByCashbox(cashboxId: String, lane: String, limit: Int, offset: Int): List<QueueTask> = emptyList()
-    override fun nextPendingQueueTask(cashboxId: String, lane: String, now: Long): QueueTask? = null
+    override fun getQueueTasksByStatus(cashboxId: String, lane: String, statuses: Set<String>): List<QueueTask> = emptyList()
     override fun updateQueueTaskStatus(id: String, status: String, attempt: Int, lastError: String?, nextAttemptAt: Long?): Boolean = true
     override fun markQueueTaskInProgress(id: String, now: Long): Boolean = true
     override fun deleteQueueTasksByCashbox(cashboxId: String): Boolean = true
@@ -545,12 +553,11 @@ private class InMemoryStoragePort : StoragePort {
         userId: String,
         name: String,
         role: UserRole,
-        pin: String,
         pinHash: String,
         createdAt: Long
     ): Boolean {
         val list = users.getOrPut(kkmId) { mutableListOf() }
-        list.add(KkmUser(userId, name, role, pin, createdAt))
+        list.add(KkmUser(userId, name, role, createdAt))
         return true
     }
 
@@ -559,7 +566,6 @@ private class InMemoryStoragePort : StoragePort {
         userId: String,
         name: String?,
         role: UserRole?,
-        pin: String?,
         pinHash: String?
     ): Boolean {
         val list = users[kkmId] ?: return false
@@ -568,8 +574,7 @@ private class InMemoryStoragePort : StoragePort {
         val current = list[index]
         list[index] = current.copy(
             name = name ?: current.name,
-            role = role ?: current.role,
-            pin = pin ?: current.pin
+            role = role ?: current.role
         )
         return true
     }
@@ -687,4 +692,18 @@ private class InMemoryStoragePort : StoragePort {
     override fun countClosedShifts(): Long = 0L
 
     override fun countOfflineQueue(): Long = 0L
+    private val documentNumbers = mutableMapOf<String, Long>()
+
+    override fun updateDocumentNumber(documentId: String, docNo: Long): Boolean {
+        documentNumbers[documentId] = docNo
+        return true
+    }
+
+    private val printedNumbers = mutableMapOf<String, Long>()
+
+    override fun updatePrintedDocumentNumber(documentId: String, number: Long): Boolean {
+        printedNumbers[documentId] = number
+        return true
+    }
+
 }

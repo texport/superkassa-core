@@ -33,12 +33,19 @@ import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserU
  * @property clock Порт для получения системного времени.
  * @property authorizeUser Сценарий авторизации пользователей по PIN-коду.
  */
+import io.github.texport.superkassa.core.domain.impl.logging.getLogger
+
+/**
+ * Сценарий (Use Case) открытия смены контрольно-кассовой машины (ККМ).
+ */
 class OpenShiftUseCase(
     private val storage: StoragePort,
     private val idGenerator: IdGeneratorPort,
     private val clock: ClockPort,
     private val authorizeUser: AuthorizeUserUseCase
 ) {
+    private val logger = getLogger(OpenShiftUseCase::class)
+
     /**
      * Выполняет процедуру открытия смены.
      *
@@ -49,6 +56,7 @@ class OpenShiftUseCase(
      * @throws ConflictException если на ККМ уже есть открытая смена.
      */
     fun execute(kkmId: String, pin: String): ShiftInfo {
+        logger.info("OpenShiftUseCase: starting shift opening for kkmId='$kkmId'")
         return storage.inTransaction {
             // Ищем ККМ в базе данных с блокировкой
             val kkm = storage.findKkmForUpdate(kkmId) ?: throw ValidationException(CoreStrings.kkmNotFound(), "KKM_NOT_FOUND")

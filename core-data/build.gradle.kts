@@ -38,6 +38,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.datetime)
                 implementation(project(":offline-queue"))
+                implementation(project(":core-database"))
                 implementation(project(":delivery"))
                 implementation(project(":receipt-renderer"))
                 implementation(libs.ofd.proto.codec)
@@ -89,6 +90,7 @@ kover {
                 classes("io.github.texport.superkassa.core.data.impl.ofd.*")
                 classes("io.github.texport.superkassa.core.data.impl.util.*")
                 classes("io.github.texport.superkassa.core.data.api.*")
+                classes("io.github.texport.superkassa.core.data.impl.adapter.*")
             }
         }
         verify {

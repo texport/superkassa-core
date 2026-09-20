@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.receipt
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ParentTicket
 
@@ -14,13 +15,14 @@ data class CreateReceiptCommand(
     val operation: ReceiptOperationType,
     val idempotencyKey: String,
     val items: List<ItemInput>,
-    val discountPercent: Double?,
-    val discountSum: Double?,
-    val markupPercent: Double?,
-    val markupSum: Double?,
+    val discountPercent: Decimal?,
+    val discountSum: Decimal?,
+    val markupPercent: Decimal?,
+    val markupSum: Decimal?,
     val payments: List<PaymentInput>,
-    val taken: Double?,
+    val taken: Decimal?,
     val parentTicket: ParentTicket? = null,
+    val domain: io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDomain? = null,
     val defaultVatGroup: String? = null,
     val customerBin: String? = null
 ) {
@@ -29,14 +31,16 @@ data class CreateReceiptCommand(
      */
     data class ItemInput(
         val name: String,
-        val price: Double,
-        val quantity: Double,
+        /** Наименование на казахском: печатается на чеке, в ОФД не уходит. */
+        val nameKk: String? = null,
+        val price: Decimal,
+        val quantity: Decimal,
         val barcode: String? = null,
         val vatGroup: String? = null,
-        val discountPercent: Double? = null,
-        val discountSum: Double? = null,
-        val markupPercent: Double? = null,
-        val markupSum: Double? = null,
+        val discountPercent: Decimal? = null,
+        val discountSum: Decimal? = null,
+        val markupPercent: Decimal? = null,
+        val markupSum: Decimal? = null,
         val measureUnitCode: String? = null,
         val listExciseStamp: List<String>? = null,
         val ntin: String? = null,
@@ -48,6 +52,6 @@ data class CreateReceiptCommand(
      */
     data class PaymentInput(
         val type: String,
-        val sum: Double
+        val sum: Decimal
     )
 }

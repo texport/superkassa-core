@@ -6,6 +6,7 @@ import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBrandin
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLayoutType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
+import io.github.texport.superkassa.core.domain.api.model.zxreport.ZxReportInput
 
 /**
  * Порт рендеринга чеков и отчётов ККМ в формат HTML.
@@ -44,6 +45,46 @@ interface ReceiptRenderPort {
         counters: Map<String, Long>,
         kkm: KkmInfo,
         ofdStatus: String?,
+        layoutType: ReceiptLayoutType? = null
+    ): String
+
+    /**
+     * Рендерит X-отчёт по готовым сменным итогам.
+     *
+     * Счётчики смены — то, как сменные итоги хранит сама касса, и по ним
+     * рисуется своя смена. Отчёт, пробитый на другой машине, приходит
+     * готовым набором итогов, и смены этой кассы за ним нет.
+     *
+     * @param report сменные итоги: номер смены, её границы, обороты, налоги, оплаты и остаток ящика.
+     * @param kkm информация о ККМ, чьими реквизитами и оформлением рисуется документ.
+     * @param ofdStatus статус отправки данных в ОФД.
+     * @param docNo фискальный номер документа.
+     * @param layoutType тип разметки шаблона.
+     * @return HTML-строка с визуализацией X-отчёта.
+     */
+    fun renderXReportHtml(
+        report: ZxReportInput,
+        kkm: KkmInfo,
+        ofdStatus: String?,
+        docNo: String? = null,
+        layoutType: ReceiptLayoutType? = null
+    ): String
+
+    /**
+     * Рендерит Z-отчёт по готовым сменным итогам.
+     *
+     * @param report сменные итоги на момент закрытия смены.
+     * @param kkm информация о ККМ, чьими реквизитами и оформлением рисуется документ.
+     * @param ofdStatus статус отправки данных в ОФД.
+     * @param docNo фискальный номер документа закрытия смены.
+     * @param layoutType тип разметки шаблона.
+     * @return HTML-строка с визуализацией Z-отчёта.
+     */
+    fun renderCloseShiftHtml(
+        report: ZxReportInput,
+        kkm: KkmInfo,
+        ofdStatus: String?,
+        docNo: String? = null,
         layoutType: ReceiptLayoutType? = null
     ): String
 

@@ -1,3 +1,5 @@
+@file:Suppress("WildcardImport", "ParameterListWrapping", "ArgumentListWrapping", "NoConsecutiveBlankLines", "NoTrailingSpaces")
+
 package io.github.texport.superkassa.core.data.api
 
 import io.github.texport.superkassa.core.domain.api.port.integration.*
@@ -52,12 +54,22 @@ class SuperkassaCoreEngine(
      * @param ownerId Уникальный идентификатор инстанса (используется для распределенных блокировок).
      * @return Объект [SuperkassaApi] для выполнения кассовых и фискальных операций.
      */
-    fun buildApi(ownerId: String = "core-engine-default"): SuperkassaApi {
+    fun buildApi(
+        ownerId: String = "core-engine-default",
+        ofdProviderId: String = DEFAULT_OFD_PROVIDER_ID,
+        ofdProtocolVersion: String = DEFAULT_OFD_PROTOCOL_VERSION
+    ): SuperkassaApi {
         val defaultSettings = CoreSettings(
             mode = CoreMode.DESKTOP,
-            storage = StorageSettings(engine = "SQLITE", jdbcUrl = "jdbc:sqlite:superkassa.db")
+            storage = StorageSettings(engine = "SQLITE", jdbcUrl = "jdbc:sqlite:superkassa.db"),
+            ofdProviderId = ofdProviderId,
+            ofdProtocolVersion = ofdProtocolVersion
         )
+        // Какой ОФД и по какой версии обслуживает узел, решает вызывающий,
+        // а не запись, сохранённая при первом запуске: иначе сменить их
+        // перезапуском нельзя.
         val coreSettings = settings.loadOrCreate(defaultSettings)
+            .copy(ofdProviderId = ofdProviderId, ofdProtocolVersion = ofdProtocolVersion)
 
         // 1. Создаем внутренние кодеки и сетевые клиенты
         val ofdConfig = OfdConfigAdapter()
@@ -127,7 +139,13 @@ class SuperkassaCoreEngine(
 
         // 6. Инициализируем Use Cases для PrintApi
         val getReceiptHtmlUseCase = GetReceiptHtmlUseCase(storage, receiptRenderPort, authorization)
-        val getPrintHtmlUseCase = GetPrintHtmlUseCase(storage, receiptRenderPort, authorization, kkmCommonHelper, getReceiptHtmlUseCase)
+        val getPrintHtmlUseCase = GetPrintHtmlUseCase(
+            storage,
+            receiptRenderPort,
+            authorization,
+            kkmCommonHelper,
+            getReceiptHtmlUseCase
+        )
         val getPrintPdfUseCase = GetPrintPdfUseCase(getPrintHtmlUseCase, pdfConverter)
         val printApi = PrintApiImpl(getReceiptHtmlUseCase, getPrintHtmlUseCase, getPrintPdfUseCase, pdfConverter)
 
@@ -149,4 +167,89 @@ class SuperkassaCoreEngine(
             printApi = printApi
         )
     }
+
+    companion object {
+        /** Провайдер ОФД по умолчанию, если вызывающий не указал другой. */
+        const val DEFAULT_OFD_PROVIDER_ID: String = "KAZAKHTELECOM"
+
+        /** Версия протокола по умолчанию, если вызывающий не указал другую. */
+        const val DEFAULT_OFD_PROTOCOL_VERSION: String = "203"
+
+        /**
+         * Быстрый метод инициализации ядра по умолчанию с in-memory хранилищем.
+         */
+        fun createDefault(ofdProviderId: String = DEFAULT_OFD_PROVIDER_ID): SuperkassaApi {
+            val roomStoragePair = io.github.texport.superkassa.coredatabase.api.RoomStorageFactory.createDefaultStorage()
+            return createWithStorage(roomStoragePair, ofdProviderId)
+        }
+
+        /**
+         * Промышленный метод инициализации ядра с дисковой БД SQLite (Room KMP).
+         *
+         * @param dbPath Путь к файлу базы данных SQLite.
+         */
+        fun createProduction(
+            dbPath: String = "superkassa.db",
+            ofdProviderId: String = DEFAULT_OFD_PROVIDER_ID
+        ): SuperkassaApi {
+            val roomStoragePair = io.github.texport.superkassa.coredatabase.api.RoomStorageFactory.createRoomStorage(dbPath)
+            return createWithStorage(roomStoragePair, ofdProviderId)
+        }
+
+        /**
+         * Создает экземпляр ядра для Desktop/Server с указанным файлом базы данных.
+         */
+        fun createDesktop(dbPath: String = "superkassa_desktop.db"): SuperkassaApi = createProduction(dbPath)
+
+        /**
+         * Создает экземпляр ядра для Android приложения.
+         */
+        fun createAndroid(dbName: String = "superkassa_android.db"): SuperkassaApi = createProduction(dbName)
+
+        /**
+         * Создает экземпляр ядра для iOS приложения.
+         */
+        fun createIos(dbName: String = "superkassa_ios.db"): SuperkassaApi = createProduction(dbName)
+
+        private fun createWithStorage(
+            roomStoragePair: io.github.texport.superkassa.coredatabase.api.RoomStoragePair,
+            ofdProviderId: String
+        ): SuperkassaApi {
+            val clock = io.github.texport.superkassa.core.data.impl.adapter.DefaultClockAdapter()
+            val timeValidator = io.github.texport.superkassa.core.data.impl.adapter.DefaultTimeValidatorAdapter()
+            val delivery = io.github.texport.superkassa.delivery.impl.DefaultKtorDeliveryAdapter()
+            val qrGen = io.github.texport.superkassa.receiptrenderer.impl.adapter.DefaultQrCodeGeneratorAdapter()
+
+            val pdfConverter = object : DocumentConvertPort {
+                override fun htmlToPdf(html: String): ByteArray = html.encodeToByteArray()
+                override fun htmlToImage(html: String): ByteArray = html.encodeToByteArray()
+                override fun htmlToEscPos(html: String, paperWidthMm: Int): ByteArray = html.encodeToByteArray()
+            }
+
+            val coreSettings = object : CoreSettingsRepositoryPort {
+                private var current: CoreSettings? = null
+                override fun load(): CoreSettings? = current
+                override fun save(settings: CoreSettings): Boolean {
+                    current = settings
+                    return true
+                }
+                override fun loadOrCreate(defaults: CoreSettings): CoreSettings {
+                    return current ?: defaults.also { current = it }
+                }
+            }
+
+            val engine = SuperkassaCoreEngine(
+                storage = roomStoragePair.storagePort,
+                settings = coreSettings,
+                delivery = delivery,
+                clock = clock,
+                timeValidator = timeValidator,
+                qrCode = qrGen,
+                pdfConverter = pdfConverter
+            )
+
+            return engine.buildApi(ofdProviderId = ofdProviderId)
+        }
+    }
 }
+

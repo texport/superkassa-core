@@ -24,12 +24,16 @@ class RequireOperationalUseCase(
      */
     fun execute(kkm: KkmInfo) {
         kkmCommonHelper.ensureSystemTimeValid()
-        if (kkm.state == KkmState.BLOCKED.name) {
-            throw ValidationException(CoreStrings.kkmBlocked(), "KKM_BLOCKED")
+        // Сначала даём снять блокировку, наложенную за долгую автономную
+        // работу: очередь могла разойтись, и держать кассу больше не за что.
+        // Раньше проверка состояния стояла первой, и эта разблокировка была
+        // недостижима — касса оставалась заблокированной навсегда.
+        val current = enforceAutonomousLimitsUseCase.execute(kkm)
+        if (current.state == KkmState.BLOCKED.name) {
+            throw ValidationException(CoreStrings.kkmBlocked(current.blockReasonCode), "KKM_BLOCKED")
         }
-        if (kkm.state == KkmState.PROGRAMMING.name) {
+        if (current.state == KkmState.PROGRAMMING.name) {
             throw ValidationException(CoreStrings.kkmInProgramming(), "KKM_IN_PROGRAMMING")
         }
-        enforceAutonomousLimitsUseCase.execute(kkm)
     }
 }

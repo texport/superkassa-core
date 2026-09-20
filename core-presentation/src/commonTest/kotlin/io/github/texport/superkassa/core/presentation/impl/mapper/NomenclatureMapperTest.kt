@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.impl.mapper
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdNomenclatureItem
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdNomenclatureLookupResult
 import io.github.texport.superkassa.core.presentation.api.model.ofd.NomenclatureItemResponse
@@ -34,7 +35,7 @@ class NomenclatureMapperTest {
             name = "Test Item",
             nameKk = "Test Item Kk",
             ntin = "ntin-123",
-            price = 1000.0,
+            price = Decimal.parse("1000.0"),
             measureUnitCode = "163",
             vatGroup = "VAT_16"
         )
@@ -56,7 +57,7 @@ class NomenclatureMapperTest {
         assertEquals("Test Item", itemResponse.name)
         assertEquals("Test Item Kk", itemResponse.nameKk)
         assertEquals("ntin-123", itemResponse.ntin)
-        assertEquals(1000.0, itemResponse.price)
+        assertEquals(Decimal.parse("1000.0"), itemResponse.price)
         assertEquals("163", itemResponse.measureUnitCode)
         assertEquals("VAT_16", itemResponse.vatGroup)
     }

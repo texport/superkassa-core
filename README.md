@@ -1,7 +1,7 @@
 # superkassa-core
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.texport/superkassa-core.svg?label=Maven%20Central)](https://central.sonatype.com/search?q=g:io.github.texport)
-[![Version](https://img.shields.io/badge/version-1.1.4-blue.svg)](https://github.com/texport/superkassa-core/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/texport/superkassa-core/releases)
 [![Coverage](https://img.shields.io/badge/coverage-98%25-green.svg)](https://github.com/texport/superkassa-core/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI Build](https://img.shields.io/github/actions/workflow/status/texport/superkassa-core/ci.yml?branch=main&label=CI%20Build)](https://github.com/texport/superkassa-core/actions)
@@ -84,21 +84,42 @@ dependencies: [
 
 ---
 
-## Quick Start / Usage
+## Quick Start / Zero-Config 1-Line Setup
 
-Here is a quick example of how to initialize and interact with `SuperkassaApi` in your application:
+`superkassa-core` provides out-of-the-box zero-config factory methods (`SuperkassaCoreEngine`) with embedded **Room KMP SQLite** storage, Ktor HTTP delivery, and ESC/POS receipt rendering for all platforms:
+
+### 📱 Android Application
+```kotlin
+// In your Android Activity, Fragment, or ViewModel:
+val api: SuperkassaApi = SuperkassaCoreEngine.createAndroid(dbName = "superkassa.db")
+```
+
+### 🍎 iOS Application (Swift)
+```swift
+// In your Swift App or Manager:
+let api = SuperkassaCoreEngine.companion.createIos(dbName: "superkassa.db")
+```
+
+### 🖥️ Desktop Application (JVM)
+```kotlin
+// In your Compose for Desktop or Swing application:
+val api: SuperkassaApi = SuperkassaCoreEngine.createDesktop(dbPath = "superkassa_desktop.db")
+```
+
+### 🌐 Server Application (JVM)
+```kotlin
+// In your Spring Boot, Ktor, or Micronaut Server:
+val api: SuperkassaApi = SuperkassaCoreEngine.createProduction(dbPath = "superkassa_server.db")
+```
+
+---
+
+### Basic API Operations
+
+Here is an example of registering a cashier sell receipt once initialized:
 
 ```kotlin
-import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
-import io.github.texport.superkassa.core.presentation.api.model.kkm.KkmInitDirectRequest
-import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptSellRequest
-import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptItemRequest
-import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptPaymentRequest
-
-// Retrieve the API implementation (e.g., via dependency injection)
-val api: SuperkassaApi = ... 
-
-// 1. Initialize a physical KKM (Direct)
+// 1. Initialize physical KKM
 val kkm = api.initKkm(
     pin = "1234",
     request = KkmInitDirectRequest(
@@ -112,7 +133,7 @@ val kkm = api.initKkm(
     )
 )
 
-// 2. Register a cashier sell receipt
+// 2. Register sell receipt
 val sellResult = api.createSellReceipt(
     kkmId = kkm.id,
     pin = "1111",

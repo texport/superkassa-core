@@ -83,8 +83,6 @@ class TestStoragePort : StoragePort {
 
     override fun deleteKkm(id: String): Boolean = kkms.remove(id) != null
 
-    override fun hasOfflineQueue(kkmId: String): Boolean = false
-
     override fun enqueueQueueTask(dto: QueueTask): Boolean {
         queueTasks.add(dto)
         return true
@@ -98,10 +96,9 @@ class TestStoragePort : StoragePort {
     ): List<QueueTask> = queueTasks.filter { it.cashboxId == cashboxId && it.lane == lane }
         .drop(offset).take(limit)
 
-    override fun nextPendingQueueTask(cashboxId: String, lane: String, now: Long): QueueTask? =
-        queueTasks.firstOrNull {
-            val nextAttempt = it.nextAttemptAt
-            it.cashboxId == cashboxId && it.lane == lane && it.status == "PENDING" && (nextAttempt == null || now >= nextAttempt)
+    override fun getQueueTasksByStatus(cashboxId: String, lane: String, statuses: Set<String>): List<QueueTask> =
+        queueTasks.filter {
+            it.cashboxId == cashboxId && it.lane == lane && statuses.contains(it.status)
         }
 
     override fun updateQueueTaskStatus(
@@ -195,12 +192,11 @@ class TestStoragePort : StoragePort {
         userId: String,
         name: String,
         role: UserRole,
-        pin: String,
         pinHash: String,
         createdAt: Long
     ): Boolean {
         val list = users.getOrPut(kkmId) { mutableListOf() }
-        list.add(KkmUser(userId, name, role, pin, createdAt))
+        list.add(KkmUser(userId, name, role, createdAt))
         userPinHashes.getOrPut(kkmId) { mutableMapOf() }[userId] = pinHash
         return true
     }
@@ -210,7 +206,6 @@ class TestStoragePort : StoragePort {
         userId: String,
         name: String?,
         role: UserRole?,
-        pin: String?,
         pinHash: String?
     ): Boolean {
         val list = users[kkmId] ?: return false
@@ -220,8 +215,7 @@ class TestStoragePort : StoragePort {
         list[index] =
             current.copy(
                 name = name ?: current.name,
-                role = role ?: current.role,
-                pin = pin ?: current.pin
+                role = role ?: current.role
             )
         if (pinHash != null) {
             userPinHashes.getOrPut(kkmId) { mutableMapOf() }[userId] = pinHash
@@ -490,4 +484,19 @@ class TestStoragePort : StoragePort {
         queueTasks.clear()
         queueLocks.clear()
     }
+
+    private val documentNumbers = mutableMapOf<String, Long>()
+
+    override fun updateDocumentNumber(documentId: String, docNo: Long): Boolean {
+        documentNumbers[documentId] = docNo
+        return true
+    }
+
+    private val printedNumbers = mutableMapOf<String, Long>()
+
+    override fun updatePrintedDocumentNumber(documentId: String, number: Long): Boolean {
+        printedNumbers[documentId] = number
+        return true
+    }
+
 }

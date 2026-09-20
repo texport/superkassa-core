@@ -8,6 +8,22 @@ import kotlinx.serialization.Serializable
 @Schema(description = "Элемент справочника типов оплат")
 data class PaymentTypeResponse(
     @Schema(description = "Код типа оплаты", example = "CASH") val code: String,
+    @Schema(description = "Локализованное название") val name: TrilingualMessageResponse,
+    /**
+     * Принимает ли действующая версия протокола такой вид оплаты.
+     *
+     * Кредит и тара объявлены устаревшими и в схеме 2.0.4 отсутствуют: узел
+     * отвергает чек с ними до фискализации. Без этого признака кассир узнавал
+     * о запрете только отказом уже пробитого чека.
+     */
+    @Schema(description = "Допускается действующей версией протокола", example = "true")
+    val supported: Boolean
+)
+
+@Serializable
+@Schema(description = "Элемент справочника видов отрасли")
+data class ReceiptDomainTypeResponse(
+    @Schema(description = "Код вида отрасли", example = "DOMAIN_TAXI") val code: String,
     @Schema(description = "Локализованное название") val name: TrilingualMessageResponse
 )
 
@@ -31,7 +47,6 @@ data class TaxRegimeResponse(
     @Schema(description = "Код налогового режима", example = "NO_VAT") val code: String,
     @Schema(description = "Локализованное название") val name: TrilingualMessageResponse
 )
-
 
 @Serializable
 @Schema(description = "Элемент справочника ширины чековой ленты")
@@ -168,4 +183,3 @@ data class TrilingualMessageResponse(
         )
     }
 }
-

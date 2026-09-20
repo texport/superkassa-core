@@ -2,11 +2,8 @@ package io.github.texport.superkassa.core.data.impl.ofd.strategy
 
 import io.github.texport.superkassa.core.data.impl.ofd.OfdConfig
 import io.github.texport.superkassa.core.data.impl.ofd.OfdRequestFactory
-import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandRequest
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
-import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
-import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import kotlinx.serialization.json.JsonObject
 
@@ -39,20 +36,20 @@ class TicketRequestBuilderStrategy(
      * @return JSON-объект [JsonObject] запроса фискального чека.
      */
     override fun build(command: OfdCommandRequest, config: OfdConfig): JsonObject? {
-        val docWithPayload = storage?.findFiscalDocumentWithReceiptPayload(command.payloadRef)
-        val receipt = docWithPayload?.second ?: ReceiptRequest(
-            kkmId = command.kkmId,
-            pin = "0000",
-            operation = ReceiptOperationType.SELL,
-            items = emptyList(),
-            payments = emptyList(),
-            total = Money(1000, 0),
-            idempotencyKey = "tmp",
-            parentTicket = null
-        )
+        // Ненайденный чек — отказ, а не подстановка. Фискальный документ
+        // нельзя сочинить: у выдуманного чека нет ни позиций, ни оплат,
+        // а сумма взялась бы из воздуха.
+        val stored = storage?.findFiscalDocumentWithReceiptPayload(command.payloadRef)
+            ?: return null
+        val (document, receipt) = stored
+        // Чек, оформленный при оборванной связи, обязан нести свой автономный
+        // номер: иначе сервер примет его как обычный сетевой документ.
+        val offlineTicketNumber =
+            if (document.isAutonomous) document.docNo?.let(::asUnsignedInt32) else null
 
         val ofdId = command.ofdProviderId.lowercase()
-        val serviceBlock = buildServiceBlock(command)
+        val serviceBlock = buildServiceBlock(command) ?: return null
+        val frShiftNumber = storage?.findOpenShift(command.kkmId)?.shiftNo?.toInt()
 
         return OfdRequestFactory.buildTicketRequest(
             ofdId = ofdId,
@@ -61,6 +58,27 @@ class TicketRequestBuilderStrategy(
             token = command.token,
             reqNum = command.reqNum,
             request = receipt,
-            serviceBlock = serviceBlock
+            serviceBlock = serviceBlock,
+            frShiftNumber = frShiftNumber,
+            offlineTicketNumber = offlineTicketNumber,
+            printedDocumentNumber = document.printedDocumentNumber
         )
     } }
+
+/** Наибольшее значение поля uint32 в протоколе. */
+private const val UNSIGNED_INT32_MAX = 4_294_967_295L
+
+/**
+ * Приводит номер к полю uint32.
+ *
+ * Значения выше Int.MAX_VALUE — законные для uint32: protobuf пишет их
+ * в дополнительном коде, и на проводе они разворачиваются верно. А вот выше
+ * 4294967295 число в поле не помещается, и молча заворачивать его нельзя:
+ * это дало бы чужой номер документа.
+ */
+private fun asUnsignedInt32(value: Long): Int {
+    require(value in 0..UNSIGNED_INT32_MAX) {
+        "Document number " + value + " does not fit in uint32"
+    }
+    return value.toInt()
+}

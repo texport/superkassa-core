@@ -22,6 +22,7 @@ import io.github.texport.superkassa.core.domain.api.model.ofd.OfdProvider as Dom
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLanguage as DomainReceiptLanguage
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLayoutType as DomainReceiptLayoutType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType as DomainReceiptOperationType
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDomainType as DomainReceiptDomainType
 import io.github.texport.superkassa.core.domain.api.model.report.PrintDocumentType as DomainPrintDocumentType
 import io.github.texport.superkassa.core.domain.api.model.settings.CoreMode as DomainCoreMode
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus as DomainShiftStatus
@@ -92,9 +93,15 @@ fun PresShiftStatus.toDomain(): DomainShiftStatus = DomainShiftStatus.valueOf(th
 fun PresDeliveryStatus.toDomain(): DomainDeliveryStatus = DomainDeliveryStatus.valueOf(this.name)
 
 object ReferenceMapper {
-    fun toResponse(value: PresPaymentType): PaymentTypeResponse = PaymentTypeResponse(
+    fun toResponse(value: PresPaymentType, supported: Boolean): PaymentTypeResponse = PaymentTypeResponse(
         code = value.name,
-        name = TrilingualMessageResponse.from(CoreStrings.paymentType(value.name))
+        name = TrilingualMessageResponse.from(CoreStrings.paymentType(value.name)),
+        supported = supported
+    )
+
+    fun toResponse(value: DomainReceiptDomainType): ReceiptDomainTypeResponse = ReceiptDomainTypeResponse(
+        code = value.name,
+        name = TrilingualMessageResponse.from(CoreStrings.receiptDomainType(value.name))
     )
 
     fun toResponse(value: PresUserRole): UserRoleResponse = UserRoleResponse(
@@ -106,7 +113,6 @@ object ReferenceMapper {
         code = value.name,
         name = TrilingualMessageResponse.from(CoreStrings.taxRegime(value.name))
     )
-
 
     fun toResponse(value: PresCashOperationType): CashOperationTypeResponse = CashOperationTypeResponse(
         code = value.name,

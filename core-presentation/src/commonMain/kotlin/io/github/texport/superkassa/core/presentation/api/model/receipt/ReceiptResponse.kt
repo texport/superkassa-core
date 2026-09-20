@@ -10,12 +10,30 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Schema(description = "Результат успешной регистрации чека")
 data class ReceiptResponse(
-    @Schema(description = "Уникальный идентификатор фискального документа чека в БД", example = "doc-uuid") val documentId: String,
-    @Schema(description = "Фискальный признак (подпись) чека от ОФД", example = "829302") val fiscalSign: String? = null,
-    @Schema(description = "Автономный фискальный признак чека (при офлайн-оформлении)", example = "920183") val autonomousSign: String? = null,
-    @Schema(description = "Сгенерированная печатная форма чека (бинарный payload)", hidden = true) val deliveryPayload: ByteArray? = null,
-    @Schema(description = "Текущий статус отправки чека в ОФД/клиенту", example = "ONLINE_OK") val deliveryStatus: DeliveryStatus = DeliveryStatus.NOT_SENT,
-    @Schema(description = "Текст возникшей ошибки при попытке отправки/печати чека", example = "Timeout") val deliveryError: String? = null
+    @Schema(
+        description = "Уникальный идентификатор фискального документа чека в БД",
+        example = "doc-uuid"
+    ) val documentId: String,
+    @Schema(
+        description = "Фискальный признак (подпись) чека от ОФД",
+        example = "829302"
+    ) val fiscalSign: String? = null,
+    @Schema(
+        description = "Автономный фискальный признак чека (при офлайн-оформлении)",
+        example = "920183"
+    ) val autonomousSign: String? = null,
+    @Schema(
+        description = "Сгенерированная печатная форма чека (бинарный payload)",
+        hidden = true
+    ) val deliveryPayload: ByteArray? = null,
+    @Schema(
+        description = "Текущий статус отправки чека в ОФД/клиенту",
+        example = "ONLINE_OK"
+    ) val deliveryStatus: DeliveryStatus = DeliveryStatus.NOT_SENT,
+    @Schema(
+        description = "Текст возникшей ошибки при попытке отправки/печати чека",
+        example = "Timeout"
+    ) val deliveryError: String? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

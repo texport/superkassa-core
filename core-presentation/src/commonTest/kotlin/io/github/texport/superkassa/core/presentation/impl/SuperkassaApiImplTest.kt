@@ -1,5 +1,13 @@
 package io.github.texport.superkassa.core.presentation.impl
 
+import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser as DomainKkmUser
+import io.github.texport.superkassa.core.domain.api.model.common.VatGroup as DomainVatGroup
+import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime as DomainTaxRegime
+import io.github.texport.superkassa.core.domain.api.model.common.Money as DomainMoney
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType as DomainOperationType
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest as DomainReceiptRequest
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem as DomainReceiptItem
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.mockk.every
 import io.mockk.mockk
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
@@ -43,6 +51,7 @@ import io.github.texport.superkassa.core.domain.impl.usecase.queue.RetryFailedQu
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -113,14 +122,17 @@ class SuperkassaApiImplTest {
         registrationNumber = "kgd-1",
         factoryNumber = "SWK-0001",
         ofdProvider = "telecom_prod",
-        systemId = "12345"
+        systemId = "12345",
+        // Чеки этой кассы в тестах несут VAT_16, и режим обязан это
+        // допускать: неплательщик НДС такой чек не оформляет.
+        taxRegime = DomainTaxRegime.VAT_PAYER,
+        defaultVatGroup = DomainVatGroup.VAT_16
     )
 
     private val testUser = KkmUser(
         id = "user-1",
         name = "Cashier 1",
         role = DomainUserRole.CASHIER,
-        pin = "hash-1",
         createdAt = 1000L
     )
 
@@ -128,7 +140,6 @@ class SuperkassaApiImplTest {
         id = "admin-1",
         name = "Admin 1",
         role = DomainUserRole.ADMIN,
-        pin = "hash-admin",
         createdAt = 1000L
     )
 
@@ -164,6 +175,37 @@ class SuperkassaApiImplTest {
         every { storage.findKkm("kkm-1") } returns testKkmInfo
         val result = api.getKkm("kkm-1")
         assertEquals(io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(testKkmInfo), result)
+    }
+
+    @Test
+    fun `getKkm answers even when the autonomous limit is exceeded`() {
+        // Чтение кассы отказом не отвечает: превышенный лимит записывается
+        // в состояние, а сказать о нём должно само действие, а не список.
+        val tooLong = testKkmInfo.copy(autonomousSince = 1L)
+        every { storage.findKkm("kkm-1") } returns tooLong
+        every { queue.canSendDirectly("kkm-1") } returns false
+        every { storage.updateKkm(any()) } returns true
+        every { clock.now() } returns AUTONOMOUS_LIMIT_PASSED
+
+        val result = api.getKkm("kkm-1")
+
+        assertEquals("kkm-1", result.kkmId)
+    }
+
+    @Test
+    fun `getKkm clears the autonomous mark once the queue has drained`() {
+        // Очередь расходится в фоне: без сверки при чтении касса числилась
+        // бы автономной до следующего чека, а вместе с ней и время
+        // автономной работы, которое уходит в ОФД.
+        val autonomous = testKkmInfo.copy(autonomousSince = 1L)
+        every { storage.findKkm("kkm-1") } returns autonomous
+        every { queue.canSendDirectly("kkm-1") } returns true
+        every { storage.updateKkm(any()) } returns true
+        every { clock.now() } returns 1_000L
+
+        val result = api.getKkm("kkm-1")
+
+        assertNull(result.autonomousSince)
     }
 
     @Test
@@ -233,7 +275,7 @@ class SuperkassaApiImplTest {
     @Test
     fun `getLocalOpenShift returns shift when open`() {
         every { storage.findKkm("kkm-1") } returns testKkmInfo
-        val testUser = KkmUser("user-1", "Name", DomainUserRole.ADMIN, "hash", 1000L)
+        val testUser = KkmUser("user-1", "Name", DomainUserRole.ADMIN, 1000L)
         every { storage.findUserByPin("kkm-1", any()) } returns testUser
         val testShift = ShiftInfo("shift-1", "kkm-1", 1L, ShiftStatus.OPEN, 1000L)
         every { storage.findOpenShift("kkm-1") } returns testShift
@@ -246,7 +288,7 @@ class SuperkassaApiImplTest {
     @Test
     fun `getLocalOpenShift returns null when no open shift`() {
         every { storage.findKkm("kkm-1") } returns testKkmInfo
-        val testUser = KkmUser("user-1", "Name", DomainUserRole.ADMIN, "hash", 1000L)
+        val testUser = KkmUser("user-1", "Name", DomainUserRole.ADMIN, 1000L)
         every { storage.findUserByPin("kkm-1", any()) } returns testUser
         every { storage.findOpenShift("kkm-1") } returns null
         
@@ -312,7 +354,7 @@ class SuperkassaApiImplTest {
         every { storage.findUserByPin("kkm-1", "hash-admin") } returns adminUser
         every { idGenerator.nextId() } returns "user-new"
         every { pinHasher.hash("4321") } returns "hash-4321"
-        every { storage.createUser(any(), any(), any(), any(), any(), any(), any()) } returns true
+        every { storage.createUser(any(), any(), any(), any(), any(), any()) } returns true
 
         val request = UserCreateRequest(name = "New User", role = UserRole.CASHIER, userPin = "4321")
         val created = api.createUser("kkm-1", "1234", request)
@@ -327,7 +369,7 @@ class SuperkassaApiImplTest {
         every { pinHasher.hash("1234") } returns "hash-admin"
         every { storage.findUserByPin("kkm-1", "hash-admin") } returns adminUser
         every { storage.listUsers("kkm-1") } returns listOf(testUser)
-        every { storage.updateUser(any(), any(), any(), any(), any(), any()) } returns true
+        every { storage.updateUser(any(), any(), any(), any(), any()) } returns true
 
         val request = UserUpdateRequest(name = "Updated User")
         val updated = api.updateUser("kkm-1", "user-1", "1234", request)
@@ -436,6 +478,41 @@ class SuperkassaApiImplTest {
     }
 
     @Test
+    fun `отвергнутый документ отдаёт код отказа`() {
+        // Код отказа лежал в снимке документа, но представление его не
+        // переносило: приложение получало «FAILED» без причины.
+        every { storage.findKkm("kkm-1") } returns testKkmInfo
+        every { pinHasher.hash("1234") } returns "hash-1"
+        every { storage.findUserByPin("kkm-1", "hash-1") } returns testUser
+        every {
+            storage.listFiscalDocumentsByPeriod("kkm-1", any(), any(), any(), any())
+        } returns listOf(
+            FiscalDocumentSnapshot(
+                id = "doc-refused",
+                cashboxId = "kkm-1",
+                shiftId = "shift-1",
+                docType = "SALE",
+                docNo = null,
+                shiftNo = 1L,
+                createdAt = 1000L,
+                totalAmount = 100L,
+                currency = "KZT",
+                fiscalSign = null,
+                autonomousSign = null,
+                isAutonomous = false,
+                ofdStatus = "FAILED",
+                ofdErrorCode = 13,
+                deliveredAt = null
+            )
+        )
+
+        val docs = api.listFiscalDocumentsByPeriod("kkm-1", 0L, 9_999_999L, 10, 0, "1234")
+
+        assertEquals("FAILED", docs.first().ofdStatus)
+        assertEquals(13, docs.first().ofdErrorCode)
+    }
+
+    @Test
     fun `getPrintHtml returns html output for print`() {
         every { printApi.getPrintHtml(any(), any(), any(), any(), any(), any()) } returns "<html>Receipt</html>"
 
@@ -464,7 +541,7 @@ class SuperkassaApiImplTest {
 
         val request = CashOperationRequest(
             idempotencyKey = "key-cash-in",
-            amount = 500.0
+            amount = Decimal.parse("500.0")
         )
         every { storage.findOpenShift("kkm-1") } returns ShiftInfo("shift-1", "kkm-1", 1L, ShiftStatus.OPEN, 1000L)
         val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
@@ -497,7 +574,7 @@ class SuperkassaApiImplTest {
         every { idGenerator.nextId() } returns "kkm-new"
         every { storage.createKkm(any()) } returns true
         every { pinHasher.hash("1234") } returns "hash-1234"
-        every { storage.createUser(any(), any(), any(), any(), any(), any(), any()) } returns true
+        every { storage.createUser(any(), any(), any(), any(), any(), any()) } returns true
 
         val request = KkmInitDirectRequest(
             ofdId = "kazakhtelecom",
@@ -519,7 +596,7 @@ class SuperkassaApiImplTest {
         every { idGenerator.nextId() } returns "kkm-simple"
         every { storage.createKkm(any()) } returns true
         every { pinHasher.hash("1234") } returns "hash-1234"
-        every { storage.createUser(any(), any(), any(), any(), any(), any(), any()) } returns true
+        every { storage.createUser(any(), any(), any(), any(), any(), any()) } returns true
 
         val request = KkmInitSimpleRequest(
             ofdId = "kazakhtelecom",
@@ -530,6 +607,123 @@ class SuperkassaApiImplTest {
         )
         val kkm = api.initKkmSimple("0000", request)
         assertEquals("kkm-simple", kkm.kkmId)
+    }
+
+    @Test
+    fun `initKkmSimple handles exceptions`() {
+        every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
+        every { idGenerator.nextId() } returns "kkm-simple-err"
+        every { storage.findKkmBySystemId("err-sys") } throws RuntimeException("Storage failure")
+
+        val request = KkmInitSimpleRequest(
+            ofdId = "kazakhtelecom",
+            ofdEnvironment = "test",
+            ofdSystemId = "err-sys",
+            ofdToken = "32876190"
+        )
+        kotlin.test.assertFailsWith<RuntimeException> {
+            api.initKkmSimple("0000", request)
+        }
+    }
+
+    @Test
+    fun `initKkm handles exceptions`() {
+        every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
+        every { storage.findKkmByRegistrationNumber(any()) } throws RuntimeException("Storage failure")
+
+        val request = KkmInitDirectRequest(
+            ofdId = "kazakhtelecom",
+            ofdEnvironment = "test",
+            ofdSystemId = "200367",
+            ofdToken = "32876190",
+            kkmKgdId = "123",
+            factoryNumber = "F123",
+            manufactureYear = 2026
+        )
+        kotlin.test.assertFailsWith<RuntimeException> {
+            api.initKkm("0000", request)
+        }
+    }
+
+    @Test
+    fun `getKkm and listKkms handle inner exceptions gracefully`() {
+        val kkm = testKkmInfo
+        every { storage.findKkm("kkm-1") } returns kkm
+        every { storage.findOpenShift("kkm-1") } returns null
+        every { storage.listQueueTasksByCashbox(any(), any(), any(), any()) } throws RuntimeException("Tasks error")
+
+        val resp = api.getKkm("kkm-1")
+        assertEquals("kkm-1", resp.kkmId)
+        assertEquals(0, resp.offlineQueueCount)
+
+        every { storage.listKkms(any(), any(), any(), any(), any(), any()) } returns listOf(kkm)
+        val listResp = api.listKkms(KkmListParams(limit = 10, offset = 0))
+        assertEquals(1, listResp.items.size)
+    }
+
+    @Test
+    fun `setLogLevel and setLogListener update LoggerConfig`() {
+        api.setLogLevel("debug")
+        api.setLogLevel("invalid_level")
+        api.setLogListener(object : io.github.texport.superkassa.core.domain.impl.logging.LogListener {
+            override fun onLog(levelName: String, tag: String, message: String) {}
+        })
+    }
+
+    @Test
+    fun `validateCanDeleteKkm delegates to validateCanDeleteKkmImpl`() {
+        every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
+        every { storage.findKkm("kkm-del") } returns testKkmInfo.copy(id = "kkm-del", state = "PROGRAMMING")
+        every { pinHasher.hash("1234") } returns "hash-pin"
+        every { storage.findUserByPin("kkm-del", "hash-pin") } returns adminUser
+        every { storage.findOpenShift("kkm-del") } returns null
+        every { queue.canSendDirectly("kkm-del") } returns true
+        every { storage.countOfflineQueue() } returns 0
+
+        val canDel = api.validateCanDeleteKkm("kkm-del", "1234")
+        assertTrue(canDel)
+    }
+
+    @Test
+    fun `openShift and closeShift handle exceptions`() {
+        every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
+        every { storage.findKkmForUpdate("kkm-err") } throws RuntimeException("Storage failure")
+
+        kotlin.test.assertFailsWith<RuntimeException> {
+            api.openShift("kkm-err", "0000")
+        }
+        kotlin.test.assertFailsWith<RuntimeException> {
+            api.closeShift("kkm-err", "0000")
+        }
+        kotlin.test.assertFailsWith<RuntimeException> {
+            api.getOpenShift("kkm-err", "0000")
+        }
+        kotlin.test.assertFailsWith<RuntimeException> {
+            api.createReport("kkm-err", "0000")
+        }
+    }
+
+    @Test
+    fun `receipt creation methods handle exceptions`() {
+        every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
+        every { storage.findKkmForUpdate("kkm-err") } throws RuntimeException("Storage failure")
+
+        val sellReq = ReceiptSellRequest(idempotencyKey = "key", items = emptyList(), payments = emptyList())
+        kotlin.test.assertFailsWith<RuntimeException> {
+            api.createSellReceipt("kkm-err", "0000", sellReq)
+        }
+        val sellReturnReq = ReceiptSellReturnRequest(idempotencyKey = "key", items = emptyList(), payments = emptyList())
+        kotlin.test.assertFailsWith<RuntimeException> {
+            api.createSellReturnReceipt("kkm-err", "0000", sellReturnReq)
+        }
+        val buyReq = ReceiptBuyRequest(idempotencyKey = "key", items = emptyList(), payments = emptyList())
+        kotlin.test.assertFailsWith<RuntimeException> {
+            api.createBuyReceipt("kkm-err", "0000", buyReq)
+        }
+        val buyReturnReq = ReceiptBuyReturnRequest(idempotencyKey = "key", items = emptyList(), payments = emptyList())
+        kotlin.test.assertFailsWith<RuntimeException> {
+            api.createBuyReturnReceipt("kkm-err", "0000", buyReturnReq)
+        }
     }
 
     @Test
@@ -646,10 +840,16 @@ class SuperkassaApiImplTest {
             deliveredAt = 1000L
         )
         every { storage.findFiscalDocumentById("doc-new") } returns mockSnapshot
+        // Покупка платит из ящика, и касса проверяет остаток пересчётом
+        // сменных счётчиков. Здесь проверяется проброс вызова, а не деньги,
+        // поэтому в ящике заведомо достаточно, а документов смены нет.
+        every { storage.loadCounters("kkm-1", any(), any()) } returns mapOf("start_shift_cash.sum" to 1_000_00L)
+        every { storage.listFiscalDocumentsByShift("kkm-1", "shift-1", any(), any()) } returns emptyList()
+        every { storage.upsertCounter("kkm-1", any(), any(), any(), any()) } returns true
 
         val sellReq = ReceiptSellRequest(
-            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = Decimal.parse("10.0"), quantity = Decimal.parse("1.0"), vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", Decimal.parse("10.0"))),
             idempotencyKey = "sell-key"
         )
         val resSell = api.createSellReceipt("kkm-1", "1234", sellReq)
@@ -660,13 +860,13 @@ class SuperkassaApiImplTest {
             pin = "1234",
             operation = "SELL",
             idempotencyKey = "direct-key",
-            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0)),
-            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = Decimal.parse("10.0"), quantity = Decimal.parse("1.0"))),
+            payments = listOf(ReceiptPaymentRequest("CASH", Decimal.parse("10.0"))),
             discountPercent = null,
             discountSum = null,
             markupPercent = null,
             markupSum = null,
-            taken = 10.0
+            taken = Decimal.parse("10.0")
         )
         val resDirect = api.createReceipt(testCommand)
         assertEquals("doc-new", resDirect.documentId)
@@ -675,13 +875,13 @@ class SuperkassaApiImplTest {
             parentTicketNumber = 123L,
             parentTicketDateTime = "2026-06-27T16:00:00Z",
             kgdKkmId = "kgd-1",
-            parentTicketTotal = 10.0,
+            parentTicketTotal = Decimal.parse("10.0"),
             parentTicketIsOffline = false
         )
 
         val sellRetReq = ReceiptSellReturnRequest(
-            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = Decimal.parse("10.0"), quantity = Decimal.parse("1.0"), vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", Decimal.parse("10.0"))),
             idempotencyKey = "sell-ret-key",
             parentTicket = parentTicket
         )
@@ -689,16 +889,16 @@ class SuperkassaApiImplTest {
         assertEquals("doc-new", resSellRet.documentId)
 
         val buyReq = ReceiptBuyRequest(
-            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = Decimal.parse("10.0"), quantity = Decimal.parse("1.0"), vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", Decimal.parse("10.0"))),
             idempotencyKey = "buy-key"
         )
         val resBuy = api.createBuyReceipt("kkm-1", "1234", buyReq)
         assertEquals("doc-new", resBuy.documentId)
 
         val buyRetReq = ReceiptBuyReturnRequest(
-            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = Decimal.parse("10.0"), quantity = Decimal.parse("1.0"), vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", Decimal.parse("10.0"))),
             idempotencyKey = "buy-ret-key",
             parentTicket = parentTicket
         )
@@ -719,10 +919,16 @@ class SuperkassaApiImplTest {
 
         val request = CashOperationRequest(
             idempotencyKey = "key-cash-out",
-            amount = 100.0
+            amount = Decimal.parse("100.0")
         )
         every { storage.findOpenShift("kkm-1") } returns ShiftInfo("shift-1", "kkm-1", 1L, ShiftStatus.OPEN, 1000L)
-        every { storage.loadCounters("kkm-1", "SHIFT", "shift-1") } returns mapOf("CASH_SUM" to 15000L)
+        // Остаток наличных берётся тем же расчётом, что и в отчётах: он начинает
+        // с остатка на начало смены и прибавляет документы. Поэтому фикстура
+        // задаёт start_shift_cash.sum, а не готовый CASH_SUM.
+        every { storage.loadCounters("kkm-1", "SHIFT", "shift-1") } returns
+            mapOf("cash.sum" to 15000L, "start_shift_cash.sum" to 15000L)
+        every { storage.listFiscalDocumentsByShift("kkm-1", "shift-1", any(), any()) } returns emptyList()
+        every { storage.upsertCounter("kkm-1", any(), any(), any(), any()) } returns true
         val ofdCommandResult = OfdCommandResult(status = DomainOfdCommandStatus.OK, resultCode = 0)
         every { ofd.send(any()) } returns ofdCommandResult
         every { storage.findFiscalDocumentById(any()) } returns FiscalDocumentSnapshot(
@@ -804,6 +1010,41 @@ class SuperkassaApiImplTest {
         val docs = api.listShiftDocuments("kkm-1", "shift-new", 10, 0, "1234")
         assertEquals(1, docs.size)
 
+        // Документ с составом: возврату нужны позиции, разбору отказа — кассир
+        val soldItem = DomainReceiptItem(
+            name = "Кофе",
+            sectionCode = "001",
+            quantity = 3_000L,
+            price = DomainMoney.fromTiyn(15055L),
+            sum = DomainMoney.fromTiyn(45165L),
+            vatGroup = DomainVatGroup.VAT_16
+        )
+        val soldReceipt = DomainReceiptRequest(
+            kkmId = "kkm-1",
+            pin = "1234",
+            operation = DomainOperationType.SELL,
+            items = listOf(soldItem),
+            payments = emptyList(),
+            total = DomainMoney.fromTiyn(45165L),
+            idempotencyKey = "key-details",
+            operatorName = "Айгүл"
+        )
+        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (mockSnapshot to soldReceipt)
+        val details = api.getDocumentDetails("kkm-1", "doc-1", "1234")
+        assertEquals(1, details.items.size)
+        assertEquals(3_000L, details.items.first().quantityThousandths)
+        assertEquals("Айгүл", details.operatorName)
+
+        // Документа нет — отказ, а не пустой ответ
+        every { storage.findFiscalDocumentWithReceiptPayload("doc-missing") } returns null
+        every { storage.findFiscalDocumentById("doc-missing") } returns null
+        assertFailsWith<NotFoundException> { api.getDocumentDetails("kkm-1", "doc-missing", "1234") }
+
+        // Отчёт: состава нет, и это не ошибка
+        every { storage.findFiscalDocumentWithReceiptPayload("doc-report") } returns null
+        every { storage.findFiscalDocumentById("doc-report") } returns mockSnapshot
+        assertEquals(0, api.getDocumentDetails("kkm-1", "doc-report", "1234").items.size)
+
         // List by period
         every { storage.listFiscalDocumentsByPeriod("kkm-1", 1000L, 2000L, 10, 0) } returns listOf(mockSnapshot)
         val periodDocs = api.listFiscalDocumentsByPeriod("kkm-1", 1000L, 2000L, 10, 0, "1234")
@@ -847,12 +1088,14 @@ class SuperkassaApiImplTest {
         every { queue.canSendDirectly("kkm-1") } returns false
 
         val sellReq = ReceiptSellRequest(
-            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = Decimal.parse("10.0"), quantity = Decimal.parse("1.0"), vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", Decimal.parse("10.0"))),
             idempotencyKey = "sell-key-offline"
         )
         val resSell = api.createSellReceipt("kkm-1", "1234", sellReq)
-        assertEquals(DeliveryStatus.ONLINE_OK, resSell.deliveryStatus)
+        // В автономном режиме чек попадает в очередь, а не доставляется:
+        // сообщать об успешной доставке здесь значит вводить кассира в заблуждение.
+        assertEquals(DeliveryStatus.OFFLINE_QUEUED, resSell.deliveryStatus)
 
         // Close report offline
         every { pinHasher.hash("1234") } returns "hash-admin"
@@ -874,8 +1117,8 @@ class SuperkassaApiImplTest {
         // 1. Closed shift check
         every { storage.findOpenShift("kkm-1") } returns null
         val sellReq = ReceiptSellRequest(
-            items = listOf(ReceiptItemRequest(name = "Item 1", price = 10.0, quantity = 1.0, vatGroup = "VAT_16", measureUnitCode = "796")),
-            payments = listOf(ReceiptPaymentRequest("CASH", 10.0)),
+            items = listOf(ReceiptItemRequest(name = "Item 1", price = Decimal.parse("10.0"), quantity = Decimal.parse("1.0"), vatGroup = "VAT_16", measureUnitCode = "796")),
+            payments = listOf(ReceiptPaymentRequest("CASH", Decimal.parse("10.0"))),
             idempotencyKey = "sell-key-closed"
         )
         assertFailsWith<ConflictException> {
@@ -954,7 +1197,7 @@ class SuperkassaApiImplTest {
         assertEquals("5449000176431", item.barcode)
         assertEquals("Soda", item.name)
         assertEquals("Soda Kk", item.nameKk)
-        assertEquals(150.0, item.price)
+        assertEquals(Decimal.parse("150.0"), item.price)
         assertEquals("163", item.measureUnitCode)
         assertEquals("VAT_16", item.vatGroup)
     }
@@ -1021,9 +1264,14 @@ class SuperkassaApiImplTest {
         assertEquals("TEST", api.getOfdEnvironments()[1].code)
         assertEquals("PROD", api.getOfdEnvironments()[2].code)
 
-        assertEquals(1, api.getOfdProviders().size)
+        // Справочник провайдеров повторяет доменный OfdProvider целиком:
+        // приложению кассы незачем держать собственный список.
+        assertEquals(2, api.getOfdProviders().size)
         assertEquals("KAZAKHTELECOM", api.getOfdProviders()[0].code)
         assertEquals("oofd.kz", api.getOfdProviders()[0].website)
+        assertEquals("BFD", api.getOfdProviders()[1].code)
+        assertEquals("ОФД БФД", api.getOfdProviders()[1].name.ru)
+        assertEquals("БФД ОФД", api.getOfdProviders()[1].name.kk)
 
         assertEquals(2, api.getCoreModes().size)
         assertEquals("DESKTOP", api.getCoreModes()[0].code)
@@ -1058,6 +1306,65 @@ class SuperkassaApiImplTest {
     }
 
     @Test
+    fun testPaymentTypesCarryProtocolSupport() {
+        // Схема 2.0.4 не содержит кредита и тары: справочник обязан сказать
+        // об этом заранее, а не отказом уже пробитого чека.
+        every { coreSettings.ofdProtocolVersion } returns "204"
+        val apiOn204 = SuperkassaApiImpl(
+            storage = storage,
+            queuePort = queue,
+            ofd = ofd,
+            ofdConfig = ofdConfig,
+            delivery = delivery,
+            tokenCodec = tokenCodec,
+            idGenerator = idGenerator,
+            clock = clock,
+            pinHasher = pinHasher,
+            coreSettings = coreSettings,
+            receiptRenderPort = receiptRender,
+            documentConvertPort = docConvert,
+            timeValidator = timeValidator,
+            printApi = printApi
+        )
+
+        val types = apiOn204.getPaymentTypes().associateBy { it.code }
+        assertEquals(6, types.size)
+        assertEquals(true, types.getValue("CASH").supported)
+        assertEquals(false, types.getValue("CREDIT").supported)
+        assertEquals(false, types.getValue("TARE").supported)
+        // Названия заведены на всех трёх языках, а не оставлены голым кодом.
+        assertEquals("Оплата в кредит", types.getValue("CREDIT").name.ru)
+        assertEquals("Несиеге төлеу", types.getValue("CREDIT").name.kk)
+        assertEquals("Credit Payment", types.getValue("CREDIT").name.en)
+        assertEquals("Оплата тарой", types.getValue("TARE").name.ru)
+        assertEquals("Ыдыспен төлеу", types.getValue("TARE").name.kk)
+        assertEquals("Payment by Tare", types.getValue("TARE").name.en)
+    }
+
+    @Test
+    fun testReceiptDomainTypesReference() {
+        val kinds = api.getReceiptDomainTypes()
+        assertEquals(6, kinds.size)
+        assertEquals("DOMAIN_TRADING", kinds[0].code)
+        assertEquals("Торговля", kinds[0].name.ru)
+        assertEquals("Сауда", kinds[0].name.kk)
+        assertEquals("Trading", kinds[0].name.en)
+        assertEquals("DOMAIN_PARKING", kinds[5].code)
+        assertEquals("Тұрақ", kinds[5].name.kk)
+    }
+
+    @Test
+    fun testVatGroupsReference() {
+        val rates = api.listVatRates().associateBy { it.code }
+        assertEquals(6, rates.size)
+        assertEquals(16, rates.getValue("VAT_16").percent)
+        assertEquals("ҚҚС 16%", rates.getValue("VAT_16").name.kk)
+        // Ставка до 2026 года: без неё нечем пробить возврат по старому чеку.
+        assertEquals(12, rates.getValue("VAT_12").percent)
+        assertEquals("ҚҚС 12%", rates.getValue("VAT_12").name.kk)
+    }
+
+    @Test
     fun testOtherReferencesAndAuth() {
         assertNotNull(api.getPaymentTypes())
         assertNotNull(api.getDocumentTypes())
@@ -1078,7 +1385,6 @@ class SuperkassaApiImplTest {
             id = "user-1",
             name = "Cashier",
             role = io.github.texport.superkassa.core.domain.api.model.auth.UserRole.CASHIER,
-            pin = "1234",
             createdAt = 123456789L
         )
 
@@ -1091,3 +1397,6 @@ class SuperkassaApiImplTest {
         }
     }
 }
+
+/** Момент, к которому 72 часа автономной работы заведомо прошли. */
+private const val AUTONOMOUS_LIMIT_PASSED = 400L * 60L * 60L * 1000L

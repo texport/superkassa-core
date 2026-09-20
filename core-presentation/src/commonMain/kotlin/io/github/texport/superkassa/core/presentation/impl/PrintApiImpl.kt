@@ -33,7 +33,14 @@ class PrintApiImpl(
         shiftId: String?,
         pin: String,
         layout: ReceiptLayoutType?
-    ): String = getPrintHtmlUseCase.execute(kkmId, ReceiptMapper.toDomain(type), documentId, shiftId, pin, layout?.let { ReceiptMapper.toDomain(it) })
+    ): String = getPrintHtmlUseCase.execute(
+        kkmId,
+        ReceiptMapper.toDomain(type),
+        documentId,
+        shiftId,
+        pin,
+        layout?.let { ReceiptMapper.toDomain(it) }
+    )
 
     override fun getPrintPdf(
         kkmId: String,
@@ -42,7 +49,14 @@ class PrintApiImpl(
         shiftId: String?,
         pin: String,
         layout: ReceiptLayoutType?
-    ): ByteArray = getPrintPdfUseCase.execute(kkmId, ReceiptMapper.toDomain(type), documentId, shiftId, pin, layout?.let { ReceiptMapper.toDomain(it) })
+    ): ByteArray = getPrintPdfUseCase.execute(
+        kkmId,
+        ReceiptMapper.toDomain(type),
+        documentId,
+        shiftId,
+        pin,
+        layout?.let { ReceiptMapper.toDomain(it) }
+    )
 
     override fun getPrintPng(
         kkmId: String,

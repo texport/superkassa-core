@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.api.model.receipt
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import io.github.texport.superkassa.core.presentation.api.annotations.DecimalMin
 import io.github.texport.superkassa.core.presentation.api.annotations.NotNull
@@ -22,5 +23,5 @@ data class ReceiptPaymentRequest(
     @Schema(description = "Сумма оплаты (в тенге)", example = "500.00")
     @field:NotNull
     @field:DecimalMin("0", message = "Сумма оплаты не может быть отрицательной")
-    val sum: Double
+    val sum: Decimal
 )

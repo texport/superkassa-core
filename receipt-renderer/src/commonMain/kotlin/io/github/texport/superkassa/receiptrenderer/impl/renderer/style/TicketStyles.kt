@@ -133,17 +133,6 @@ internal object TicketStyles {
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.05);
             box-shadow: 0 4px 12px var(--m3-shadow);
         }
-        .qr::after {
-            content: "Scan to verify / Тексеру үшін сканерлеңіз";
-            display: block;
-            margin-top: 6px;
-            font-size: 0.8em;
-            color: #475569;
-            color: var(--m3-on-surface-variant);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
         .item-row-card {
             background: #f1f5f9;
             background: var(--m3-surface-variant);

@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.api.model.ofd
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import kotlinx.serialization.Serializable
 
@@ -20,8 +21,8 @@ data class NomenclatureItemResponse(
     @Schema(description = "Глобальный номер товарной позиции NTIN", example = "0200091550792")
     val ntin: String?,
     @Schema(description = "Рекомендованная цена продажи (в тенге)", example = "0.0")
-    val price: Double,
-    @Schema(description = "Код единицы измерения (ОКЕИ)", example = "166")
+    val price: Decimal,
+    @Schema(description = "Код единицы измерения по классификатору ИС ЭСФ", example = "116")
     val measureUnitCode: String?,
     @Schema(description = "Группа НДС товара (если определена)", example = "NO_VAT")
     val vatGroup: String?

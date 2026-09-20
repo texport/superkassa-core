@@ -30,6 +30,8 @@ import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBrandin
  * @property taxRegime Налоговый режим ККМ (по умолчанию неплательщик НДС).
  * @property defaultVatGroup Группа НДС по умолчанию для позиций без явно указанной ставки.
  * @property branding Настройки брендирования и локализации печатных форм чеков.
+ * @property name Название кассы, данное владельцем. Показывается вместо регистрационного
+ * номера там, где кассир выбирает машину. У касс, заведённых до появления поля, его нет.
  * @property blockReasonCode Код причины блокировки ОФД (CPCR код, например 2 - неверный токен).
  */
 data class KkmInfo(
@@ -56,5 +58,6 @@ data class KkmInfo(
     val taxRegime: TaxRegime = TaxRegime.NO_VAT,
     val defaultVatGroup: VatGroup = VatGroup.NO_VAT,
     val branding: ReceiptBranding = ReceiptBranding(),
-    val blockReasonCode: Int? = null
+    val blockReasonCode: Int? = null,
+    val name: String? = null
 )

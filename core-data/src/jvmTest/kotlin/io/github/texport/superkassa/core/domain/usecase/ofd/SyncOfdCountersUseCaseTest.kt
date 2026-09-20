@@ -2,6 +2,7 @@ package io.github.texport.superkassa.core.domain.impl.usecase.ofd
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlinx.serialization.json.Json
@@ -10,6 +11,7 @@ import kotlinx.serialization.json.jsonObject
 import io.github.texport.superkassa.core.data.impl.adapter.security.Base64TokenCodecAdapter
 import io.github.texport.superkassa.core.data.impl.adapter.ofd.OfdConfigAdapter
 import io.github.texport.superkassa.core.data.impl.adapter.security.Sha256PinHasherAdapter
+import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.common.TimeValidationResult
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
@@ -47,28 +49,36 @@ class SyncOfdCountersUseCaseTest {
         val globalCounters = fixture.storage.loadCounters(fixture.kkm.id, "GLOBAL", null)
 
         assertEquals(2L, shiftCounters["operation.OPERATION_SELL.count"])
-        assertEquals(1000L, shiftCounters["operation.OPERATION_SELL.sum"])
-        assertEquals(5000L, globalCounters["non_nullable.OPERATION_SELL.sum"])
+        assertEquals(100_000L, shiftCounters["operation.OPERATION_SELL.sum"])
+        assertEquals(500_000L, globalCounters["non_nullable.OPERATION_SELL.sum"])
 
         val updatedKkm = fixture.storage.findKkm(fixture.kkm.id)
         assertNotNull(updatedKkm)
-        assertEquals(listOf("Ad Promo 1"), updatedKkm.branding.ofdTicketAds)
+        assertEquals(listOf("Ad Promo 1"), updatedKkm.branding.ofdTicketAds.map { it.text })
     }
 
+    /**
+     * Сверка счётчиков смену не закрывает.
+     *
+     * Закрытие смены — это Z-отчёт. Раньше сверка закрывала локальную
+     * смену временем из ответа ОФД, то есть временем прошлого документа:
+     * на стенде смена 7 получила закрытие раньше своего открытия.
+     */
     @Test
-    fun `syncOfdCounters closes local open shift when OFD returns REPORT_Z`() {
+    fun `syncOfdCounters refuses and keeps the shift open when OFD returns REPORT_Z`() {
         val fixture = Fixture(reportXResponse())
         fixture.useCase.execute(fixture.kkm.id, "1234")
-        val shiftBeforeClose = fixture.storage.findOpenShift(fixture.kkm.id)
-        assertNotNull(shiftBeforeClose)
+        val shiftBefore = fixture.storage.findOpenShift(fixture.kkm.id)
+        assertNotNull(shiftBefore)
 
         fixture.ofd.responseJson = reportZResponse()
-        val closeResult = fixture.useCase.execute(fixture.kkm.id, "1234")
-        assertEquals(OfdCommandStatus.OK, closeResult.status)
-        assertNull(fixture.storage.findOpenShift(fixture.kkm.id))
+        val failure = assertFailsWith<ConflictException> { fixture.useCase.execute(fixture.kkm.id, "1234") }
+        assertEquals("KKM_SYNC_SHIFT_DIVERGED", failure.code)
 
-        val firstShift = fixture.storage.listShifts(fixture.kkm.id, limit = 1, offset = 0).first()
-        assertEquals(ShiftStatus.CLOSED, firstShift.status)
+        val shiftAfter = fixture.storage.findOpenShift(fixture.kkm.id)
+        assertNotNull(shiftAfter)
+        assertEquals(ShiftStatus.OPEN, shiftAfter.status)
+        assertNull(shiftAfter.closedAt)
     }
 
     private class Fixture(initialResponse: JsonObject) {
@@ -132,7 +142,6 @@ class SyncOfdCountersUseCaseTest {
                 userId = "admin-1",
                 name = "Admin",
                 role = UserRole.ADMIN,
-                pin = "1234",
                 pinHash = pinHasher.hash("1234"),
                 createdAt = clock.now()
             )

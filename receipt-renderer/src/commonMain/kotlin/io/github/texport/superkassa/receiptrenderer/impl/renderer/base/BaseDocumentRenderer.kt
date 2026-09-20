@@ -125,8 +125,8 @@ abstract class BaseDocumentRenderer {
         return "<tr><td>$label</td><td>$valStr</td></tr>"
     }
 
-    protected fun formatAmount(bills: Long): String =
-        io.github.texport.superkassa.receiptrenderer.impl.ReceiptFormatter.formatCents(bills)
+    protected fun formatAmount(tiyn: Long): String =
+        io.github.texport.superkassa.receiptrenderer.impl.ReceiptFormatter.formatTiyn(tiyn)
 
     protected fun renderPageFrame(title: String, bodyContent: String, kkm: KkmInfo, docCss: String = ""): String {
         val cleanTitle = title.replace(Regex("<[^>]*>"), "")
@@ -216,7 +216,7 @@ abstract class BaseDocumentRenderer {
 
         val ofdAdsHtml = if (kkm.branding.printOfdTicketAds && kkm.branding.ofdTicketAds.isNotEmpty()) {
             val adsList = kkm.branding.ofdTicketAds.joinToString("\n") {
-                "<div class=\"ofd-ad-item\">${it.escaped()}</div>"
+                "<div class=\"ofd-ad-item\">${it.text.escaped()}</div>"
             }
             """
             <div class="ofd-ads center muted" style="font-size: 0.85em; color: var(--m3-on-surface-variant); line-height: 1.4; padding: 4px 0; margin-top: 8px;">

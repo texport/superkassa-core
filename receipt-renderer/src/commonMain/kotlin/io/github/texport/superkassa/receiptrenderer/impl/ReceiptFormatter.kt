@@ -11,24 +11,24 @@ import kotlinx.datetime.toLocalDateTime
 internal object ReceiptFormatter {
 
     /**
-     * Конвертирует денежную структуру [Money] в общее количество тиын (центов).
+     * Конвертирует денежную структуру [Money] в общее количество тиын.
      *
      * @param m денежная сумма
      * @return общее количество тиын в виде [Long]
      */
-    fun moneyToCents(m: Money): Long {
+    fun moneyToTiyn(m: Money): Long {
         return m.bills * 100L + m.coins
     }
 
     /**
-     * Форматирует количество тиын (центов) в строку с точкой в качестве разделителя (например, 100.50).
+     * Форматирует количество тиын в строку с точкой в качестве разделителя (например, 100.50).
      *
-     * @param cents количество тиын (монет/центов)
+     * @param tiyn сумма в тиынах
      * @return форматированная строка с денежной суммой
      */
-    fun formatCents(cents: Long): String {
-        val whole = cents / 100
-        val fraction = cents % 100
+    fun formatTiyn(tiyn: Long): String {
+        val whole = tiyn / 100
+        val fraction = tiyn % 100
         val absFraction = if (fraction < 0) -fraction else fraction
         val fractionStr = if (absFraction < 10) "0$absFraction" else "$absFraction"
         return "$whole.$fractionStr"
@@ -41,7 +41,7 @@ internal object ReceiptFormatter {
      * @return форматированная строка с денежной суммой
      */
     fun formatMoney(m: Money): String {
-        return formatCents(moneyToCents(m))
+        return formatTiyn(moneyToTiyn(m))
     }
 
     /**

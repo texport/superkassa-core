@@ -75,7 +75,11 @@ class OfdCommandRequestFactory(
         val factoryNumber = factoryNumberOverride ?: kkm.factoryNumber
             ?: throw ValidationException(CoreStrings.kkmFactoryRequired(), "KKM_FACTORY_REQUIRED")
 
-        // Первая попытка онлайн: begin = end = now; при офлайн-повторе end обновит worker
+        // Время автономной работы: от первой неудавшейся попытки до этой
+        // отправки. Спецификация (CPCR, п. 5.2) требует считать его с момента
+        // первой неудачи и обновлять конец перед каждой досылкой; пока здесь
+        // стояло begin = end = now, ОФД получал нулевой промежуток — то есть
+        // сведения о том, что касса вовсе не теряла связь.
         return OfdCommandRequest(
             kkmId = kkm.id,
             commandType = commandType,
@@ -89,8 +93,11 @@ class OfdCommandRequestFactory(
             factoryNumber = factoryNumber,
             ofdSystemId = systemId,
             serviceInfo = serviceInfo,
-            offlineBeginMillis = now,
-            offlineEndMillis = now
+            offlineBeginMillis = kkm.autonomousSince ?: now,
+            offlineEndMillis = now,
+            // Что у кассы уже есть, ОФД знать обязан: иначе он либо шлёт
+            // объявления на каждый чек, либо не шлёт их вовсе.
+            knownTicketAds = kkm.branding.ofdTicketAds
         )
     }
 }

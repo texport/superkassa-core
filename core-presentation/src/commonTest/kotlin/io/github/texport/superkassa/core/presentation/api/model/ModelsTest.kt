@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.api.model
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import kotlinx.serialization.json.Json
 import io.github.texport.superkassa.core.domain.api.model.common.UnitOfMeasurement
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
@@ -91,8 +92,7 @@ class ModelsTest {
         val response = UserResponse(
             userId = "user-1",
             name = "User One",
-            role = UserRole.CASHIER,
-            pin = "1234"
+            role = UserRole.CASHIER
         )
         val responseStr = json.encodeToString(response)
         val responseDec = json.decodeFromString<UserResponse>(responseStr)
@@ -198,8 +198,8 @@ class ModelsTest {
     fun testReceiptModelsSerialization() {
         val item = ReceiptItemRequest(
             name = "Item 1",
-            price = 10.0,
-            quantity = 2.0,
+            price = Decimal.parse("10.0"),
+            quantity = Decimal.parse("2.0"),
             vatGroup = "VAT_16",
             measureUnitCode = "796"
         )
@@ -209,7 +209,7 @@ class ModelsTest {
 
         val payment = ReceiptPaymentRequest(
             type = "CASH",
-            sum = 20.0
+            sum = Decimal.parse("20.0")
         )
         val paymentStr = json.encodeToString(payment)
         val paymentDec = json.decodeFromString<ReceiptPaymentRequest>(paymentStr)
@@ -219,7 +219,7 @@ class ModelsTest {
             parentTicketNumber = 123L,
             parentTicketDateTime = "2026-06-27T16:00:00Z",
             kgdKkmId = "kgd-123",
-            parentTicketTotal = 1500.0,
+            parentTicketTotal = Decimal.parse("1500.0"),
             parentTicketIsOffline = false
         )
         val parentStr = json.encodeToString(parent)
@@ -357,11 +357,10 @@ class ModelsTest {
         assertEquals("Det", apiErr.details)
 
         // 2. UserResponse
-        val userResp = UserResponse(userId = "u1", name = "N1", role = UserRole.CASHIER, pin = "1234")
+        val userResp = UserResponse(userId = "u1", name = "N1", role = UserRole.CASHIER)
         assertEquals("u1", userResp.userId)
         assertEquals("N1", userResp.name)
         assertEquals(UserRole.CASHIER, userResp.role)
-        assertEquals("1234", userResp.pin)
 
         // 4. OfdServiceInfo mapping
         val domainOfd = io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo(
@@ -405,7 +404,9 @@ class ModelsTest {
             useForceDarkTheme = true,
             customBackgroundColorHex = "bg",
             customCardTopBorderColorHex = "border",
-            ofdTicketAds = listOf("ad1"),
+            ofdTicketAds = listOf(
+                io.github.texport.superkassa.core.domain.api.model.receipt.TicketAd("TICKET_AD_OFD", 7L, "ad1")
+            ),
             printOfdTicketAds = false
         )
         val dtoBranding = io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper.toResponse(domainBranding)
@@ -425,7 +426,7 @@ class ModelsTest {
         assertTrue(dtoBranding.useForceDarkTheme)
         assertEquals("bg", dtoBranding.customBackgroundColorHex)
         assertEquals("border", dtoBranding.customCardTopBorderColorHex)
-        assertEquals(listOf("ad1"), dtoBranding.ofdTicketAds)
+        assertEquals(listOf(TicketAdDto("TICKET_AD_OFD", 7L, "ad1")), dtoBranding.ofdTicketAds)
         assertTrue(!dtoBranding.printOfdTicketAds)
 
         val domainBranding2 = dtoBranding.toDomainLocal()
@@ -434,30 +435,30 @@ class ModelsTest {
         // 6. Additional Receipt mapping using ReceiptMapper (ReceiptItemRequest to ItemInput)
         val itemDto = ReceiptItemRequest(
             name = "Item",
-            price = 100.0,
-            quantity = 2.0,
+            price = Decimal.parse("100.0"),
+            quantity = Decimal.parse("2.0"),
             vatGroup = "VAT_16",
             measureUnitCode = "796"
         )
         val itemInput = ReceiptMapper.toItemInput(itemDto)
         assertEquals("Item", itemInput.name)
-        assertEquals(100.0, itemInput.price)
-        assertEquals(2.0, itemInput.quantity)
+        assertEquals(Decimal.parse("100.0"), itemInput.price)
+        assertEquals(Decimal.parse("2.0"), itemInput.quantity)
         assertEquals("VAT_16", itemInput.vatGroup)
         assertEquals("796", itemInput.measureUnitCode)
 
         // 7. ReceiptPaymentRequest using ReceiptMapper (ReceiptPaymentRequest to PaymentInput)
-        val paymentDto = ReceiptPaymentRequest(type = "CASH", sum = 150.0)
+        val paymentDto = ReceiptPaymentRequest(type = "CASH", sum = Decimal.parse("150.0"))
         val paymentInput = ReceiptMapper.toPaymentInput(paymentDto)
         assertEquals("CASH", paymentInput.type)
-        assertEquals(150.0, paymentInput.sum)
+        assertEquals(Decimal.parse("150.0"), paymentInput.sum)
 
         // 8. ParentTicketRequest using ReceiptMapper (ParentTicketRequest to ParentTicket)
         val parentDto = ParentTicketRequest(
             parentTicketNumber = 12L,
             parentTicketDateTime = "2026-06-27T16:00:00Z",
             kgdKkmId = "kgd-12",
-            parentTicketTotal = 500.0,
+            parentTicketTotal = Decimal.parse("500.0"),
             parentTicketIsOffline = true
         )
         val domainParent = ReceiptMapper.toParentTicket(parentDto)!!
@@ -477,60 +478,60 @@ class ModelsTest {
 
         // Validation tests for ReceiptSellRequest
         try {
-            ReceiptSellRequest(items = emptyList(), payments = emptyList(), discountPercent = 10.0, discountSum = 100.0, idempotencyKey = "key")
+            ReceiptSellRequest(items = emptyList(), payments = emptyList(), discountPercent = Decimal.parse("10.0"), discountSum = Decimal.parse("100.0"), idempotencyKey = "key")
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("discount"))
         }
         try {
-            ReceiptSellRequest(items = emptyList(), payments = emptyList(), markupPercent = 10.0, markupSum = 100.0, idempotencyKey = "key")
+            ReceiptSellRequest(items = emptyList(), payments = emptyList(), markupPercent = Decimal.parse("10.0"), markupSum = Decimal.parse("100.0"), idempotencyKey = "key")
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("наценку"))
         }
 
         // Validation tests for ReceiptSellReturnRequest
         try {
-            ReceiptSellReturnRequest(items = emptyList(), payments = emptyList(), discountPercent = 10.0, discountSum = 100.0, idempotencyKey = "key")
+            ReceiptSellReturnRequest(items = emptyList(), payments = emptyList(), discountPercent = Decimal.parse("10.0"), discountSum = Decimal.parse("100.0"), idempotencyKey = "key")
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("discount"))
         }
         try {
-            ReceiptSellReturnRequest(items = emptyList(), payments = emptyList(), markupPercent = 10.0, markupSum = 100.0, idempotencyKey = "key")
+            ReceiptSellReturnRequest(items = emptyList(), payments = emptyList(), markupPercent = Decimal.parse("10.0"), markupSum = Decimal.parse("100.0"), idempotencyKey = "key")
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("наценку"))
         }
 
         // Validation tests for ReceiptBuyRequest
         try {
-            ReceiptBuyRequest(items = emptyList(), payments = emptyList(), discountPercent = 10.0, discountSum = 100.0, idempotencyKey = "key")
+            ReceiptBuyRequest(items = emptyList(), payments = emptyList(), discountPercent = Decimal.parse("10.0"), discountSum = Decimal.parse("100.0"), idempotencyKey = "key")
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("discount"))
         }
         try {
-            ReceiptBuyRequest(items = emptyList(), payments = emptyList(), markupPercent = 10.0, markupSum = 100.0, idempotencyKey = "key")
+            ReceiptBuyRequest(items = emptyList(), payments = emptyList(), markupPercent = Decimal.parse("10.0"), markupSum = Decimal.parse("100.0"), idempotencyKey = "key")
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("наценку"))
         }
 
         // Validation tests for ReceiptBuyReturnRequest
         try {
-            ReceiptBuyReturnRequest(items = emptyList(), payments = emptyList(), discountPercent = 10.0, discountSum = 100.0, idempotencyKey = "key")
+            ReceiptBuyReturnRequest(items = emptyList(), payments = emptyList(), discountPercent = Decimal.parse("10.0"), discountSum = Decimal.parse("100.0"), idempotencyKey = "key")
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("discount"))
         }
         try {
-            ReceiptBuyReturnRequest(items = emptyList(), payments = emptyList(), markupPercent = 10.0, markupSum = 100.0, idempotencyKey = "key")
+            ReceiptBuyReturnRequest(items = emptyList(), payments = emptyList(), markupPercent = Decimal.parse("10.0"), markupSum = Decimal.parse("100.0"), idempotencyKey = "key")
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("наценку"))
         }
 
         // Validation tests for ReceiptItemRequest
         try {
-            ReceiptItemRequest(name = "Item", price = 10.0, quantity = 1.0, discountPercent = 10.0, discountSum = 100.0)
+            ReceiptItemRequest(name = "Item", price = Decimal.parse("10.0"), quantity = Decimal.parse("1.0"), discountPercent = Decimal.parse("10.0"), discountSum = Decimal.parse("100.0"))
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("discount"))
         }
         try {
-            ReceiptItemRequest(name = "Item", price = 10.0, quantity = 1.0, markupPercent = 10.0, markupSum = 100.0)
+            ReceiptItemRequest(name = "Item", price = Decimal.parse("10.0"), quantity = Decimal.parse("1.0"), markupPercent = Decimal.parse("10.0"), markupSum = Decimal.parse("100.0"))
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("наценку"))
         }
@@ -590,7 +591,9 @@ class ModelsTest {
             useForceDarkTheme = useForceDarkTheme,
             customBackgroundColorHex = customBackgroundColorHex,
             customCardTopBorderColorHex = customCardTopBorderColorHex,
-            ofdTicketAds = ofdTicketAds,
+            ofdTicketAds = ofdTicketAds.map {
+                io.github.texport.superkassa.core.domain.api.model.receipt.TicketAd(it.type, it.version, it.text)
+            },
             printOfdTicketAds = printOfdTicketAds
         )
     }

@@ -9,6 +9,11 @@ complexity:
     thresholdInClasses: 60
     thresholdInInterfaces: 50
     thresholdInObjects: 100
+    # Реестр надписей — не класс с поведением: в нём по функции на фразу,
+    # и порог числа функций к нему неприменим. Дробить его на «предметы»
+    # значило бы разнести один словарь по десятку файлов и заставить
+    # вызывающего помнить, в каком из них лежит нужная строка.
+    excludes: ['**/core-string/**']
   LongMethod:
     active: true
     threshold: 310
@@ -20,6 +25,9 @@ complexity:
   LargeClass:
     active: true
     threshold: 600
+    # То же основание, что у TooManyFunctions: словарь растёт вместе
+    # с числом сообщений кассы, и его размер ни о какой сложности не говорит.
+    excludes: ['**/core-string/**']
   CyclomaticComplexMethod:
     active: true
     threshold: 60
@@ -36,6 +44,10 @@ style:
     ignoreAnnotation: true
     ignoreNamedArgument: true
     ignoreEnums: true
+    # Коды результата ОФД в словаре сообщений — это номера из протокола,
+    # а не магические числа: именованная константа на каждый увела бы
+    # соответствие «код — текст» из одного места в два.
+    excludes: ['**/core-string/**']
   WildcardImport:
     active: true
     excludeImports: ['kotlin.test.*', 'kotlinx.serialization.json.*', 'java.util.*', 'io.github.texport.superkassa.core.domain.api.model.*', 'io.github.texport.superkassa.core.domain.api.port.integration.*', 'io.github.texport.superkassa.core.domain.api.port.internal.*', 'io.github.texport.superkassa.core.domain.model.*', 'io.github.texport.superkassa.core.domain.port.*', 'org.springframework.web.bind.annotation.*', 'io.github.texport.superkassa.core.presentation.api.model.*', 'androidx.room.*']
@@ -58,6 +70,17 @@ style:
     allowedNames: '(_.*|authorization|counters|queuePort|ofdConfig|pinHasher|clock|ofd)'
   UnusedImports:
     active: true
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - reason: 'In-memory mutableMapOf is strictly prohibited in persistence storage adapters. Use Room SQLite DAOs.'
+        value: 'kotlin.collections.mutableMapOf'
+      - reason: 'Direct RuntimeException with un-localized raw string is prohibited. Use SuperkassaException with TrilingualMessage from core-string.'
+        value: 'kotlin.RuntimeException.<init>'
+      - reason: 'Direct IllegalArgumentException with un-localized raw string is prohibited. Use ValidationException with TrilingualMessage from core-string.'
+        value: 'kotlin.IllegalArgumentException.<init>'
+      - reason: 'Direct IllegalStateException with un-localized raw string is prohibited. Use ConflictException with TrilingualMessage from core-string.'
+        value: 'kotlin.IllegalStateException.<init>'
 
 naming:
   active: true
@@ -79,6 +102,8 @@ exceptions:
   TooGenericExceptionCaught:
     active: true
     exceptionNames:
+      - Exception
+      - RuntimeException
       - Throwable
       - Error
 

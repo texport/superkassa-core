@@ -37,9 +37,13 @@ class MoneyPlacementRequestBuilderStrategy(
      */
     override fun build(command: OfdCommandRequest, config: OfdConfig): JsonObject? {
         val serviceBlock = buildServiceBlock(command) ?: return null
-        val doc = storage.findFiscalDocumentById(command.payloadRef) ?: return null
+        val shiftNo = storage?.findOpenShift(command.kkmId)?.shiftNo?.toInt()
+        val doc = storage?.findFiscalDocumentById(command.payloadRef) ?: return null
         if (doc.docType != "CASH_IN" && doc.docType != "CASH_OUT") return null
-        val amountBills = doc.totalAmount ?: 0L
+        // Сумма документа хранится в тиынах — разбираем обратно на тенге и тиыны.
+        val amountTiyn = doc.totalAmount ?: 0L
+        val amountBills = amountTiyn / TIYN_IN_TENGE
+        val amountCoins = (amountTiyn % TIYN_IN_TENGE).toInt()
         val ofdId = command.ofdProviderId.lowercase()
         return OfdRequestFactory.buildMoneyPlacementRequest(
             ofdId = ofdId,
@@ -49,8 +53,15 @@ class MoneyPlacementRequestBuilderStrategy(
             reqNum = command.reqNum,
             docType = doc.docType,
             amountBills = amountBills,
+            amountCoins = amountCoins,
             createdAtMillis = doc.createdAt,
-            serviceBlock = serviceBlock
+            serviceBlock = serviceBlock,
+            printedDocumentNumber = doc.printedDocumentNumber,
+            frShiftNumber = shiftNo,
+            isOffline = doc.isAutonomous
         )
     }
 }
+
+/** Тиынов в тенге. */
+private const val TIYN_IN_TENGE = 100L

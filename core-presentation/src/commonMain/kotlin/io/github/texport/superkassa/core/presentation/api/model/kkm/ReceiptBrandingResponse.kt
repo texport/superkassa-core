@@ -38,8 +38,8 @@ data class ReceiptBrandingResponse(
     val customBackgroundColorHex: String? = null,
     @Schema(description = "Кастомный цвет верхней плашки-границы чека в формате HEX-кода", example = "#4F46E5")
     val customCardTopBorderColorHex: String? = null,
-    @Schema(description = "Список рекламных текстов ОФД для вывода на чеке")
-    val ofdTicketAds: List<String> = emptyList(),
+    @Schema(description = "Рекламные строки ОФД: вид, версия и текст")
+    val ofdTicketAds: List<TicketAdDto> = emptyList(),
     @Schema(description = "Флаг необходимости печати рекламных блоков ОФД на чеке", example = "true")
     val printOfdTicketAds: Boolean = true
 )

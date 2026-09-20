@@ -5,10 +5,10 @@ package io.github.texport.superkassa.core.domain.api.model.zxreport
  *
  * @property operation Тип фискальной операции.
  * @property count Количество операций.
- * @property sumBills Общая сумма операций в целых единицах валюты (тенге).
+ * @property sumTiyn Общая сумма операций в целых единицах валюты (тенге).
  */
 data class OperationAggregate(
     val operation: String,
     val count: Long,
-    val sumBills: Long
+    val sumTiyn: Long
 )

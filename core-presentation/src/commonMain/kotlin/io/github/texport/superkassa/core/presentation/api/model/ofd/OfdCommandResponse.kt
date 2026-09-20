@@ -11,15 +11,27 @@ import kotlinx.serialization.Serializable
 data class OfdCommandResponse(
     @Schema(description = "Статус выполнения запроса", example = "OK") val status: OfdCommandStatus,
     @Schema(description = "Бинарный ответ от ОФД", hidden = true) val responseBin: ByteArray? = null,
-    @Schema(description = "Парсированный JSON-ответ от ОФД", hidden = true) val responseJson: kotlinx.serialization.json.JsonObject? = null,
+    @Schema(
+        description = "Парсированный JSON-ответ от ОФД",
+        hidden = true
+    ) val responseJson: kotlinx.serialization.json.JsonObject? = null,
     @Schema(description = "Числовой токен, возвращенный ОФД", example = "10529") val responseToken: Long? = null,
     @Schema(description = "Номер ответа ОФД", example = "202") val responseReqNum: Int? = null,
     @Schema(description = "Код результата обработки команды", example = "0") val resultCode: Int? = null,
     @Schema(description = "Описание результата обработки от ОФД", example = "OK") val resultText: String? = null,
     @Schema(description = "Фискальный признак документа", example = "3810283") val fiscalSign: String? = null,
-    @Schema(description = "Автономный фискальный признак документа", example = "2837192") val autonomousSign: String? = null,
-    @Schema(description = "Описание ошибки", example = "Timeout waiting for OFD response") val errorMessage: String? = null,
-    @Schema(description = "Ссылка на электронный чек на сервере ОФД", example = "http://ofd.example.com/receipt/123") val receiptUrl: String? = null
+    @Schema(
+        description = "Автономный фискальный признак документа",
+        example = "2837192"
+    ) val autonomousSign: String? = null,
+    @Schema(
+        description = "Описание ошибки",
+        example = "Timeout waiting for OFD response"
+    ) val errorMessage: String? = null,
+    @Schema(
+        description = "Ссылка на электронный чек на сервере ОФД",
+        example = "http://ofd.example.com/receipt/123"
+    ) val receiptUrl: String? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

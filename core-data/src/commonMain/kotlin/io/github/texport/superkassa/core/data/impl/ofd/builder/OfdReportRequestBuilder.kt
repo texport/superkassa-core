@@ -33,7 +33,9 @@ object OfdReportRequestBuilder {
         reqNum: Int,
         reportType: String,
         zxReport: ZxReportInput,
-        serviceBlock: JsonObject
+        serviceBlock: JsonObject,
+        isOffline: Boolean = false,
+        printedDocumentNumber: Long? = null
     ): JsonObject {
         val ofdIdNorm = ofdId.lowercase()
         return buildJsonObject {
@@ -58,7 +60,8 @@ object OfdReportRequestBuilder {
                         buildJsonObject {
                             put("reportType", JsonPrimitive(reportType))
                             put("dateTime", OfdCommonRequestHelper.toDateTime(zxReport.dateTimeMillis))
-                            put("isOffline", JsonPrimitive(false))
+                            put("isOffline", JsonPrimitive(isOffline))
+                            printedDocumentNumber?.let { put("printedDocumentNumber", JsonPrimitive(it)) }
                             put(
                                 "zxReport",
                                 buildZxReportInternal(zxReport)
@@ -93,7 +96,9 @@ object OfdReportRequestBuilder {
         closeTimeMillis: Long,
         frShiftNumber: Int,
         zxReport: JsonObject,
-        serviceBlock: JsonObject
+        serviceBlock: JsonObject,
+        isOffline: Boolean = false,
+        printedDocumentNumber: Long? = null
     ): JsonObject {
         val ofdIdNorm = ofdId.lowercase()
         return buildJsonObject {
@@ -117,7 +122,8 @@ object OfdReportRequestBuilder {
                         "closeShift",
                         buildJsonObject {
                             put("closeTime", OfdCommonRequestHelper.toDateTime(closeTimeMillis))
-                            put("isOffline", JsonPrimitive(false))
+                            put("isOffline", JsonPrimitive(isOffline))
+                            printedDocumentNumber?.let { put("printedDocumentNumber", JsonPrimitive(it)) }
                             put("frShiftNumber", JsonPrimitive(frShiftNumber))
                             put("withdrawMoney", JsonPrimitive(false))
                             put(
@@ -148,18 +154,17 @@ object OfdReportRequestBuilder {
             put("openShiftTime", OfdCommonRequestHelper.toDateTime(zx.openShiftTimeMillis))
             zx.closeShiftTimeMillis?.let { put("closeShiftTime", OfdCommonRequestHelper.toDateTime(it)) }
             put("shiftNumber", JsonPrimitive(zx.shiftNumber))
-            put("cashSum", OfdCommonRequestHelper.moneyObject(zx.cashSumBills, 0))
+            // Остаток ящика уходит в ОФД целиком: раньше дробная часть
+            // прибивалась нулём, и Z-отчёт расходился с настоящими деньгами.
+            put("cashSum", OfdCommonRequestHelper.moneyFromTiyn(zx.cashSumTiyn))
             put(
                 "revenue",
                 buildJsonObject {
-                    put(
-                        "sum",
-                        OfdCommonRequestHelper.moneyObject(
-                            if (zx.revenueBills < 0) -zx.revenueBills else zx.revenueBills,
-                            if (zx.revenueCoins < 0) -zx.revenueCoins else zx.revenueCoins
-                        )
-                    )
-                    put("isNegative", JsonPrimitive(zx.revenueBills < 0 || zx.revenueCoins < 0))
+                    // Выручка уходит по модулю, знак отдельным признаком:
+                    // так требует протокол.
+                    val revenue = if (zx.revenueTiyn < 0) -zx.revenueTiyn else zx.revenueTiyn
+                    put("sum", OfdCommonRequestHelper.moneyFromTiyn(revenue))
+                    put("isNegative", JsonPrimitive(zx.revenueTiyn < 0))
                 }
             )
             put(
@@ -169,7 +174,7 @@ object OfdReportRequestBuilder {
                         add(
                             buildJsonObject {
                                 put("operation", JsonPrimitive(op))
-                                put("sum", OfdCommonRequestHelper.moneyObject(sum, 0))
+                                put("sum", OfdCommonRequestHelper.moneyFromTiyn(sum))
                             }
                         )
                     }
@@ -182,7 +187,7 @@ object OfdReportRequestBuilder {
                         add(
                             buildJsonObject {
                                 put("operation", JsonPrimitive(op))
-                                put("sum", OfdCommonRequestHelper.moneyObject(sum, 0))
+                                put("sum", OfdCommonRequestHelper.moneyFromTiyn(sum))
                             }
                         )
                     }
@@ -196,7 +201,7 @@ object OfdReportRequestBuilder {
                             buildJsonObject {
                                 put("operation", JsonPrimitive(op.operation))
                                 put("count", JsonPrimitive(op.count.toInt()))
-                                put("sum", OfdCommonRequestHelper.moneyObject(op.sumBills, 0))
+                                put("sum", OfdCommonRequestHelper.moneyFromTiyn(op.sumTiyn))
                             }
                         )
                     }
@@ -217,7 +222,7 @@ object OfdReportRequestBuilder {
                                                 buildJsonObject {
                                                     put("operation", JsonPrimitive(op.operation))
                                                     put("count", JsonPrimitive(op.count.toInt()))
-                                                    put("sum", OfdCommonRequestHelper.moneyObject(op.sumBills, 0))
+                                                    put("sum", OfdCommonRequestHelper.moneyFromTiyn(op.sumTiyn))
                                                 }
                                             )
                                         }
@@ -236,7 +241,7 @@ object OfdReportRequestBuilder {
                             buildJsonObject {
                                 put("operation", JsonPrimitive(op.operation))
                                 put("count", JsonPrimitive(op.count.toInt()))
-                                put("sum", OfdCommonRequestHelper.moneyObject(op.sumBills, 0))
+                                put("sum", OfdCommonRequestHelper.moneyFromTiyn(op.sumTiyn))
                             }
                         )
                     }
@@ -250,7 +255,7 @@ object OfdReportRequestBuilder {
                             buildJsonObject {
                                 put("operation", JsonPrimitive(op.operation))
                                 put("count", JsonPrimitive(op.count.toInt()))
-                                put("sum", OfdCommonRequestHelper.moneyObject(op.sumBills, 0))
+                                put("sum", OfdCommonRequestHelper.moneyFromTiyn(op.sumTiyn))
                             }
                         )
                     }
@@ -264,7 +269,7 @@ object OfdReportRequestBuilder {
                             buildJsonObject {
                                 put("operation", JsonPrimitive(op.operation))
                                 put("count", JsonPrimitive(op.count.toInt()))
-                                put("sum", OfdCommonRequestHelper.moneyObject(op.sumBills, 0))
+                                put("sum", OfdCommonRequestHelper.moneyFromTiyn(op.sumTiyn))
                             }
                         )
                     }
@@ -279,7 +284,7 @@ object OfdReportRequestBuilder {
                                 put("operation", JsonPrimitive(t.operation))
                                 put("ticketsTotalCount", JsonPrimitive(t.ticketsTotalCount.toInt()))
                                 put("ticketsCount", JsonPrimitive(t.ticketsCount.toInt()))
-                                put("ticketsSum", OfdCommonRequestHelper.moneyObject(t.ticketsSumBills, 0))
+                                put("ticketsSum", OfdCommonRequestHelper.moneyFromTiyn(t.ticketsSumTiyn))
                                 put(
                                     "payments",
                                     buildJsonArray {
@@ -287,12 +292,12 @@ object OfdReportRequestBuilder {
                                             if (it.payment == "PAYMENT_ELECTRONIC") "PAYMENT_CARD" else it.payment
                                         }
                                         grouped.forEach { (pay, list) ->
-                                            val totalSum = list.sumOf { it.sumBills }
+                                            val totalSum = list.sumOf { it.sumTiyn }
                                             val totalCount = list.sumOf { it.count }
                                             add(
                                                 buildJsonObject {
                                                     put("payment", JsonPrimitive(pay))
-                                                    put("sum", OfdCommonRequestHelper.moneyObject(totalSum, 0))
+                                                    put("sum", OfdCommonRequestHelper.moneyFromTiyn(totalSum))
                                                     put("count", JsonPrimitive(totalCount.toInt()))
                                                 }
                                             )
@@ -300,9 +305,9 @@ object OfdReportRequestBuilder {
                                     }
                                 )
                                 put("offlineCount", JsonPrimitive(t.offlineCount.toInt()))
-                                put("discountSum", OfdCommonRequestHelper.moneyObject(t.discountSumBills, 0))
-                                put("markupSum", OfdCommonRequestHelper.moneyObject(t.markupSumBills, 0))
-                                put("changeSum", OfdCommonRequestHelper.moneyObject(t.changeSumBills, 0))
+                                put("discountSum", OfdCommonRequestHelper.moneyFromTiyn(t.discountSumTiyn))
+                                put("markupSum", OfdCommonRequestHelper.moneyFromTiyn(t.markupSumTiyn))
+                                put("changeSum", OfdCommonRequestHelper.moneyFromTiyn(t.changeSumTiyn))
                             }
                         )
                     }
@@ -317,7 +322,7 @@ object OfdReportRequestBuilder {
                                 put("operation", JsonPrimitive(m.operation))
                                 put("operationsTotalCount", JsonPrimitive(m.operationsTotalCount.toInt()))
                                 put("operationsCount", JsonPrimitive(m.operationsCount.toInt()))
-                                put("operationsSum", OfdCommonRequestHelper.moneyObject(m.operationsSumBills, 0))
+                                put("operationsSum", OfdCommonRequestHelper.moneyFromTiyn(m.operationsSumTiyn))
                                 put("offlineCount", JsonPrimitive(m.offlineCount.toInt()))
                             }
                         )
@@ -342,18 +347,15 @@ object OfdReportRequestBuilder {
                                                     put("operation", JsonPrimitive(op.operation))
                                                     put(
                                                         "turnover",
-                                                        OfdCommonRequestHelper.moneyObject(op.turnoverBills, 0)
+                                                        OfdCommonRequestHelper.moneyFromTiyn(op.turnoverTiyn)
                                                     )
                                                     put(
                                                         "turnoverWithoutTax",
-                                                        OfdCommonRequestHelper.moneyObject(
-                                                            op.turnoverWithoutTaxBills,
-                                                            0
-                                                        )
+                                                        OfdCommonRequestHelper.moneyFromTiyn(op.turnoverWithoutTaxTiyn)
                                                     )
                                                     put(
                                                         "sum",
-                                                        OfdCommonRequestHelper.moneyObject(op.taxSumBills, 0)
+                                                        OfdCommonRequestHelper.moneyFromTiyn(op.taxSumTiyn)
                                                     )
                                                 }
                                             )

@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.api.model.kkm
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
+
 /**
  * Запрос на проведение операции с наличными (внесение/изъятие).
  *
@@ -9,7 +11,7 @@ package io.github.texport.superkassa.core.domain.api.model.kkm
  */
 data class CashOperationRequest(
     val pin: String = "",
-    val amount: Double,
+    val amount: Decimal,
     val idempotencyKey: String
 ) {
     /**

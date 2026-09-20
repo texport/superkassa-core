@@ -607,17 +607,6 @@ td.num { white-space: nowrap; font-weight: 500; }
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.05);
     box-shadow: 0 4px 12px var(--m3-shadow);
 }
-.qr::after {
-    content: "Scan to verify / Тексеру үшін сканерлеңіз";
-    display: block;
-    margin-top: 6px;
-    font-size: 0.8em;
-    color: #475569;
-    color: var(--m3-on-surface-variant);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
 .item-row-card {
     background: #f1f5f9;
     background: var(--m3-surface-variant);
@@ -885,14 +874,14 @@ body { background-color: #1e1d20; }
 </div>
 
             <fieldset class="section-card">
-    <legend class="card-label">БАҚ туралы ақпарат / Информация о ККМ</legend>
+    <legend class="card-label">БКМ туралы ақпарат / Информация о ККМ</legend>
     <table class="meta-table" style="margin-top: 4px;">
-        <tr><td>БАҚ ID / ККМ ID</td><td style="word-break: break-all; white-space: normal;">kkm-123</td></tr>
-        <tr><td>ТНМ / РНМ</td><td>RN-999888777</td></tr>
+        <tr><td>БКМ ID / ККМ ID</td><td style="word-break: break-all; white-space: normal;">kkm-123</td></tr>
+        <tr><td>МТН / РНМ</td><td>RN-999888777</td></tr>
         <tr><td>МЗН / ЗНМ</td><td>FN-777666</td></tr>
         <tr><td>Ауысым № / Смена №</td><td>5</td></tr>
         <tr><td>Құжат № / Документ №</td><td style="word-break: break-all; white-space: normal;">105</td></tr>
-        <tr><td>Күні мен уақыты / Дата и время</td><td>23.06.2026 14:33:20</td></tr>
+        <tr><td>Күні мен уақыты / Дата и время</td><td>23.06.2026 12:33:20</td></tr>
         
     </table>
 </fieldset>
@@ -900,7 +889,7 @@ body { background-color: #1e1d20; }
                                 <fieldset class="tax-row-card" style="margin-top: 14px; margin-bottom: 8px;">
     <legend class="card-label"><span class="lang-fraction"><span class="lang-fraction-top">Қайтаруға негіз болған чек</span><span class="lang-fraction-bottom">Чек-основание для возврата</span></span></legend>
     <table class="tax-row-table">
-        <tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Фискалдық белгі:</span><span class="lang-fraction-bottom">Фискальный признак:</span></span></td><td class="tax-sum-cell num bold" style="color: var(--m3-on-surface);">104</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Күні мен уақыты</span><span class="lang-fraction-bottom">Дата и время</span></span></td><td class="tax-sum-cell num" style="color: var(--m3-on-surface);">23.06.2026 14:33:20</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">ТНМ</span><span class="lang-fraction-bottom">РНМ</span></span></td><td class="tax-sum-cell num" style="color: var(--m3-on-surface);">kkm-123</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Чек сомасы</span><span class="lang-fraction-bottom">Сумма чека</span></span></td><td class="tax-sum-cell num bold">1000.00</td></tr>
+        <tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Фискалдық белгі:</span><span class="lang-fraction-bottom">Фискальный признак:</span></span></td><td class="tax-sum-cell num bold" style="color: var(--m3-on-surface);">104</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Күні мен уақыты</span><span class="lang-fraction-bottom">Дата и время</span></span></td><td class="tax-sum-cell num" style="color: var(--m3-on-surface);">23.06.2026 12:33:20</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">МТН</span><span class="lang-fraction-bottom">РНМ</span></span></td><td class="tax-sum-cell num" style="color: var(--m3-on-surface);">kkm-123</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Чек сомасы</span><span class="lang-fraction-bottom">Сумма чека</span></span></td><td class="tax-sum-cell num bold">1000.00</td></tr>
     </table>
 </fieldset>
         <div class="rule"></div>
@@ -960,7 +949,7 @@ body { background-color: #1e1d20; }
                         <div class="rule"></div>
             <table class="meta-table">
                 <tr><td>Фискалдық белгі: / Фискальный признак:</td><td class="bold">1234567890</td></tr>
-                <tr><td>ФДО: / ОФД:</td><td>KAZAKHTELECOM</td></tr>
+                <tr><td>ФДО: / ОФД:</td><td><span class="lang-fraction"><span class="lang-fraction-top">«Қазақтелеком» АҚ</span><span class="lang-fraction-bottom">АО «Казахтелеком»</span></span></td></tr>
             </table>
             
             <div class="receipt-link center">
@@ -976,7 +965,6 @@ body { background-color: #1e1d20; }
             
             <div class="footer center">
     
-    <div class="footer-item muted">Құжаттың баспа түрі. / Печатная форма документа.</div>
     
 </div>
     </div>

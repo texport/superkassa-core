@@ -16,7 +16,7 @@ class ZxOperationsBlockBuilderTest {
             OperationAggregate(
                 operation = "OPERATION_SELL",
                 count = 2L,
-                sumBills = 2_000L
+                sumTiyn = 2_000L
             )
         )
 
@@ -72,7 +72,7 @@ class ZxOperationsBlockBuilderTest {
             OperationAggregate(
                 operation = "OPERATION_SELL",
                 count = 3L,
-                sumBills = 3_000L
+                sumTiyn = 3_000L
             )
         )
 
@@ -86,25 +86,25 @@ class ZxOperationsBlockBuilderTest {
         assertEquals(4, first.operations.size)
         val firstSell = first.operations.first { it.operation == "OPERATION_SELL" }
         assertEquals(2L, firstSell.count)
-        assertEquals(2_000L, firstSell.sumBills)
+        assertEquals(2_000L, firstSell.sumTiyn)
         // Остальные операции для секции "001" должны быть с нулевыми значениями.
         first.operations.filter { it.operation != "OPERATION_SELL" }.forEach {
             assertEquals(0L, it.count)
-            assertEquals(0L, it.sumBills)
+            assertEquals(0L, it.sumTiyn)
         }
 
         assertEquals("002", second.sectionCode)
         assertEquals(4, second.operations.size)
         val secondSell = second.operations.first { it.operation == "OPERATION_SELL" }
         assertEquals(1L, secondSell.count)
-        assertEquals(1_000L, secondSell.sumBills)
+        assertEquals(1_000L, secondSell.sumTiyn)
         second.operations.filter { it.operation != "OPERATION_SELL" }.forEach {
             assertEquals(0L, it.count)
-            assertEquals(0L, it.sumBills)
+            assertEquals(0L, it.sumTiyn)
         }
 
         // Убеждаемся, что fallback не используется, когда есть реальные секционные счётчики.
-        assertTrue(sections.flatMap { it.operations }.all { it.count != 3L && it.sumBills != 3_000L })
+        assertTrue(sections.flatMap { it.operations }.all { it.count != 3L && it.sumTiyn != 3_000L })
     }
 
     @Test
@@ -134,39 +134,39 @@ class ZxOperationsBlockBuilderTest {
         // Для SELL значения берутся из счетчиков.
         with(findOp(operations, "OPERATION_SELL")) {
             assertEquals(2L, count)
-            assertEquals(2_000L, sumBills)
+            assertEquals(2_000L, sumTiyn)
         }
         with(findOp(discounts, "OPERATION_SELL")) {
             assertEquals(2L, count)
-            assertEquals(100L, sumBills)
+            assertEquals(100L, sumTiyn)
         }
         with(findOp(markups, "OPERATION_SELL")) {
             assertEquals(2L, count)
-            assertEquals(50L, sumBills)
+            assertEquals(50L, sumTiyn)
         }
         with(findOp(totalResult, "OPERATION_SELL")) {
             // totalResult = OPERATION_SUM - DISCOUNT_SUM + MARKUP_SUM.
             assertEquals(2L, count)
-            assertEquals(2_000L - 100L + 50L, sumBills)
+            assertEquals(2_000L - 100L + 50L, sumTiyn)
         }
 
         // Для остальных операций значения должны быть нулевыми.
         listOf("OPERATION_SELL_RETURN", "OPERATION_BUY", "OPERATION_BUY_RETURN").forEach { op ->
             with(findOp(operations, op)) {
                 assertEquals(0L, count)
-                assertEquals(0L, sumBills)
+                assertEquals(0L, sumTiyn)
             }
             with(findOp(discounts, op)) {
                 assertEquals(0L, count)
-                assertEquals(0L, sumBills)
+                assertEquals(0L, sumTiyn)
             }
             with(findOp(markups, op)) {
                 assertEquals(0L, count)
-                assertEquals(0L, sumBills)
+                assertEquals(0L, sumTiyn)
             }
             with(findOp(totalResult, op)) {
                 assertEquals(0L, count)
-                assertEquals(0L, sumBills)
+                assertEquals(0L, sumTiyn)
             }
         }
     }

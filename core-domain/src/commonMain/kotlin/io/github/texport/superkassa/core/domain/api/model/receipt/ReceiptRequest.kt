@@ -35,10 +35,19 @@ data class ReceiptRequest(
     val change: Money? = null,
     val idempotencyKey: String,
     val parentTicket: ParentTicket? = null,
+    /** Отраслевые реквизиты чека, если отрасль объявлена. */
+    val domain: ReceiptDomain? = null,
     val taxRegime: TaxRegime = TaxRegime.NO_VAT,
     val defaultVatGroup: VatGroup? = null,
     val discount: Money? = null,
     val markup: Money? = null,
     val customerBin: String? = null,
-    val ticketTaxes: List<TaxLine>? = null
+    val ticketTaxes: List<TaxLine>? = null,
+    /**
+     * Кто оформил чек.
+     *
+     * Имя, а не пин: пин на диск не пишется никогда, а разбор отказа ОФД
+     * без имени кассира упирается в «кто-то пробил в 14:53».
+     */
+    val operatorName: String? = null
 )

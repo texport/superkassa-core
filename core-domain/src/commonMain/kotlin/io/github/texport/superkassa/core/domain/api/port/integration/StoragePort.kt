@@ -122,15 +122,6 @@ interface StoragePort {
     fun deleteKkm(id: String): Boolean
 
     /**
-     * Проверяет наличие автономной очереди по кассе (queue_task, lane=OFFLINE).
-     *
-     * @param kkmId уникальный идентификатор ККМ.
-     * @return `true`, если в БД есть задачи в офлайн-очереди; `false` в противном случае.
-     * @deprecated Используйте [OfflineQueuePort.canSendDirectly] — офлайн-очередь является единственным источником истины.
-     */
-    fun hasOfflineQueue(kkmId: String): Boolean
-
-    /**
      * Ставит задачу в очередь выполнения (queue_task).
      *
      * @param dto данные задачи для постановки в очередь.
@@ -150,14 +141,14 @@ interface StoragePort {
     fun listQueueTasksByCashbox(cashboxId: String, lane: String, limit: Int, offset: Int = 0): List<QueueTask>
 
     /**
-     * Возвращает следующую ожидающую выполнения задачу в очереди для указанной кассы и потока.
+     * Возвращает список задач в очереди, отфильтрованных по набору статусов.
      *
      * @param cashboxId идентификатор кассы.
      * @param lane поток обработки задач.
-     * @param now текущее время для фильтрации задач по времени следующей попытки выполнения.
-     * @return следующая задача [QueueTask] или `null`, если очередь пуста.
+     * @param statuses набор строковых статусов для фильтрации.
+     * @return список задач [QueueTask].
      */
-    fun nextPendingQueueTask(cashboxId: String, lane: String, now: Long): QueueTask?
+    fun getQueueTasksByStatus(cashboxId: String, lane: String, statuses: Set<String>): List<QueueTask>
 
     /**
      * Обновляет статус выполнения задачи в очереди.
@@ -259,7 +250,6 @@ interface StoragePort {
      * @param userId уникальный идентификатор пользователя.
      * @param name имя пользователя.
      * @param role роль пользователя в системе [UserRole] (например, кассир, админ).
-     * @param pin открытый PIN-код (если применимо/требуется).
      * @param pinHash криптографический хеш PIN-кода.
      * @param createdAt время создания пользователя.
      * @return `true`, если пользователь успешно создан; `false` в противном случае.
@@ -269,7 +259,6 @@ interface StoragePort {
         userId: String,
         name: String,
         role: UserRole,
-        pin: String,
         pinHash: String,
         createdAt: Long
     ): Boolean
@@ -282,7 +271,6 @@ interface StoragePort {
      * @param userId уникальный идентификатор пользователя.
      * @param name новое имя пользователя (опционально).
      * @param role новая роль пользователя (опционально).
-     * @param pin новый PIN-код (опционально).
      * @param pinHash новый хеш PIN-кода (опционально).
      * @return `true`, если пользователь обновлен; `false` в противном случае.
      */
@@ -291,7 +279,6 @@ interface StoragePort {
         userId: String,
         name: String?,
         role: UserRole?,
-        pin: String?,
         pinHash: String?
     ): Boolean
 
@@ -439,6 +426,17 @@ interface StoragePort {
     fun findFiscalDocumentById(id: String): FiscalDocumentSnapshot?
 
     /**
+     * Обновляет официальный номер фискального документа после получения ответа от ОФД.
+     */
+    fun updateDocumentNumber(documentId: String, docNo: Long): Boolean
+
+    /**
+     * Проставляет сквозной номер печатного документа, присвоенный кассой.
+     * В отличие от docNo не зависит от ответа ОФД и не прерывается в разрыве связи.
+     */
+    fun updatePrintedDocumentNumber(documentId: String, number: Long): Boolean
+
+    /**
      * Возвращает фискальный документ и сохранённые исходные параметры чека (payload) по идентификатору документа.
      * Используется для повторного рендеринга чека в HTML/PDF.
      *
@@ -562,7 +560,6 @@ interface StoragePort {
      * @return `true`, если результат сохранен успешно; `false` в противном случае.
      */
     fun updateIdempotencyResponse(kkmId: String, idempotencyKey: String, responseRef: String?): Boolean
-
 }
 
 /**

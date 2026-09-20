@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.api.model.receipt
 
+import kotlinx.serialization.Serializable
+
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 
@@ -11,6 +13,7 @@ import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
  * @property taxBase Налогооблагаемая база (сумма облагаемого оборота без учета НДС).
  * @property taxSum Рассчитанная сумма налога.
  */
+@Serializable
 data class TaxLine(
     val vatGroup: VatGroup,
     val percent: Int,

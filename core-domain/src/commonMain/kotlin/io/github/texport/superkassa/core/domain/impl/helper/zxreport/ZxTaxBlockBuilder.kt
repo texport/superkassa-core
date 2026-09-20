@@ -58,9 +58,9 @@ object ZxTaxBlockBuilder {
 
                 TaxOperationAggregate(
                     operation = op,
-                    turnoverBills = turnover,
-                    turnoverWithoutTaxBills = turnoverNoTax,
-                    taxSumBills = sum
+                    turnoverTiyn = turnover,
+                    turnoverWithoutTaxTiyn = turnoverNoTax,
+                    taxSumTiyn = sum
                 )
             }
 

@@ -58,7 +58,7 @@ class StorageBackedQueueStorageAdapterTest {
     }
 
     @Test
-    fun testNextPending() {
+    fun testGetCommandsByStatus() {
         val task = QueueTask(
             id = "cmd-1",
             cashboxId = "kkm-1",
@@ -72,16 +72,17 @@ class StorageBackedQueueStorageAdapterTest {
             lastError = "error"
         )
 
-        every { storage.nextPendingQueueTask("kkm-1", "OFFLINE", 150L) } returns task
-        val command = adapter.nextPending("kkm-1", QueueLane.OFFLINE, 150L)
-        assertNotNull(command)
+        every { storage.getQueueTasksByStatus("kkm-1", "OFFLINE", setOf("PENDING")) } returns listOf(task)
+        val commands = adapter.getCommandsByStatus("kkm-1", QueueLane.OFFLINE, setOf(QueueStatus.PENDING))
+        assertEquals(1, commands.size)
+        val command = commands[0]
         assertEquals("cmd-1", command.id)
         assertEquals(QueueLane.OFFLINE, command.lane)
         assertEquals(QueueCommandType.TICKET, command.type)
         assertEquals(QueueStatus.PENDING, command.status)
 
-        every { storage.nextPendingQueueTask("kkm-1", "OFFLINE", 150L) } returns null
-        assertNull(adapter.nextPending("kkm-1", QueueLane.OFFLINE, 150L))
+        every { storage.getQueueTasksByStatus("kkm-1", "OFFLINE", setOf("PENDING")) } returns emptyList()
+        assertTrue(adapter.getCommandsByStatus("kkm-1", QueueLane.OFFLINE, setOf(QueueStatus.PENDING)).isEmpty())
     }
 
     @Test
@@ -136,40 +137,5 @@ class StorageBackedQueueStorageAdapterTest {
         assertFalse(adapter.deleteByCashbox("kkm-1"))
     }
 
-    @Test
-    fun testHasPendingCommands() {
-        val taskPending = QueueTask(
-            id = "cmd-1",
-            cashboxId = "kkm-1",
-            lane = "OFFLINE",
-            type = "TICKET",
-            payloadRef = "doc-1",
-            createdAt = 100L,
-            status = "PENDING",
-            attempt = 1,
-            nextAttemptAt = null,
-            lastError = null
-        )
-        val taskSent = QueueTask(
-            id = "cmd-2",
-            cashboxId = "kkm-1",
-            lane = "OFFLINE",
-            type = "TICKET",
-            payloadRef = "doc-2",
-            createdAt = 100L,
-            status = "SENT",
-            attempt = 1,
-            nextAttemptAt = null,
-            lastError = null
-        )
 
-        every { storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 100, 0) } returns listOf(taskPending, taskSent)
-        assertTrue(adapter.hasPendingCommands("kkm-1", QueueLane.OFFLINE))
-
-        every { storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 100, 0) } returns listOf(taskSent)
-        assertFalse(adapter.hasPendingCommands("kkm-1", QueueLane.OFFLINE))
-
-        every { storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 100, 0) } returns emptyList()
-        assertFalse(adapter.hasPendingCommands("kkm-1", QueueLane.OFFLINE))
-    }
 }

@@ -37,10 +37,15 @@ internal class StorageBackedQueueStorageAdapter(
     }
 
     /**
-     * Выбирает следующую готовую к обработке (PENDING) оффлайн-задачу для указанной кассы.
+     * Выбирает все оффлайн-задачи для указанной кассы по статусам.
      */
-    override fun nextPending(cashboxId: String, lane: QueueLane, now: Long): QueueCommand? {
-        return storage.nextPendingQueueTask(cashboxId, lane.name, now)?.let { toCommand(it) }
+    override fun getCommandsByStatus(
+        cashboxId: String,
+        lane: QueueLane,
+        statuses: Set<QueueStatus>
+    ): List<QueueCommand> {
+        return storage.getQueueTasksByStatus(cashboxId, lane.name, statuses.map { it.name }.toSet())
+            .map { toCommand(it) }
     }
 
     /**
@@ -81,11 +86,6 @@ internal class StorageBackedQueueStorageAdapter(
      */
     override fun deleteByCashbox(cashboxId: String): Boolean {
         return storage.deleteQueueTasksByCashbox(cashboxId)
-    }
-
-    override fun hasPendingCommands(cashboxId: String, lane: QueueLane): Boolean {
-        return storage.listQueueTasksByCashbox(cashboxId, lane.name, limit = 100, offset = 0)
-            .any { it.status != QueueStatus.SENT.name }
     }
 
     /**

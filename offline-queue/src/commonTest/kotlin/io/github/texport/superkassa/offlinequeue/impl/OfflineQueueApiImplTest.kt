@@ -43,17 +43,17 @@ class OfflineQueueApiImplTest {
             val nextAttemptAt: Long?
         )
 
-        data class NextPendingParams(val cashboxId: String, val lane: QueueLane, val now: Long)
+        data class NextPendingParams(val cashboxId: String, val lane: QueueLane)
 
         override fun enqueue(command: QueueCommand): Boolean {
             commands.add(command)
             return true
         }
 
-        override fun nextPending(cashboxId: String, lane: QueueLane, now: Long): QueueCommand? {
-            lastNextPendingParams = NextPendingParams(cashboxId, lane, now)
+        override fun getCommandsByStatus(cashboxId: String, lane: QueueLane, statuses: Set<QueueStatus>): List<QueueCommand> {
+            lastNextPendingParams = NextPendingParams(cashboxId, lane)
             nextPendingError?.let { throw it }
-            return nextPendingResponse
+            return listOfNotNull(nextPendingResponse)
         }
 
         override fun updateStatus(
@@ -84,9 +84,7 @@ class OfflineQueueApiImplTest {
             return true
         }
 
-        override fun hasPendingCommands(cashboxId: String, lane: QueueLane): Boolean {
-            return hasPendingCommandsResult
-        }
+
     }
 
     private class StubLock : LeaseLockPort {
@@ -125,7 +123,8 @@ class OfflineQueueApiImplTest {
         cashboxId: String = "c1",
         status: QueueStatus = QueueStatus.PENDING,
         attempt: Int = 0,
-        type: QueueCommandType = QueueCommandType.TICKET
+        type: QueueCommandType = QueueCommandType.TICKET,
+        nextAttemptAt: Long? = null
     ): QueueCommand = QueueCommand(
         id = id,
         cashboxId = cashboxId,
@@ -134,7 +133,8 @@ class OfflineQueueApiImplTest {
         payloadRef = "ref$id",
         createdAt = 1000L,
         status = status,
-        attempt = attempt
+        attempt = attempt,
+        nextAttemptAt = nextAttemptAt
     )
 
     private fun service(
@@ -143,16 +143,20 @@ class OfflineQueueApiImplTest {
         handler: QueueCommandHandlerPort = QueueCommandHandlerPort { _, _ -> DispatchResult(DispatchStatus.SENT) },
         backoffPolicy: BackoffPolicy = BackoffPolicy { _, _ -> 0L },
         timeProvider: TimeProvider = TimeProvider { 10000L },
-        maxAttempts: Int = Int.MAX_VALUE
+        maxAttempts: Int = Int.MAX_VALUE,
+        now: Long? = null
     ): OfflineQueueApiImpl = OfflineQueueApiImpl(
         storage = storage,
         lockPort = lock,
         handler = handler,
         backoffPolicy = backoffPolicy,
         ownerId = "node-1",
-        timeProvider = timeProvider,
+        timeProvider = now?.let { moment -> TimeProvider { moment } } ?: timeProvider,
         maxAttempts = maxAttempts
     )
+
+    /** Срок аренды очереди по умолчанию: на нём построен расчёт брошенных задач. */
+    private val LEASE_MS = 15_000L
 
     private fun trilingual(message: String): String = "RU: $message | KK: $message | EN: $message"
 
@@ -199,10 +203,10 @@ class OfflineQueueApiImplTest {
         val storage = StubStorage()
         val service = service(storage)
 
-        storage.hasPendingCommandsResult = true
+        storage.nextPendingResponse = command()
         assertTrue(service.hasOfflineQueue("c1"))
 
-        storage.hasPendingCommandsResult = false
+        storage.nextPendingResponse = null
         assertFalse(service.hasOfflineQueue("c1"))
     }
 
@@ -215,6 +219,31 @@ class OfflineQueueApiImplTest {
 
         assertTrue(service.clearQueue("c1"))
         assertEquals(0, storage.commands.size)
+    }
+
+    @Test
+    fun testWaitingHeadIsNotOvertakenByALaterCommand() {
+        // Спецификация CPCR: накопленные сообщения досылаются строго в том
+        // порядке, в каком они попали в очередь. Голова очереди ждёт повтора,
+        // и более поздний чек не имеет права уйти в ОФД впереди неё.
+        val storage = StubStorage()
+        val dispatched = mutableListOf<String>()
+        val service = service(
+            storage,
+            handler = QueueCommandHandlerPort { cmd, _ ->
+                dispatched.add(cmd.id)
+                DispatchResult(DispatchStatus.SENT)
+            },
+            timeProvider = TimeProvider { 10_000L }
+        )
+        storage.commands.add(
+            command(id = "ранний", status = QueueStatus.FAILED)
+                .copy(createdAt = 1000L, nextAttemptAt = 50_000L)
+        )
+        storage.commands.add(command(id = "поздний").copy(createdAt = 2000L))
+
+        assertFalse(service.processNext("c1", QueueLane.OFFLINE))
+        assertEquals(emptyList(), dispatched)
     }
 
     @Test
@@ -448,7 +477,7 @@ class OfflineQueueApiImplTest {
         storage.nextPendingResponse = null
         assertFalse(service.processNext("c1", QueueLane.OFFLINE))
         assertTrue(lock.lockAcquired.not()) // Освобождается в блоке finally
-        assertEquals(StubStorage.NextPendingParams("c1", QueueLane.OFFLINE, 10000L), storage.lastNextPendingParams)
+        assertEquals(StubStorage.NextPendingParams("c1", QueueLane.OFFLINE), storage.lastNextPendingParams)
         assertEquals("c1", lock.releasedId)
         assertEquals(null, storage.lastInProgressId)
     }
@@ -528,6 +557,94 @@ class OfflineQueueApiImplTest {
         assertTrue(service.processNext("c1", QueueLane.OFFLINE))
         assertEquals(
             StubStorage.StatusUpdate("1", QueueStatus.FAILED, 1, trilingual("try later"), 42000L),
+            storage.lastStatusUpdate
+        )
+    }
+
+    /**
+     * Отвергнутая окончательно команда снимается с повтора совсем.
+     *
+     * Времени следующей попытки у неё нет и быть не может: повторять
+     * нечего. Без этого состояния очередь повторяла негодную команду
+     * вечно — на стенде счётчик дошёл до 530 попыток.
+     */
+    /**
+     * Задачу, брошенную умершим обработчиком, очередь забирает обратно.
+     *
+     * Без этого обычный перезапуск узла терял документы навсегда: они
+     * оставались в `IN_PROGRESS`, выборка их не брала, и до ОФД они
+     * не доходили никогда. На стенде так осталось шесть чеков.
+     */
+    @Test
+    fun testAbandonedCommandIsPickedUpAgain() {
+        val claimedAt = 1_000L
+        val storage = StubStorage().apply {
+            nextPendingResponse = command(status = QueueStatus.IN_PROGRESS, nextAttemptAt = claimedAt)
+        }
+        val service = service(
+            storage = storage,
+            handler = QueueCommandHandlerPort { _, _ -> DispatchResult(DispatchStatus.SENT) },
+            now = claimedAt + LEASE_MS * 2
+        )
+
+        assertTrue(service.processNext("c1", QueueLane.OFFLINE))
+        assertEquals(QueueStatus.SENT, storage.lastStatusUpdate?.status)
+    }
+
+    /** Пока обработчик жив, задачу у него не отбирают: документ ушёл бы дважды. */
+    @Test
+    fun testCommandInFlightIsLeftAlone() {
+        val claimedAt = 1_000L
+        val storage = StubStorage().apply {
+            nextPendingResponse = command(status = QueueStatus.IN_PROGRESS, nextAttemptAt = claimedAt)
+        }
+        val service = service(
+            storage = storage,
+            handler = QueueCommandHandlerPort { _, _ -> error("Живую задачу забирать нельзя") },
+            now = claimedAt + LEASE_MS
+        )
+
+        assertFalse(service.processNext("c1", QueueLane.OFFLINE))
+    }
+
+    /**
+     * Захват без времени оставила прежняя версия: она его не записывала.
+     * Такие задачи висели в `IN_PROGRESS` вечно, и вернуть их было не по чему.
+     */
+    @Test
+    fun testCommandClaimedWithoutTimeIsAbandoned() {
+        val storage = StubStorage().apply {
+            nextPendingResponse = command(status = QueueStatus.IN_PROGRESS, nextAttemptAt = null)
+        }
+        val service = service(
+            storage = storage,
+            handler = QueueCommandHandlerPort { _, _ -> DispatchResult(DispatchStatus.SENT) }
+        )
+
+        assertTrue(service.processNext("c1", QueueLane.OFFLINE))
+        assertEquals(QueueStatus.SENT, storage.lastStatusUpdate?.status)
+    }
+
+    @Test
+    fun testRejectedDispatchLeavesNoNextAttempt() {
+        val storage = StubStorage().apply { nextPendingResponse = command() }
+        val service = service(
+            storage = storage,
+            handler = QueueCommandHandlerPort { _, _ ->
+                DispatchResult(DispatchStatus.REJECTED, "document is not valid")
+            },
+            backoffPolicy = BackoffPolicy { _, _ -> error("Backoff should not be called") }
+        )
+
+        assertTrue(service.processNext("c1", QueueLane.OFFLINE))
+        assertEquals(
+            StubStorage.StatusUpdate(
+                "1",
+                QueueStatus.REJECTED,
+                1,
+                trilingual("document is not valid"),
+                null
+            ),
             storage.lastStatusUpdate
         )
     }

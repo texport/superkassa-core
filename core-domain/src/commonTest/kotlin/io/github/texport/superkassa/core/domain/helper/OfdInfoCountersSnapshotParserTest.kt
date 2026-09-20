@@ -67,15 +67,15 @@ class OfdInfoCountersSnapshotParserTest {
         assertEquals(12, snapshot.shiftNumber)
 
         val globalSellKey = CounterKeyFormats.NON_NULLABLE_SUM.format("OPERATION_SELL")
-        assertEquals(5000L, snapshot.globalCounters[globalSellKey])
+        assertEquals(500_000L, snapshot.globalCounters[globalSellKey])
 
         assertEquals(2L, snapshot.shiftCounters[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL")])
-        assertEquals(1000L, snapshot.shiftCounters[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
+        assertEquals(100_000L, snapshot.shiftCounters[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
         assertEquals(
-            4000L,
+            400_000L,
             snapshot.shiftCounters[CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL")]
         )
-        assertEquals(700L, snapshot.shiftCounters[CounterKeyFormats.CASH_SUM])
+        assertEquals(70_000L, snapshot.shiftCounters[CounterKeyFormats.CASH_SUM])
     }
 
     @Test
@@ -110,7 +110,7 @@ class OfdInfoCountersSnapshotParserTest {
         assertEquals(25, snapshot.shiftNumber)
 
         val globalBuyKey = CounterKeyFormats.NON_NULLABLE_SUM.format("OPERATION_BUY")
-        assertEquals(2100L, snapshot.globalCounters[globalBuyKey])
+        assertEquals(210_000L, snapshot.globalCounters[globalBuyKey])
         assertEquals(1L, snapshot.shiftCounters[CounterKeyFormats.REVENUE_IS_NEGATIVE])
     }
 

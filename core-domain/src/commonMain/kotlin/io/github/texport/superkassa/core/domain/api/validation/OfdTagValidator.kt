@@ -34,7 +34,7 @@ object OfdTagValidator {
                 CoreStrings.ofdEnvironmentUnknown(environmentId),
                 "OFD_ENVIRONMENT_UNKNOWN"
             )
-        if (!provider.endpoints.containsKey(environment)) {
+        if (!provider.supports(environment)) {
             throw ValidationException(
                 CoreStrings.ofdEnvironmentUnknown(environmentId),
                 "OFD_ENVIRONMENT_UNKNOWN"

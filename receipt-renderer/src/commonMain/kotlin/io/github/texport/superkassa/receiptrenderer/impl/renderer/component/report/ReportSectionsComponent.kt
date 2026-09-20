@@ -17,7 +17,7 @@ internal object ReportSectionsComponent {
     ): String {
         val cards = operations.joinToString("") { op ->
             val label = translateInlineKey(op.operation.toOperationKey())
-            val totalSumStr = formatAmount(op.sumBills)
+            val totalSumStr = formatAmount(op.sumTiyn)
             """
             <fieldset class="tax-row-card">
                 <legend class="card-label">$label</legend>
@@ -53,7 +53,7 @@ internal object ReportSectionsComponent {
             sec.operations.map { op ->
                 val opLabel = translateInlineKey(op.operation.toOperationKey())
                 val cardTitle = "${translateInlineKey("department")} ${sec.sectionCode} - $opLabel"
-                val totalSumStr = formatAmount(op.sumBills)
+                val totalSumStr = formatAmount(op.sumTiyn)
                 """
                 <fieldset class="tax-row-card">
                     <legend class="card-label">$cardTitle</legend>
@@ -94,14 +94,14 @@ internal object ReportSectionsComponent {
             } else {
                 translateInlineKey(mappedKey)
             }
-            val formattedSum = formatAmount(op.sumBills)
+            val cell = signedCell(op.sumTiyn, formatAmount(op.sumTiyn), "-", "var(--m3-error)")
             """
             <fieldset class="tax-row-card">
                 <legend class="card-label">$label</legend>
                 <table class="tax-row-table">
                     <tr>
                         <td class="tax-details-cell">${t("sum")}</td>
-                        <td class="tax-sum-cell" style="color: var(--m3-error); font-weight: bold;">-$formattedSum</td>
+                        $cell
                     </tr>
                 </table>
             </fieldset>
@@ -114,14 +114,14 @@ internal object ReportSectionsComponent {
             } else {
                 translateInlineKey(mappedKey)
             }
-            val formattedSum = formatAmount(op.sumBills)
+            val cell = signedCell(op.sumTiyn, formatAmount(op.sumTiyn), "+", "var(--m3-success)")
             """
             <fieldset class="tax-row-card">
                 <legend class="card-label">$label</legend>
                 <table class="tax-row-table">
                     <tr>
                         <td class="tax-details-cell">${t("sum")}</td>
-                        <td class="tax-sum-cell" style="color: var(--m3-success); font-weight: bold;">+$formattedSum</td>
+                        $cell
                     </tr>
                 </table>
             </fieldset>
@@ -144,7 +144,7 @@ internal object ReportSectionsComponent {
     ): String {
         val totalResultCards = totalResult.joinToString("") { op ->
             val label = translateInlineKey(op.operation.toTotalResultKey())
-            val formattedSum = formatAmount(op.sumBills)
+            val formattedSum = formatAmount(op.sumTiyn)
             """
             <fieldset class="tax-row-card highlighted">
                 <legend class="card-label">$label</legend>
@@ -168,4 +168,18 @@ internal object ReportSectionsComponent {
             </div>
         """.trimIndent()
     }
+
+    /**
+     * Ячейка суммы скидки или наценки.
+     *
+     * Знак и цвет ставятся только на настоящую сумму: «-0.00» красным
+     * читается как убыток, которого не было, а в смене без скидок таких
+     * строк четыре.
+     */
+    private fun signedCell(sumTiyn: Long, formatted: String, sign: String, color: String): String =
+        if (sumTiyn == 0L) {
+            """<td class="tax-sum-cell">$formatted</td>"""
+        } else {
+            """<td class="tax-sum-cell" style="color: $color; font-weight: bold;">$sign$formatted</td>"""
+        }
 }

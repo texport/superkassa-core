@@ -19,6 +19,11 @@ data class KkmResponse(
     val updatedAt: Long,
     @Schema(description = "Режим работы ККМ", example = "REGISTRATION") val mode: String,
     @Schema(description = "Состояние ККМ", example = "ACTIVE") val state: String,
+    @Schema(
+        description = "Название кассы, данное владельцем. Пусто у касс, заведённых до появления поля",
+        example = "Касса 2 на Достык"
+    )
+    val name: String? = null,
     @Schema(description = "ID провайдера ОФД", example = "kazakhtelecom")
     val ofdId: String? = null,
     @Schema(description = "Среда ОФД", example = "test") val ofdEnvironment: String? = null,
@@ -69,7 +74,7 @@ data class KkmResponse(
     val branding: ReceiptBrandingResponse? = null,
     @Schema(description = "Код причины блокировки ОФД")
     val blockReasonCode: Int? = null,
-    
+
     // Агрегированные статусы (для UI)
     @Schema(description = "Статус открытой смены (true = открыта, false = закрыта)", example = "true")
     val isShiftOpen: Boolean = false,
@@ -77,6 +82,14 @@ data class KkmResponse(
     val shiftOpenedAt: Long? = null,
     @Schema(description = "Количество чеков в офлайн-очереди", example = "5")
     val offlineQueueCount: Int = 0,
+    /**
+     * Сколько документов кассы до ОФД так и не дошло.
+     *
+     * Отбракованная задача из очереди уходит, а документ остаётся
+     * неотправленным: без этого числа касса выглядела чистой, хотя
+     * фискальный документ потерян.
+     */
+    val stuckQueueCount: Int = 0,
     @Schema(description = "Текст последней ошибки синхронизации с ОФД")
     val lastSyncError: String? = null,
     @Schema(description = "Режим программирования (касса заблокирована для настроек)", example = "false")

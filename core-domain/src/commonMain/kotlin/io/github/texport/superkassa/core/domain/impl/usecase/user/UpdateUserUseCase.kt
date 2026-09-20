@@ -58,7 +58,7 @@ class UpdateUserUseCase(
                 throw ForbiddenException(CoreStrings.userForbidden(), "USER_FORBIDDEN")
             }
             if (role != null && role != caller.role) {
-                throw ValidationException(CoreStrings.userForbidden(), "CASHIER_CANNOT_CHANGE_ROLE")
+                throw ValidationException(CoreStrings.cashierCannotChangeRole(), "CASHIER_CANNOT_CHANGE_ROLE")
             }
         }
 
@@ -77,18 +77,18 @@ class UpdateUserUseCase(
         }
 
         val updatedRole = role ?: existing.role
-        val updatedPin = userPin ?: existing.pin
-        if (updatedPin.isNullOrBlank()) {
+        if (userPin != null && userPin.isBlank()) {
             throw ValidationException(CoreStrings.userPinRequired(), "USER_PIN_REQUIRED")
         }
 
+        // Пин не пересчитывается, когда его не меняют: узел хранит только хеш,
+        // а прежний пин взять неоткуда. Хранилище понимает null как «не трогать».
         val success = storage.updateUser(
             kkmId = kkmId,
             userId = userId,
             name = updatedName,
             role = updatedRole,
-            pin = updatedPin,
-            pinHash = pinHasher.hash(updatedPin)
+            pinHash = userPin?.let { pinHasher.hash(it) }
         )
         if (!success) {
             throw ConflictException(CoreStrings.userPinConflict(), "USER_PIN_CONFLICT")
@@ -97,7 +97,6 @@ class UpdateUserUseCase(
             id = userId,
             name = updatedName,
             role = updatedRole,
-            pin = updatedPin,
             createdAt = existing.createdAt
         )
     }

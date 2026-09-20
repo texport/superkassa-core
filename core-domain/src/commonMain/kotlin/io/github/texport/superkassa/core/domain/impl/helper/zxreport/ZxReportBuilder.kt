@@ -33,8 +33,8 @@ object ZxReportBuilder {
         openShiftTimeMillis: Long,
         closeShiftTimeMillis: Long?
     ): ZxReportInput {
-        val cashSumBills = ZxCashBlockBuilder.resolveCashSum(counters)
-        val (revenueBills, revenueCoins) = ZxOperationsBlockBuilder.resolveRevenue(counters)
+        val cashSumTiyn = ZxCashBlockBuilder.resolveCashSum(counters)
+        val (revenueTiyn, revenueCoins) = ZxOperationsBlockBuilder.resolveRevenue(counters)
         val nonNullable = ZxCashBlockBuilder.resolveNonNullableSums(counters)
         val startShiftNonNullable = ZxCashBlockBuilder.resolveStartShiftNonNullableSums(counters)
 
@@ -53,8 +53,8 @@ object ZxReportBuilder {
             shiftNumber = shiftNumber,
             openShiftTimeMillis = openShiftTimeMillis,
             closeShiftTimeMillis = closeShiftTimeMillis,
-            cashSumBills = cashSumBills,
-            revenueBills = revenueBills,
+            cashSumTiyn = cashSumTiyn,
+            revenueTiyn = revenueTiyn,
             revenueCoins = revenueCoins,
             nonNullableSums = nonNullable,
             startShiftNonNullableSums = startShiftNonNullable,

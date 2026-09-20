@@ -2,6 +2,7 @@ package io.github.texport.superkassa.receiptrenderer.impl.renderer.report
 
 import io.github.texport.superkassa.core.domain.api.model.kkm.*
 import io.github.texport.superkassa.core.domain.api.model.shift.*
+import io.github.texport.superkassa.core.domain.api.model.zxreport.ZxReportInput
 
 import io.github.texport.superkassa.core.domain.impl.helper.zxreport.ZxReportBuilder
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.BaseDocumentRenderer
@@ -17,10 +18,47 @@ import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.MetadataB
 
 abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
 
+    /**
+     * Рисует отчёт по счётчикам смены этой кассы.
+     *
+     * Счётчики — то, как сменные итоги хранит касса; сам отчёт собирает
+     * из них [ZxReportBuilder]. Отчёт, пришедший готовым — например,
+     * из пакета протокола другой кассы, — рисуется вторым входом.
+     */
     protected fun renderZxReportHtml(
         titleKey: String,
         shift: ShiftInfo,
         counters: Map<String, Long>,
+        isZReport: Boolean,
+        kkm: KkmInfo,
+        ofdStatus: String?,
+        docNo: String? = null
+    ): String = renderZxReportHtml(
+        titleKey = titleKey,
+        report = ZxReportBuilder.build(
+            counters = counters,
+            dateTimeMillis = shift.closedAt ?: kotlin.time.Clock.System.now().toEpochMilliseconds(),
+            shiftNumber = shift.shiftNo.toInt(),
+            openShiftTimeMillis = shift.openedAt,
+            closeShiftTimeMillis = shift.closedAt
+        ),
+        isZReport = isZReport,
+        kkm = kkm,
+        ofdStatus = ofdStatus,
+        docNo = docNo
+    )
+
+    /**
+     * Рисует отчёт по готовым сменным итогам.
+     *
+     * Всё, что печатается в X- и Z-отчёте, лежит в [ZxReportInput]: номер
+     * смены, её границы, обороты, налоги, оплаты и остаток ящика. Смена
+     * как запись кассы здесь не нужна — и не может быть нужна, когда
+     * отчёт пробит на другой машине.
+     */
+    protected fun renderZxReportHtml(
+        titleKey: String,
+        report: ZxReportInput,
         isZReport: Boolean,
         kkm: KkmInfo,
         ofdStatus: String?,
@@ -30,13 +68,7 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
         fun t(key: String): String = translate(key, lang)
         fun translateInlineKey(key: String): String = translateInline(key, lang)
 
-        val reportInput = ZxReportBuilder.build(
-            counters = counters,
-            dateTimeMillis = shift.closedAt ?: kotlin.time.Clock.System.now().toEpochMilliseconds(),
-            shiftNumber = shift.shiftNo.toInt(),
-            openShiftTimeMillis = shift.openedAt,
-            closeShiftTimeMillis = shift.closedAt
-        )
+        val reportInput = report
 
         // 1. Meta-information setup for the base class
         val additionalMeta = MetadataBuilder { translateInlineKey(it) }.apply {
@@ -109,9 +141,9 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
         // 9. Cash and revenue operations
         val cashInPl = reportInput.moneyPlacements.firstOrNull { op -> op.operation == "MONEY_PLACEMENT_DEPOSIT" }
         val cashOutPl = reportInput.moneyPlacements.firstOrNull { op -> op.operation == "MONEY_PLACEMENT_WITHDRAWAL" }
-        val cashInSum = cashInPl?.operationsSumBills ?: 0L
+        val cashInSum = cashInPl?.operationsSumTiyn ?: 0L
         val cashInCount = cashInPl?.operationsCount ?: 0L
-        val cashOutSum = cashOutPl?.operationsSumBills ?: 0L
+        val cashOutSum = cashOutPl?.operationsSumTiyn ?: 0L
         val cashOutCount = cashOutPl?.operationsCount ?: 0L
 
         val cashOperationsHtml = ReportCashOpsComponent.render(
@@ -120,8 +152,8 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
                 cashInSum = cashInSum,
                 cashOutCount = cashOutCount,
                 cashOutSum = cashOutSum,
-                cashSumBills = reportInput.cashSumBills,
-                revenueBills = reportInput.revenueBills
+                cashSumTiyn = reportInput.cashSumTiyn,
+                revenueTiyn = reportInput.revenueTiyn
             ),
             t = { t(it) },
             translateInlineKey = { translateInlineKey(it) },
@@ -140,14 +172,16 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
             $cashOperationsHtml
         """.trimIndent()
 
+        val effectiveOfdStatus = ofdStatus ?: if (!isZReport) "SENT" else "DELIVERED"
+
         return renderStandardDocument(
             StandardDocumentInput(
                 titleKey = titleKey,
                 kkm = kkm,
                 createdAt = reportInput.dateTimeMillis,
-                shiftNo = shift.shiftNo,
+                shiftNo = reportInput.shiftNumber.toLong(),
                 docNo = docNo,
-                ofdStatus = ofdStatus,
+                ofdStatus = effectiveOfdStatus,
                 isFiscal = isZReport,
                 additionalMeta = additionalMeta,
                 bodyContent = bodyContent

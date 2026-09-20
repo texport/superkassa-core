@@ -22,7 +22,7 @@ class AuthorizeUserUseCaseTest {
 
     @Test
     fun testExecuteSuccess() {
-        val user = KkmUser("user-1", "Admin", UserRole.ADMIN, "1234", 100L)
+        val user = KkmUser("user-1", "Admin", UserRole.ADMIN, 100L)
         every { pinHasher.hash("1234") } returns "hash-1"
         every { storage.findUserByPin("kkm-1", "hash-1") } returns user
 
@@ -48,7 +48,7 @@ class AuthorizeUserUseCaseTest {
 
     @Test
     fun testExecuteDefaultPinAllowed() {
-        val user = KkmUser("user-1", "Admin", UserRole.ADMIN, "0000", 100L)
+        val user = KkmUser("user-1", "Admin", UserRole.ADMIN, 100L)
         every { pinHasher.hash("0000") } returns "hash-1"
         every { storage.findUserByPin("kkm-1", "hash-1") } returns user
 
@@ -67,7 +67,7 @@ class AuthorizeUserUseCaseTest {
 
     @Test
     fun testExecuteUserForbidden() {
-        val user = KkmUser("user-1", "Cashier", UserRole.CASHIER, "1234", 100L)
+        val user = KkmUser("user-1", "Cashier", UserRole.CASHIER, 100L)
         every { pinHasher.hash("1234") } returns "hash-2"
         every { storage.findUserByPin("kkm-1", "hash-2") } returns user
 
@@ -105,7 +105,7 @@ class AuthorizeUserUseCaseTest {
 
     @Test
     fun testRequireRoleSuccess() {
-        val user = KkmUser("user-1", "Admin", UserRole.ADMIN, "1234", 100L)
+        val user = KkmUser("user-1", "Admin", UserRole.ADMIN, 100L)
         every { pinHasher.hash("1234") } returns "hash-1"
         every { storage.findUserByPin("kkm-1", "hash-1") } returns user
 

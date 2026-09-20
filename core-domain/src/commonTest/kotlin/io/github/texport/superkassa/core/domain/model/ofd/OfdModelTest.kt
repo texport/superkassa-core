@@ -71,6 +71,15 @@ class OfdModelTest {
         }
     }
 
+    @Test
+    fun providerAnswersOnlyForEnvironmentsWithAddress() {
+        val expected = OfdProvider.KAZAKHTELECOM.endpoints.getValue(OfdEnvironment.PROD)
+        assertTrue(OfdProvider.KAZAKHTELECOM.supports(OfdEnvironment.PROD))
+        assertEquals(expected, OfdProvider.KAZAKHTELECOM.endpoint(OfdEnvironment.PROD))
+        assertFalse(OfdProvider.KAZAKHTELECOM.supports(OfdEnvironment.DEV))
+        assertNull(OfdProvider.KAZAKHTELECOM.endpoint(OfdEnvironment.DEV))
+    }
+
     private fun assertNotNullOrEmpty(str: String) {
         assertTrue(str.isNotEmpty())
     }

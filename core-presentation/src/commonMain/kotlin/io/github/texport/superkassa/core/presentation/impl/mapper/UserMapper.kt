@@ -8,7 +8,6 @@ object UserMapper {
     fun toResponse(user: KkmUser): UserResponse = UserResponse(
         userId = user.id,
         name = user.name,
-        role = UserRole.valueOf(user.role.name),
-        pin = user.pin
+        role = UserRole.valueOf(user.role.name)
     )
 }

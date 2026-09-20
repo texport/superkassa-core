@@ -66,9 +66,24 @@ class SyncOfdServiceInfoUseCase(
                 val currentInfo = kkm.ofdServiceInfo ?: kkmCommonHelper.defaultServiceInfo()
                 // Извлекаем из JSON ответа обновленные сервисные данные
                 val parsed = OfdResponseParser.extractServiceInfo(result.responseJson, currentInfo)
+                // Регистрационный и заводской номера приходят тем же ответом.
+                // Пока сверка брала одну организацию, касса оставалась
+                // с прежним номером — тем самым, который кассир видит
+                // в списке и на чеке.
+                val registration = OfdResponseParser.extractRegistrationNumber(result.responseJson)
+                val factory = OfdResponseParser.extractFactoryNumber(result.responseJson)
                 val freshKkm = storage.findKkmForUpdate(kkmId)
                 if (freshKkm != null) {
-                    storage.updateKkm(freshKkm.copy(updatedAt = clock.now(), ofdServiceInfo = parsed))
+                    storage.updateKkm(
+                        freshKkm.copy(
+                            updatedAt = clock.now(),
+                            ofdServiceInfo = parsed,
+                            registrationNumber = registration?.takeIf { it.isNotBlank() }
+                                ?: freshKkm.registrationNumber,
+                            factoryNumber = factory?.takeIf { it.isNotBlank() }
+                                ?: freshKkm.factoryNumber
+                        )
+                    )
                 }
             }
         }

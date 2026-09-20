@@ -80,6 +80,12 @@ object CounterKeyFormats {
     /** Текущая сумма наличных денег в кассе. */
     const val CASH_SUM = "cash.sum"
 
+    /** Сквозной номер документа, присвоенный кассой при работе в разрыве связи. */
+    const val OFFLINE_TICKET_NUMBER = "offline_ticket.number"
+
+    /** Сквозной номер печатного документа кассы. */
+    const val PRINTED_DOCUMENT_NUMBER = "printed_document.number"
+
     /** Выручка за смену. */
     const val REVENUE_SUM = "revenue.sum"
 

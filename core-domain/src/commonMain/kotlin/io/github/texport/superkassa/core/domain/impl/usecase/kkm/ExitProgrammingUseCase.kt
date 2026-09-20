@@ -24,6 +24,7 @@ class ExitProgrammingUseCase(
     private val draftState = KkmState.IDLE.name
     private val registeredMode = KkmMode.REGISTRATION.name
     private val registeredState = KkmState.ACTIVE.name
+    private val blockedState = KkmState.BLOCKED.name
 
     /**
      * Выводит ККМ из режима программирования в рамках транзакции.
@@ -39,7 +40,15 @@ class ExitProgrammingUseCase(
         return storage.inTransaction {
             val isDraft = kkm.registrationNumber.isNullOrBlank()
             val restoredMode = if (isDraft) draftMode else registeredMode
-            val restoredState = if (isDraft) draftState else registeredState
+            // Блокировку снимает ОФД ответом OK либо ввод верного токена,
+            // а не поход в режим программирования и обратно. Пока состояние
+            // восстанавливалось всегда активным, круг «войти — выйти» гасил
+            // любую блокировку, включая снятие кассы с учёта.
+            val restoredState = when {
+                isDraft -> draftState
+                kkm.blockReasonCode != null -> blockedState
+                else -> registeredState
+            }
             val updated = kkm.copy(
                 updatedAt = clock.now(),
                 mode = restoredMode,

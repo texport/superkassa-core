@@ -27,7 +27,7 @@ data class DispatchResult(
     /**
      * Создает результат обработки без раскрытия внутренних статусов очереди (PENDING, IN_PROGRESS) обработчикам.
      *
-     * @param status статус результата попытки обработки (SENT или FAILED).
+     * @param status статус результата попытки обработки.
      * @param errorMessage сообщение об ошибке.
      * @param retryAt время повторной попытки выполнения.
      * @param error локализованное сообщение об ошибке.
@@ -41,6 +41,7 @@ data class DispatchResult(
         status = when (status) {
             DispatchStatus.SENT -> QueueStatus.SENT
             DispatchStatus.FAILED -> QueueStatus.FAILED
+            DispatchStatus.REJECTED -> QueueStatus.REJECTED
         },
         errorMessage = errorMessage,
         retryAt = retryAt,
@@ -53,6 +54,7 @@ data class DispatchResult(
     val dispatchStatus: DispatchStatus
         get() = when (status) {
             QueueStatus.SENT -> DispatchStatus.SENT
+            QueueStatus.REJECTED -> DispatchStatus.REJECTED
             else -> DispatchStatus.FAILED
         }
 }

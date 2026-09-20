@@ -3,6 +3,8 @@ package io.github.texport.superkassa.core.presentation.impl.mapper
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
 // Domain Enums
 import io.github.texport.superkassa.core.domain.api.model.receipt.PaymentType as DomainPaymentType
@@ -58,8 +60,17 @@ class ReferenceMapperTest {
         val pres = domain.toPresentation()
         assertEquals(domain.name, pres.name)
         assertEquals(domain, pres.toDomain())
-        val response = ReferenceMapper.toResponse(pres)
+        val response = ReferenceMapper.toResponse(pres, supported = true)
         assertEquals(pres.name, response.code)
+        assertTrue(response.supported)
+    }
+
+    @Test
+    fun testPaymentTypeUnsupportedByProtocol() {
+        val pres = DomainPaymentType.CREDIT.toPresentation()
+        val response = ReferenceMapper.toResponse(pres, supported = false)
+        assertEquals("CREDIT", response.code)
+        assertFalse(response.supported)
     }
 
     @Test

@@ -18,16 +18,16 @@ class ZxTicketOperationsBlockBuilderTest {
         val sellOp = result.first { it.operation == "OPERATION_SELL" }
         assertEquals(0L, sellOp.ticketsTotalCount)
         assertEquals(0L, sellOp.ticketsCount)
-        assertEquals(0L, sellOp.ticketsSumBills)
+        assertEquals(0L, sellOp.ticketsSumTiyn)
         assertEquals(0L, sellOp.offlineCount)
-        assertEquals(0L, sellOp.discountSumBills)
-        assertEquals(0L, sellOp.markupSumBills)
-        assertEquals(0L, sellOp.changeSumBills)
+        assertEquals(0L, sellOp.discountSumTiyn)
+        assertEquals(0L, sellOp.markupSumTiyn)
+        assertEquals(0L, sellOp.changeSumTiyn)
 
         // Payments should be 6 default payment types
         assertEquals(6, sellOp.payments.size)
         sellOp.payments.forEach { payment ->
-            assertEquals(0L, payment.sumBills)
+            assertEquals(0L, payment.sumTiyn)
             assertEquals(0L, payment.count)
         }
     }
@@ -54,22 +54,22 @@ class ZxTicketOperationsBlockBuilderTest {
 
         assertEquals(15L, sellOp.ticketsTotalCount)
         assertEquals(12L, sellOp.ticketsCount)
-        assertEquals(25000L, sellOp.ticketsSumBills)
+        assertEquals(25000L, sellOp.ticketsSumTiyn)
         assertEquals(3L, sellOp.offlineCount)
-        assertEquals(500L, sellOp.discountSumBills)
-        assertEquals(200L, sellOp.markupSumBills)
-        assertEquals(300L, sellOp.changeSumBills)
+        assertEquals(500L, sellOp.discountSumTiyn)
+        assertEquals(200L, sellOp.markupSumTiyn)
+        assertEquals(300L, sellOp.changeSumTiyn)
 
         val cashPayment = sellOp.payments.first { it.payment == "PAYMENT_CASH" }
-        assertEquals(15000L, cashPayment.sumBills)
+        assertEquals(15000L, cashPayment.sumTiyn)
         assertEquals(8L, cashPayment.count)
 
         val cardPayment = sellOp.payments.first { it.payment == "PAYMENT_CARD" }
-        assertEquals(10000L, cardPayment.sumBills)
+        assertEquals(10000L, cardPayment.sumTiyn)
         assertEquals(4L, cardPayment.count)
 
         val creditPayment = sellOp.payments.first { it.payment == "PAYMENT_CREDIT" }
-        assertEquals(0L, creditPayment.sumBills)
+        assertEquals(0L, creditPayment.sumTiyn)
         assertEquals(0L, creditPayment.count)
     }
 
@@ -95,30 +95,30 @@ class ZxTicketOperationsBlockBuilderTest {
         val result = ZxTicketOperationsBlockBuilder.resolveTicketOperations(counters)
         val targetOp = result.first { it.operation == op }
 
-        assertEquals(Long.MAX_VALUE, targetOp.ticketsSumBills)
+        assertEquals(Long.MAX_VALUE, targetOp.ticketsSumTiyn)
 
         val cash = targetOp.payments.first { it.payment == "PAYMENT_CASH" }
-        assertEquals(1000L, cash.sumBills)
+        assertEquals(1000L, cash.sumTiyn)
         assertEquals(1L, cash.count)
 
         val card = targetOp.payments.first { it.payment == "PAYMENT_CARD" }
-        assertEquals(2000L, card.sumBills)
+        assertEquals(2000L, card.sumTiyn)
         assertEquals(2L, card.count)
 
         val credit = targetOp.payments.first { it.payment == "PAYMENT_CREDIT" }
-        assertEquals(3000L, credit.sumBills)
+        assertEquals(3000L, credit.sumTiyn)
         assertEquals(3L, credit.count)
 
         val tare = targetOp.payments.first { it.payment == "PAYMENT_TARE" }
-        assertEquals(4000L, tare.sumBills)
+        assertEquals(4000L, tare.sumTiyn)
         assertEquals(4L, tare.count)
 
         val mobile = targetOp.payments.first { it.payment == "PAYMENT_MOBILE" }
-        assertEquals(5000L, mobile.sumBills)
+        assertEquals(5000L, mobile.sumTiyn)
         assertEquals(5L, mobile.count)
 
         val electronic = targetOp.payments.first { it.payment == "PAYMENT_ELECTRONIC" }
-        assertEquals(6000L, electronic.sumBills)
+        assertEquals(6000L, electronic.sumTiyn)
         assertEquals(6L, electronic.count)
     }
 }

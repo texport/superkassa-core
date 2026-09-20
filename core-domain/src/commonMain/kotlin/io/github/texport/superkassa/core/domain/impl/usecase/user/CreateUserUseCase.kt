@@ -4,6 +4,7 @@ import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
+import io.github.texport.superkassa.core.domain.api.model.auth.StandardPin
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
@@ -52,7 +53,7 @@ class CreateUserUseCase(
         if (userPin.isBlank()) {
             throw ValidationException(CoreStrings.userPinRequired(), "USER_PIN_REQUIRED")
         }
-        if (userPin == "0000" || userPin == "1111") {
+        if (StandardPin.isStandard(userPin)) {
             throw ValidationException(CoreStrings.defaultPinNotAllowed(), "DEFAULT_PIN_NOT_ALLOWED")
         }
         val now = clock.now()
@@ -62,13 +63,12 @@ class CreateUserUseCase(
             userId = userId,
             name = name,
             role = role,
-            pin = userPin,
             pinHash = pinHasher.hash(userPin),
             createdAt = now
         )
         if (!created) {
             throw ConflictException(CoreStrings.userPinConflict(), "USER_PIN_CONFLICT")
         }
-        return KkmUser(id = userId, name = name, role = role, pin = userPin, createdAt = now)
+        return KkmUser(id = userId, name = name, role = role, createdAt = now)
     }
 }

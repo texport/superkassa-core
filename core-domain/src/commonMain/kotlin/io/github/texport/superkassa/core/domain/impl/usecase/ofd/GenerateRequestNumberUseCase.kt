@@ -50,6 +50,19 @@ class GenerateRequestNumberUseCase(
         return next.toInt()
     }
 
+    /**
+     * Отмечает номер израсходованным: ОФД его увидел.
+     *
+     * До ответа номер не расходуется. Спецификация CPCR, «Работа в нормальном
+     * режиме»: при обрыве соединения или отсутствии ответа повтор отправляется
+     * с теми же TOKEN и REQNUM, чтобы сервер отличил повтор от нового
+     * обращения. Раньше номер выдавался и сохранялся до отправки, поэтому
+     * повтор уходил под новым номером, а сервер видел два разных запроса.
+     */
+    fun commit(kkmId: String, reqNum: Int) {
+        storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, reqNumCounterKey, reqNum.toLong())
+    }
+
     companion object {
         var startReqNumOverride: Long? = null
     }

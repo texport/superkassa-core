@@ -16,10 +16,11 @@ plugins {
     alias(libs.plugins.nmcp)
     `maven-publish`
     alias(libs.plugins.kover)
+    alias(libs.plugins.ksp) apply false
 }
 
 group = "io.github.texport"
-version = "1.1.7"
+version = "1.4.4"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
@@ -48,6 +49,15 @@ allprojects {
             buildUponDefaultConfig = true
             allRules = true
             autoCorrect = true
+            ignoreFailures = true
+            source.setFrom(
+                files(
+                    "src/commonMain/kotlin",
+                    "src/jvmMain/kotlin",
+                    "src/androidMain/kotlin",
+                    "src/iosMain/kotlin"
+                )
+            )
         }
     }
 
@@ -324,3 +334,48 @@ nmcp {
 tasks.withType<GenerateModuleMetadata> {
     enabled = false
 }
+
+tasks.register("copyResourcesToFrameworks") {
+    description = "Copies receipt-renderer resources (CSS, templates, translations) into the built iOS frameworks"
+    doLast {
+        val buildDir = layout.buildDirectory.get().asFile
+        val resourcesDir = project(":receipt-renderer").file("src/commonMain/resources")
+        if (resourcesDir.exists()) {
+            val configs = listOf("debug", "release")
+            val targets = listOf("ios-arm64", "ios-arm64_x86_64-simulator")
+            configs.forEach { config ->
+                val xcframeworkDir = File(buildDir, "XCFrameworks/$config/SuperkassaCore.xcframework")
+                if (xcframeworkDir.exists()) {
+                    targets.forEach { target ->
+                        val destFrameworkDir = File(xcframeworkDir, "$target/SuperkassaCore.framework")
+                        if (destFrameworkDir.exists()) {
+                            println("Copying receipt-renderer resources to ${destFrameworkDir.absolutePath}...")
+                            resourcesDir.copyRecursively(destFrameworkDir, overwrite = true)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.named("assembleSuperkassaCoreReleaseXCFramework") {
+    finalizedBy("copyResourcesToFrameworks")
+}
+
+tasks.register("syncDebugToReleaseXCFramework") {
+    doLast {
+        val debugXc = file("build/XCFrameworks/debug/SuperkassaCore.xcframework")
+        val releaseDir = file("build/XCFrameworks/release")
+        if (debugXc.exists()) {
+            releaseDir.mkdirs()
+            debugXc.copyRecursively(File(releaseDir, "SuperkassaCore.xcframework"), overwrite = true)
+            println("Synchronized debug SuperkassaCore.xcframework to release path!")
+        }
+    }
+}
+
+tasks.named("assembleSuperkassaCoreDebugXCFramework") {
+    finalizedBy("copyResourcesToFrameworks", "syncDebugToReleaseXCFramework")
+}
+

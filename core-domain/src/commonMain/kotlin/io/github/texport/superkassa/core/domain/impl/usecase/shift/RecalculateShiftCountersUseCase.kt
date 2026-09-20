@@ -6,7 +6,9 @@ import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationType
 import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.kkm.becameFiscal
 import io.github.texport.superkassa.core.domain.api.model.receipt.PaymentType
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDocumentTypes
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
@@ -37,14 +39,35 @@ class RecalculateShiftCountersUseCase(
      * @return [Map] Карта пересчитанных счетчиков (ключ-значение).
      */
     fun execute(kkmId: String, shift: ShiftInfo): Map<String, Long> {
-        println("[RecalculateShiftCountersUseCase.kt] execute START")
+        val cashBefore = storage.loadCounters(kkmId, CounterScopes.SHIFT, shift.id)[CounterKeyFormats.CASH_SUM]
         val rebuilt = rebuildShiftCounters(kkmId, shift)
-        println("[RecalculateShiftCountersUseCase.kt] rebuildShiftCounters DONE, updating ${rebuilt.size} counters...")
         rebuilt.forEach { (key, value) ->
             storage.upsertCounter(kkmId, CounterScopes.SHIFT, shift.id, key, value)
         }
-        println("[RecalculateShiftCountersUseCase.kt] upsertCounter loop DONE")
+        reconcileGlobalCash(kkmId, cashBefore, rebuilt[CounterKeyFormats.CASH_SUM] ?: 0L)
         return rebuilt
+    }
+
+    /**
+     * Переносит поправку денежного ящика из смены в глобальный счётчик.
+     *
+     * Наличные в ящике живут в двух областях сразу: сменной и глобальной.
+     * Смена открывается значением глобального счётчика и дальше идёт с ним
+     * в ногу — каждый чек и каждое внесение меняют обе. Пересчёт же
+     * переписывал только сменную, и после него кассир видел в ящике одно,
+     * а в журнале другое.
+     *
+     * Правится ровно поправка: глобальный счётчик сдвигается на ту же
+     * величину, на которую пересчёт изменил сменный. Так остаток ящика,
+     * накопленный прошлыми сменами, остаётся нетронутым.
+     */
+    private fun reconcileGlobalCash(kkmId: String, cashBefore: Long?, cashAfter: Long) {
+        // Счётчика ещё не было: пересчёт ничего не исправлял, а завёл смену.
+        if (cashBefore == null) return
+        val correction = cashAfter - cashBefore
+        if (correction == 0L) return
+        val global = storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[CounterKeyFormats.CASH_SUM] ?: 0L
+        storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.CASH_SUM, global + correction)
     }
 
     /**
@@ -57,6 +80,11 @@ class RecalculateShiftCountersUseCase(
     fun rebuildShiftCounters(kkmId: String, shift: ShiftInfo): Map<String, Long> {
         val existing = storage.loadCounters(kkmId, CounterScopes.SHIFT, shift.id)
         val result = mutableMapOf<String, Long>()
+
+        // Сохраняем начальные значения смены из existing (стартовые суммы ОФД)
+        existing.filterKeys { it.startsWith("start_shift_") }.forEach { (k, v) ->
+            result[k] = v
+        }
 
         val operations = listOf(
             "OPERATION_SELL",
@@ -84,10 +112,12 @@ class RecalculateShiftCountersUseCase(
         while (true) {
             val docs = storage.listFiscalDocumentsByShift(kkmId, shift.id, limit = limit, offset = offset)
             if (docs.isEmpty()) break
-            docs.forEach { doc ->
-                when (doc.docType) {
-                    "CHECK" -> applyReceiptDocument(doc, result)
-                    "CASH_IN", "CASH_OUT" -> applyCashOperationDocument(doc, result)
+            docs.filter { it.becameFiscal() }.forEach { doc ->
+                when {
+                    doc.docType in ReceiptDocumentTypes.ALL -> applyReceiptDocument(doc, result)
+                    doc.docType == CashOperationType.CASH_IN.name ||
+                        doc.docType == CashOperationType.CASH_OUT.name ->
+                        applyCashOperationDocument(doc, result)
                 }
             }
             offset += limit
@@ -127,25 +157,25 @@ class RecalculateShiftCountersUseCase(
             ReceiptOperationType.BUY -> "OPERATION_BUY"
             ReceiptOperationType.BUY_RETURN -> "OPERATION_BUY_RETURN"
         }
-        val sumValue = request.total.bills
+        val sumValue = request.total.tiyn()
 
-        val totalItemDiscountBills = request.items.mapNotNull { it.discount?.bills }.sum()
-        val totalItemMarkupBills = request.items.mapNotNull { it.markup?.bills }.sum()
-        val discountBills = request.discount?.bills ?: totalItemDiscountBills
-        val markupBills = request.markup?.bills ?: totalItemMarkupBills
-        val changeBills = request.change?.bills ?: 0L
+        val totalItemDiscountTiyn = request.items.mapNotNull { it.discount?.tiyn() }.sum()
+        val totalItemMarkupTiyn = request.items.mapNotNull { it.markup?.tiyn() }.sum()
+        val discountTiyn = request.discount?.tiyn() ?: totalItemDiscountTiyn
+        val markupTiyn = request.markup?.tiyn() ?: totalItemMarkupTiyn
+        val changeTiyn = request.change?.tiyn() ?: 0L
 
         // Увеличиваем счетчики количества и сумм операций
         increment(counters, CounterKeyFormats.OPERATION_COUNT.format(operationKey), 1L)
         increment(counters, CounterKeyFormats.OPERATION_SUM.format(operationKey), sumValue)
-        increment(counters, CounterKeyFormats.DISCOUNT_SUM.format(operationKey), discountBills)
-        increment(counters, CounterKeyFormats.MARKUP_SUM.format(operationKey), markupBills)
+        increment(counters, CounterKeyFormats.DISCOUNT_SUM.format(operationKey), discountTiyn)
+        increment(counters, CounterKeyFormats.MARKUP_SUM.format(operationKey), markupTiyn)
 
         // Обновляем счетчики по секциям/отделам
         request.items.forEach { item ->
             val sectionCode = item.sectionCode.ifBlank { "001" }
             val countDelta = if (item.isStorno) -1L else 1L
-            val sumDelta = if (item.isStorno) -item.sum.bills else item.sum.bills
+            val sumDelta = if (item.isStorno) -item.sum.tiyn() else item.sum.tiyn()
             increment(
                 counters,
                 CounterKeyFormats.SECTION_OPERATION_COUNT.format(sectionCode, operationKey),
@@ -162,9 +192,9 @@ class RecalculateShiftCountersUseCase(
         increment(counters, CounterKeyFormats.TICKET_TOTAL_COUNT.format(operationKey), 1L)
         increment(counters, CounterKeyFormats.TICKET_COUNT.format(operationKey), 1L)
         increment(counters, CounterKeyFormats.TICKET_SUM.format(operationKey), sumValue)
-        increment(counters, CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey), discountBills)
-        increment(counters, CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey), markupBills)
-        increment(counters, CounterKeyFormats.TICKET_CHANGE_SUM.format(operationKey), changeBills)
+        increment(counters, CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey), discountTiyn)
+        increment(counters, CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey), markupTiyn)
+        increment(counters, CounterKeyFormats.TICKET_CHANGE_SUM.format(operationKey), changeTiyn)
         if (doc.isAutonomous || doc.ofdStatus == "TIMEOUT") {
             increment(counters, CounterKeyFormats.TICKET_OFFLINE_COUNT.format(operationKey), 1L)
         }
@@ -181,11 +211,13 @@ class RecalculateShiftCountersUseCase(
                 PaymentType.CARD -> "PAYMENT_CARD"
                 PaymentType.ELECTRONIC -> "PAYMENT_ELECTRONIC"
                 PaymentType.MOBILE -> "PAYMENT_MOBILE"
+                PaymentType.CREDIT -> "PAYMENT_CREDIT"
+                PaymentType.TARE -> "PAYMENT_TARE"
             }
             increment(
                 counters,
                 CounterKeyFormats.PAYMENT_SUM.format(operationKey, payKey),
-                payment.sum.bills
+                payment.sum.tiyn()
             )
             increment(
                 counters,
@@ -195,11 +227,20 @@ class RecalculateShiftCountersUseCase(
         }
 
         // Обновляем счетчик наличных в денежном ящике (только для наличных платежей)
-        val cashBills = request.payments
+        // Знак операции для денежного ящика: продажа и возврат покупки кладут
+        // наличные в кассу, возврат продажи и покупка — выдают их из кассы.
+        // Совпадает с эталоном OperationCalculator.addTicket.
+        val cashDirection = when (request.operation) {
+            ReceiptOperationType.SELL, ReceiptOperationType.BUY_RETURN -> 1L
+            ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY -> -1L
+        }
+        // Наличные копятся в тиынах: суммирование одних целых тенге теряло
+        // до тиына с каждого чека, и остаток ящика расходился с настоящим.
+        val cashTiyn = cashDirection * request.payments
             .filter { it.type == PaymentType.CASH }
-            .sumOf { it.sum.bills }
-        if (cashBills != 0L) {
-            increment(counters, CounterKeyFormats.CASH_SUM, cashBills)
+            .sumOf { it.sum.tiyn() }
+        if (cashTiyn != 0L) {
+            increment(counters, CounterKeyFormats.CASH_SUM, cashTiyn)
         }
 
         // Рассчитываем влияние на общую выручку ККМ
@@ -223,14 +264,14 @@ class RecalculateShiftCountersUseCase(
             increment(
                 counters,
                 CounterKeyFormats.TAX_TURNOVER.format(taxKey, operationKey),
-                line.taxBase.bills
+                line.taxBase.tiyn()
             )
             increment(
                 counters,
                 CounterKeyFormats.TAX_SUM.format(taxKey, operationKey),
-                line.taxSum.bills
+                line.taxSum.tiyn()
             )
-            val turnoverWithoutTax = line.taxBase.bills
+            val turnoverWithoutTax = line.taxBase.tiyn()
             increment(
                 counters,
                 CounterKeyFormats.TAX_TURNOVER_NO_TAX.format(taxKey, operationKey),

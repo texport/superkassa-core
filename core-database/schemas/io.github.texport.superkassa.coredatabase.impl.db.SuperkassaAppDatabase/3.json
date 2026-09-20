@@ -1,0 +1,420 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "7dc18373c0fc644d8cea0fc121b8c0d0",
+    "entities": [
+      {
+        "tableName": "queue_commands",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `cashboxId` TEXT NOT NULL, `lane` TEXT NOT NULL, `type` TEXT NOT NULL, `payloadRef` TEXT NOT NULL, `status` TEXT NOT NULL, `attempt` INTEGER NOT NULL, `lastError` TEXT, `nextAttemptAt` INTEGER, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cashboxId",
+            "columnName": "cashboxId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lane",
+            "columnName": "lane",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadRef",
+            "columnName": "payloadRef",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attempt",
+            "columnName": "attempt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nextAttemptAt",
+            "columnName": "nextAttemptAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "kkms",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `registrationNumber` TEXT, `factoryNumber` TEXT, `state` TEXT NOT NULL, `mode` TEXT NOT NULL, `autoCloseShift` INTEGER NOT NULL, `autoCashout` INTEGER NOT NULL, `tokenEncryptedBase64` TEXT, `tokenUpdatedAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "registrationNumber",
+            "columnName": "registrationNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "factoryNumber",
+            "columnName": "factoryNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mode",
+            "columnName": "mode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoCloseShift",
+            "columnName": "autoCloseShift",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoCashout",
+            "columnName": "autoCashout",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tokenEncryptedBase64",
+            "columnName": "tokenEncryptedBase64",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tokenUpdatedAt",
+            "columnName": "tokenUpdatedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "kkm_users",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `kkmId` TEXT NOT NULL, `name` TEXT NOT NULL, `role` TEXT NOT NULL, `pin` TEXT NOT NULL, `pinHash` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kkmId",
+            "columnName": "kkmId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pin",
+            "columnName": "pin",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pinHash",
+            "columnName": "pinHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "shifts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `kkmId` TEXT NOT NULL, `shiftNo` INTEGER NOT NULL, `status` TEXT NOT NULL, `openedAt` INTEGER NOT NULL, `closedAt` INTEGER, `openDocumentId` TEXT, `closeDocumentId` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kkmId",
+            "columnName": "kkmId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shiftNo",
+            "columnName": "shiftNo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "openedAt",
+            "columnName": "openedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "closedAt",
+            "columnName": "closedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "openDocumentId",
+            "columnName": "openDocumentId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "closeDocumentId",
+            "columnName": "closeDocumentId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "fiscal_documents",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `cashboxId` TEXT NOT NULL, `shiftId` TEXT NOT NULL, `docType` TEXT NOT NULL, `docNo` INTEGER, `shiftNo` INTEGER, `createdAt` INTEGER NOT NULL, `totalAmount` INTEGER, `currency` TEXT, `fiscalSign` TEXT, `autonomousSign` TEXT, `isAutonomous` INTEGER NOT NULL, `ofdStatus` TEXT, `ofdErrorCode` INTEGER, `deliveredAt` INTEGER, `registrationNumber` TEXT, `taxpayerName` TEXT, `taxpayerBin` TEXT, `taxpayerAddress` TEXT, `factoryNumber` TEXT, `ofdProvider` TEXT, `receiptPayloadJson` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cashboxId",
+            "columnName": "cashboxId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shiftId",
+            "columnName": "shiftId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "docType",
+            "columnName": "docType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "docNo",
+            "columnName": "docNo",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "shiftNo",
+            "columnName": "shiftNo",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalAmount",
+            "columnName": "totalAmount",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "currency",
+            "columnName": "currency",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fiscalSign",
+            "columnName": "fiscalSign",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "autonomousSign",
+            "columnName": "autonomousSign",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isAutonomous",
+            "columnName": "isAutonomous",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ofdStatus",
+            "columnName": "ofdStatus",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ofdErrorCode",
+            "columnName": "ofdErrorCode",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "deliveredAt",
+            "columnName": "deliveredAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "registrationNumber",
+            "columnName": "registrationNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "taxpayerName",
+            "columnName": "taxpayerName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "taxpayerBin",
+            "columnName": "taxpayerBin",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "taxpayerAddress",
+            "columnName": "taxpayerAddress",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "factoryNumber",
+            "columnName": "factoryNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ofdProvider",
+            "columnName": "ofdProvider",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "receiptPayloadJson",
+            "columnName": "receiptPayloadJson",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "counters",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `value` INTEGER NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7dc18373c0fc644d8cea0fc121b8c0d0')"
+    ]
+  }
+}

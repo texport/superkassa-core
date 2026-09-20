@@ -59,29 +59,29 @@ class ZxReportBuilderIntegrationTest {
         val counters = mutableMapOf<String, Long>().apply {
             // Операция SELL: 2 чека по 1000 (итого 2000).
             put(CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL"), 2L)
-            put(CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL"), 2_000L)
+            put(CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL"), 200_000L)
 
             // Необнуляемые суммы на начало и конец смены.
-            put(CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL"), 10_000L)
-            put(CounterKeyFormats.NON_NULLABLE_SUM.format("OPERATION_SELL"), 12_000L)
+            put(CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL"), 1_000_000L)
+            put(CounterKeyFormats.NON_NULLABLE_SUM.format("OPERATION_SELL"), 1_200_000L)
 
             // Скидки/наценки.
-            put(CounterKeyFormats.DISCOUNT_SUM.format("OPERATION_SELL"), 100L)
-            put(CounterKeyFormats.MARKUP_SUM.format("OPERATION_SELL"), 50L)
+            put(CounterKeyFormats.DISCOUNT_SUM.format("OPERATION_SELL"), 10_000L)
+            put(CounterKeyFormats.MARKUP_SUM.format("OPERATION_SELL"), 5_000L)
 
             // Сводка по билетам (чекам) SELL.
             put(CounterKeyFormats.TICKET_TOTAL_COUNT.format("OPERATION_SELL"), 2L)
             put(CounterKeyFormats.TICKET_COUNT.format("OPERATION_SELL"), 2L)
-            put(CounterKeyFormats.TICKET_SUM.format("OPERATION_SELL"), 2_000L)
-            put(CounterKeyFormats.TICKET_DISCOUNT_SUM.format("OPERATION_SELL"), 100L)
-            put(CounterKeyFormats.TICKET_MARKUP_SUM.format("OPERATION_SELL"), 50L)
+            put(CounterKeyFormats.TICKET_SUM.format("OPERATION_SELL"), 200_000L)
+            put(CounterKeyFormats.TICKET_DISCOUNT_SUM.format("OPERATION_SELL"), 10_000L)
+            put(CounterKeyFormats.TICKET_MARKUP_SUM.format("OPERATION_SELL"), 5_000L)
             put(CounterKeyFormats.TICKET_CHANGE_SUM.format("OPERATION_SELL"), 0L)
             put(CounterKeyFormats.TICKET_OFFLINE_COUNT.format("OPERATION_SELL"), 0L)
 
             // Платежи: оба чека оплатили наличными.
             put(
                 CounterKeyFormats.PAYMENT_SUM.format("OPERATION_SELL", "PAYMENT_CASH"),
-                2_000L
+                200_000L
             )
             put(
                 CounterKeyFormats.PAYMENT_COUNT.format("OPERATION_SELL", "PAYMENT_CASH"),
@@ -89,8 +89,8 @@ class ZxReportBuilderIntegrationTest {
             )
 
             // Касса: наличные и выручка.
-            put(CounterKeyFormats.CASH_SUM, 2_000L)
-            put(CounterKeyFormats.REVENUE_SUM, 2_000L)
+            put(CounterKeyFormats.CASH_SUM, 200_000L)
+            put(CounterKeyFormats.REVENUE_SUM, 200_000L)
             put(CounterKeyFormats.REVENUE_IS_NEGATIVE, 0L)
 
             // Внесения/изъятия (для moneyPlacements) в этом сценарии отсутствуют.
@@ -223,17 +223,17 @@ class ZxReportBuilderIntegrationTest {
         val counters = mutableMapOf<String, Long>().apply {
             // Операция SELL: одна операция для выручки/кассы.
             put(CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL"), 1L)
-            put(CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL"), 1_000L)
-            put(CounterKeyFormats.CASH_SUM, 1_000L)
-            put(CounterKeyFormats.REVENUE_SUM, 1_000L)
+            put(CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL"), 100_000L)
+            put(CounterKeyFormats.CASH_SUM, 100_000L)
+            put(CounterKeyFormats.REVENUE_SUM, 100_000L)
             put(CounterKeyFormats.REVENUE_IS_NEGATIVE, 0L)
 
             // Налоговые счётчики для группы VAT_16 по операции SELL.
-            put(CounterKeyFormats.TAX_TURNOVER.format("VAT_16", "OPERATION_SELL"), 1_000L)
-            put(CounterKeyFormats.TAX_SUM.format("VAT_16", "OPERATION_SELL"), 160L)
+            put(CounterKeyFormats.TAX_TURNOVER.format("VAT_16", "OPERATION_SELL"), 100_000L)
+            put(CounterKeyFormats.TAX_SUM.format("VAT_16", "OPERATION_SELL"), 16_000L)
             put(
                 CounterKeyFormats.TAX_TURNOVER_NO_TAX.format("VAT_16", "OPERATION_SELL"),
-                840L
+                84_000L
             )
         }
 
@@ -291,7 +291,7 @@ class ZxReportBuilderIntegrationTest {
 
         val counters = mutableMapOf<String, Long>().apply {
             // Касса: начальное значение наличных.
-            put(CounterKeyFormats.CASH_SUM, 2_000L)
+            put(CounterKeyFormats.CASH_SUM, 200_000L)
 
             // Внесение наличных (DEPOSIT): одна операция на 500.
             put(
@@ -304,7 +304,7 @@ class ZxReportBuilderIntegrationTest {
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_SUM.format("MONEY_PLACEMENT_DEPOSIT"),
-                500L
+                50_000L
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_OFFLINE_COUNT.format("MONEY_PLACEMENT_DEPOSIT"),
@@ -322,7 +322,7 @@ class ZxReportBuilderIntegrationTest {
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_SUM.format("MONEY_PLACEMENT_WITHDRAWAL"),
-                300L
+                30_000L
             )
             put(
                 CounterKeyFormats.MONEY_PLACEMENT_OFFLINE_COUNT.format("MONEY_PLACEMENT_WITHDRAWAL"),

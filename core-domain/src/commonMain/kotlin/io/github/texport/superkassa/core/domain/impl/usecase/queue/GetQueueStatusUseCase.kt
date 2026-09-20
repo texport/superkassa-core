@@ -17,10 +17,12 @@ class GetQueueStatusUseCase(
      *
      * @property hasPendingItems Наличие неотправленных задач.
      * @property pendingCount Количество неотправленных задач.
+     * @property rejectedCount Количество задач, отправка которых прекращена.
      */
     data class QueueStatus(
         val hasPendingItems: Boolean,
-        val pendingCount: Int
+        val pendingCount: Int,
+        val rejectedCount: Int = 0
     )
 
     /**
@@ -32,9 +34,14 @@ class GetQueueStatusUseCase(
     fun execute(kkmId: String): QueueStatus {
         val tasks = storage.listQueueTasksByCashbox(kkmId, "OFFLINE", limit = 500)
         val pendingCount = tasks.count { it.status == "PENDING" || it.status == "FAILED" }
+        // Отбракованная задача из очереди уходит, а документ остаётся
+        // неотправленным: без отдельного счётчика касса выглядела чистой,
+        // хотя фискальный документ до ОФД не дошёл.
+        val rejectedCount = tasks.count { it.status == "REJECTED" }
         return QueueStatus(
             hasPendingItems = pendingCount > 0,
-            pendingCount = pendingCount
+            pendingCount = pendingCount,
+            rejectedCount = rejectedCount
         )
     }
 }

@@ -11,8 +11,11 @@ import io.github.texport.superkassa.core.domain.api.model.ofd.*
 import io.github.texport.superkassa.core.domain.api.model.shift.*
 import io.github.texport.superkassa.core.domain.api.model.common.*
 import io.github.texport.superkassa.core.domain.api.model.receipt.*
+import io.github.texport.superkassa.core.domain.api.model.zxreport.ZxReportInput
 import io.github.texport.superkassa.core.domain.api.port.integration.QrCodeGeneratorPort
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.DocumentConstants
+
+import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 
 /**
  * Внутренняя реализация движка рендеринга чеков.
@@ -20,6 +23,8 @@ import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.DocumentC
 internal class ReceiptRendererApiImpl(
     qrCodeGenerator: QrCodeGeneratorPort
 ) : ReceiptRendererApi {
+
+    private val logger = getLogger(ReceiptRendererApiImpl::class)
 
     private val saleRenderer = SaleReceiptRenderer(qrCodeGenerator)
     private val xReportRenderer = XReportRenderer()
@@ -62,6 +67,16 @@ internal class ReceiptRendererApiImpl(
         return xReportRenderer.render(shift, counters, overrideKkmLayout(kkm, layoutType), ofdStatus)
     }
 
+    override fun renderXReportHtml(
+        report: ZxReportInput,
+        kkm: KkmInfo,
+        ofdStatus: String?,
+        docNo: String?,
+        layoutType: ReceiptLayoutType?
+    ): String {
+        return xReportRenderer.render(report, overrideKkmLayout(kkm, layoutType), ofdStatus, docNo)
+    }
+
     override fun renderOpenShiftHtml(
         shift: ShiftInfo,
         kkm: KkmInfo,
@@ -81,6 +96,16 @@ internal class ReceiptRendererApiImpl(
         layoutType: ReceiptLayoutType?
     ): String {
         return zReportRenderer.render(shift, counters, overrideKkmLayout(kkm, layoutType), ofdStatus, docNo)
+    }
+
+    override fun renderCloseShiftHtml(
+        report: ZxReportInput,
+        kkm: KkmInfo,
+        ofdStatus: String?,
+        docNo: String?,
+        layoutType: ReceiptLayoutType?
+    ): String {
+        return zReportRenderer.render(report, overrideKkmLayout(kkm, layoutType), ofdStatus, docNo)
     }
 
     override fun renderCashOperationHtml(

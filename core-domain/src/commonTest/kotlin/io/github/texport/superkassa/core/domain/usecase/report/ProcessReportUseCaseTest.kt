@@ -29,6 +29,7 @@ class ProcessReportUseCaseTest {
     private val idGenerator = mockk<IdGeneratorPort>()
     private val authorizeUser = mockk<AuthorizeUserUseCase>()
     private val requireOperational = mockk<RequireOperationalUseCase>(relaxed = true)
+    private val clock = mockk<io.github.texport.superkassa.core.domain.api.port.integration.ClockPort>()
 
     private val useCase = ProcessReportUseCase(
         storage = storage,
@@ -36,7 +37,8 @@ class ProcessReportUseCaseTest {
         sendFiscalCommandUseCase = sendFiscalCommandUseCase,
         idGenerator = idGenerator,
         authorizeUser = authorizeUser,
-        requireOperational = requireOperational
+        requireOperational = requireOperational,
+        clock = clock
     )
 
     private val kkm = KkmInfo(
@@ -51,6 +53,7 @@ class ProcessReportUseCaseTest {
         every { authorizeUser.requireKkm("kkm-1") } returns kkm
         every { authorizeUser.execute("kkm-1", "1234", setOf(UserRole.ADMIN, UserRole.CASHIER)) } returns mockk()
         every { idGenerator.nextId() } returns "doc-123"
+        every { clock.now() } returns 1000L
     }
 
     @Test

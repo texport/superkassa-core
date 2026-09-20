@@ -9,6 +9,7 @@ data class CoreSettings(
     val allowChanges: Boolean = false,
     val nodeId: String = "node-1",
     val ofdProtocolVersion: String = "203",
+    val ofdProviderId: String = "KAZAKHTELECOM",
     val deliveryChannels: List<String> = listOf("PRINT"),
     val ofdTimeoutSeconds: Long = 30L,
     val ofdReconnectIntervalSeconds: Long = 60L,

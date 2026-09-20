@@ -1,28 +1,66 @@
 package io.github.texport.superkassa.core.domain.api.model.common
 
+import kotlinx.serialization.Serializable
+
 /**
  * Представление денежной суммы с фиксированной точностью (соответствует формату bills/coins в ОФД).
  *
  * @property bills Целая часть суммы (тенге).
  * @property coins Дробная часть суммы (тиыны).
  */
+@Serializable
 data class Money(
     val bills: Long,
     val coins: Int
 ) {
+    /**
+     * Сумма целиком в тиынах.
+     *
+     * Тиын — наименьшая доля тенге, и только в них сумму можно хранить и
+     * складывать без потерь. Раньше в журнал и в счётчики шли одни целые
+     * тенге, и с каждого чека терялось до тиына: остаток денежного ящика
+     * расходился с настоящим, а расхождение уходило в Z-отчёт.
+     *
+     * Метод, а не свойство: чек хранится сериализованным по бинам, и
+     * вычисляемое свойство попадало в сохранённый JSON лишним полем.
+     * Обратное чтение такого чека падало, и чек навсегда оставался
+     * в очереди — не уходил в ОФД и не получал фискального признака.
+     */
+    fun tiyn(): Long = bills * TIYN_IN_TENGE + coins
+
+    /**
+     * Сумма словами сообщения: тенге, точка, два знака тиына.
+     *
+     * Нужна там, где сумма попадает в текст отказа кассиру. Печатью
+     * и разметкой экрана она не управляет — там свои правила показа,
+     * а здесь важно, чтобы в сообщении стояло «700.00», а не то, как
+     * устроен тип.
+     */
+    fun asTenge(): String = "$bills." + coins.toString().padStart(TIYN_DIGITS, '0')
+
     companion object {
+        /** Тиынов в тенге. */
+        const val TIYN_IN_TENGE: Long = 100
+
+        /** Знаков в дробной части: тиын — сотая доля тенге. */
+        private const val TIYN_DIGITS: Int = 2
+
+        /** Собирает сумму из тиынов. */
+        fun fromTiyn(total: Long): Money =
+            Money(bills = total / TIYN_IN_TENGE, coins = (total % TIYN_IN_TENGE).toInt())
+
         /**
-         * Преобразует сумму в виде Double (тенге) в формат Money (bills/coins).
-         * bills - целая часть (тенге), coins - дробная часть (тиыны, умноженные на 100).
+         * Собирает сумму из десятичной записи в тенге.
          *
-         * @param amount Сумма в тенге (например, 1234.56)
-         * @return Объект [Money] с bills=1234 и coins=56
+         * Доли тиына округляются к ближайшему: меньше тиына касса выдать
+         * не может, а отбрасывание уводило бы остаток ящика вниз с каждого чека.
+         *
+         * @param amount сумма в тенге, например «1234.56».
+         * @return сумма с bills = 1234 и coins = 56.
          */
-        fun fromTenge(amount: Double): Money {
-            val totalCoins = kotlin.math.round(amount * 100).toLong()
-            val bills = totalCoins / 100
-            val coins = (totalCoins % 100).toInt()
-            return Money(bills = bills, coins = coins)
-        }
+        fun fromTenge(amount: Decimal): Money = fromTiyn(amount.scaled(TIYN_SCALE))
+
+        /** Знаков после запятой у тенге. */
+        private const val TIYN_SCALE: Int = 2
     }
 }

@@ -35,7 +35,10 @@ object OfdTicketRequestBuilder {
         token: Long,
         reqNum: Int,
         request: ReceiptRequest,
-        serviceBlock: JsonObject? = null
+        serviceBlock: JsonObject? = null,
+        frShiftNumber: Int? = null,
+        offlineTicketNumber: Int? = null,
+        printedDocumentNumber: Long? = null
     ): JsonObject {
         val now = OfdCommonRequestHelper.toDateTime(kotlin.time.Clock.System.now().toEpochMilliseconds())
         val operationCode = when (request.operation) {
@@ -64,6 +67,81 @@ object OfdTicketRequestBuilder {
                     put(
                         "ticket",
                         buildJsonObject {
+                            // Номер смены ведёт касса: без него сервер продолжит свой счёт
+                            // и документы лягут не в ту смену.
+                            frShiftNumber?.let { put("frShiftNumber", JsonPrimitive(it)) }
+                            // Отраслевые реквизиты: вид отрасли и ровно один подблок под него.
+                            request.domain?.let { d ->
+                                put(
+                                    "domain",
+                                    buildJsonObject {
+                                        put("type", JsonPrimitive(d.type.name))
+                                        d.services?.let {
+                                            put(
+                                                "services",
+                                                buildJsonObject {
+                                                    put(
+                                                        "accountNumber",
+                                                        JsonPrimitive(it.accountNumber)
+                                                    )
+                                                }
+                                            )
+                                        }
+                                        d.gasOil?.let { g ->
+                                            put(
+                                                "gasoil",
+                                                buildJsonObject {
+                                                    g.correctionNumber?.let {
+                                                        put(
+                                                            "correctionNumber",
+                                                            JsonPrimitive(it)
+                                                        )
+                                                    }
+                                                    g.correctionSum?.let {
+                                                        put(
+                                                            "correctionSum",
+                                                            OfdCommonRequestHelper.moneyObject(it.bills, it.coins)
+                                                        )
+                                                    }
+                                                    g.cardNumber?.let { put("cardNumber", JsonPrimitive(it)) }
+                                                }
+                                            )
+                                        }
+                                        d.taxi?.let { t ->
+                                            put(
+                                                "taxi",
+                                                buildJsonObject {
+                                                    put("carNumber", JsonPrimitive(t.carNumber))
+                                                    put("isOrder", JsonPrimitive(t.isOrder))
+                                                    put(
+                                                        "currentFee",
+                                                        OfdCommonRequestHelper.moneyObject(
+                                                            t.currentFee.bills,
+                                                            t.currentFee.coins
+                                                        )
+                                                    )
+                                                }
+                                            )
+                                        }
+                                        d.parking?.let { pk ->
+                                            put(
+                                                "parking",
+                                                buildJsonObject {
+                                                    put(
+                                                        "beginTime",
+                                                        OfdCommonRequestHelper.toDateTime(pk.beginTimeMillis)
+                                                    )
+                                                    put("endTime", OfdCommonRequestHelper.toDateTime(pk.endTimeMillis))
+                                                }
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                            // Признак автономного чека — сам номер: поля is_offline у чека нет,
+                            // и без номера сервер считает документ обычным сетевым.
+                            offlineTicketNumber?.let { put("offlineTicketNumber", JsonPrimitive(it)) }
+                            printedDocumentNumber?.let { put("printedDocumentNumber", JsonPrimitive(it)) }
                             put("operation", JsonPrimitive(operationCode))
                             put("dateTime", now)
                             put(
@@ -209,6 +287,8 @@ object OfdTicketRequestBuilder {
                                             PaymentType.CARD -> "PAYMENT_CARD"
                                             PaymentType.ELECTRONIC -> "PAYMENT_CARD" // Map ELECTRONIC to CARD for OFD
                                             PaymentType.MOBILE -> "PAYMENT_MOBILE"
+                                            PaymentType.CREDIT -> "PAYMENT_CREDIT"
+                                            PaymentType.TARE -> "PAYMENT_TARE"
                                         }
                                     }
                                     groupedPayments.forEach { (payType, paymentList) ->

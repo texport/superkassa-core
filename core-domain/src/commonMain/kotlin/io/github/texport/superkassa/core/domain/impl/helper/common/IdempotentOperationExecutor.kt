@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.impl.helper.common
 
+import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
+import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.RequireOperationalUseCase
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
@@ -121,6 +123,22 @@ class IdempotentOperationExecutor(
             saveOperation(documentId, now, shiftId)
 
             // Отправка команды в ОФД
+            // Номер печатного документа касса ведёт сама и не прерывает
+            // в разрыве связи: по нему восстанавливают нумерацию после сбоя.
+            val printedNumber = 1 + (
+                storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[
+                    CounterKeyFormats.PRINTED_DOCUMENT_NUMBER
+                ] ?: 0L
+                )
+            storage.upsertCounter(
+                kkmId,
+                CounterScopes.GLOBAL,
+                null,
+                CounterKeyFormats.PRINTED_DOCUMENT_NUMBER,
+                printedNumber
+            )
+            storage.updatePrintedDocumentNumber(documentId, printedNumber)
+
             val ofdResult = sendOfdCommand(kkm, documentId)
 
             // Определение типа команды из результата

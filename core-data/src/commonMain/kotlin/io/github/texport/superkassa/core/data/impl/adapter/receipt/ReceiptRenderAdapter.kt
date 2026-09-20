@@ -6,6 +6,7 @@ import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBrandin
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLayoutType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
+import io.github.texport.superkassa.core.domain.api.model.zxreport.ZxReportInput
 import io.github.texport.superkassa.core.domain.api.port.integration.QrCodeGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderPort
 import io.github.texport.superkassa.receiptrenderer.api.ReceiptRendererApi
@@ -36,6 +37,22 @@ internal class ReceiptRenderAdapter(
         ofdStatus: String?,
         layoutType: ReceiptLayoutType?
     ): String = renderer.renderXReportHtml(shift, counters, kkm, ofdStatus, layoutType)
+
+    override fun renderXReportHtml(
+        report: ZxReportInput,
+        kkm: KkmInfo,
+        ofdStatus: String?,
+        docNo: String?,
+        layoutType: ReceiptLayoutType?
+    ): String = renderer.renderXReportHtml(report, kkm, ofdStatus, docNo, layoutType)
+
+    override fun renderCloseShiftHtml(
+        report: ZxReportInput,
+        kkm: KkmInfo,
+        ofdStatus: String?,
+        docNo: String?,
+        layoutType: ReceiptLayoutType?
+    ): String = renderer.renderCloseShiftHtml(report, kkm, ofdStatus, docNo, layoutType)
 
     override fun renderOpenShiftHtml(
         shift: ShiftInfo,

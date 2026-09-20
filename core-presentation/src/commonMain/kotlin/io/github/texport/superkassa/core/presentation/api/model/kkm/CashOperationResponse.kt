@@ -10,7 +10,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Schema(description = "Результат выполнения операции с наличными")
 data class CashOperationResponse(
-    @Schema(description = "Идентификатор сгенерированного фискального документа", example = "doc-uuid") val documentId: String,
-    @Schema(description = "Статус доставки документа в ОФД", example = "ONLINE_OK") val deliveryStatus: DeliveryStatus = DeliveryStatus.NOT_SENT,
-    @Schema(description = "Текст ошибки доставки, если отправка в ОФД не удалась", example = "Network failure") val deliveryError: String? = null
+    @Schema(
+        description = "Идентификатор сгенерированного фискального документа",
+        example = "doc-uuid"
+    ) val documentId: String,
+    @Schema(
+        description = "Статус доставки документа в ОФД",
+        example = "ONLINE_OK"
+    ) val deliveryStatus: DeliveryStatus = DeliveryStatus.NOT_SENT,
+    @Schema(
+        description = "Текст ошибки доставки, если отправка в ОФД не удалась",
+        example = "Network failure"
+    ) val deliveryError: String? = null
 )

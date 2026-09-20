@@ -66,26 +66,26 @@ class GetPrintHtmlUseCase(
         authorizeUserUseCase.requireRole(kkmId, pin, setOf(UserRole.CASHIER, UserRole.ADMIN))
         return when (type) {
             PrintDocumentType.DOCUMENT -> {
-                val id = documentId ?: throw ValidationException(CoreStrings.badRequest(), "DOCUMENT_ID_REQUIRED")
+                val id = documentId ?: throw ValidationException(CoreStrings.printDocumentIdRequired(), "DOCUMENT_ID_REQUIRED")
                 getDocumentPrintHtmlInternal(kkm, id, pin, layout)
             }
             PrintDocumentType.X_REPORT -> {
-                val shift = getOpenShift(kkmId, pin)
+                val shift = (shiftId?.let { storage.findShiftById(it) }) ?: getOpenShift(kkmId, pin)
                 val counters = storage.loadCounters(kkmId, CounterScopes.SHIFT, shift.id)
                 receiptRenderPort.renderXReportHtml(shift, counters, kkm, null, layout)
             }
             PrintDocumentType.OPEN_SHIFT -> {
-                val shift = getOpenShift(kkmId, pin)
+                val shift = (shiftId?.let { storage.findShiftById(it) }) ?: getOpenShift(kkmId, pin)
                 val ofdStatus = resolveOfdStatus(kkmId, shift.openDocumentId)
                 val docNo = shift.openDocumentId?.let { storage.findFiscalDocumentById(it)?.docNo?.toString() }
                 receiptRenderPort.renderOpenShiftHtml(shift, kkm, ofdStatus, docNo, layout)
             }
             PrintDocumentType.CLOSE_SHIFT -> {
-                val sid = shiftId ?: throw ValidationException(CoreStrings.badRequest(), "SHIFT_ID_REQUIRED")
+                val sid = shiftId ?: throw ValidationException(CoreStrings.printShiftIdRequired(), "SHIFT_ID_REQUIRED")
                 val shift = storage.findShiftById(sid)
-                    ?: throw NotFoundException(CoreStrings.documentNotFound(), "SHIFT_NOT_FOUND")
-                if (shift.kkmId != kkmId) throw NotFoundException(CoreStrings.documentNotFound(), "SHIFT_NOT_FOUND")
-                val counters = storage.loadCounters(kkmId, CounterScopes.SHIFT, sid)
+                    ?: throw NotFoundException(CoreStrings.shiftNotFound(), "SHIFT_NOT_FOUND")
+                if (shift.kkmId != kkmId) throw NotFoundException(CoreStrings.shiftNotFound(), "SHIFT_NOT_FOUND")
+                val counters = storage.loadCounters(kkmId, CounterScopes.SHIFT, shift.id)
                 val ofdStatus = resolveOfdStatus(kkmId, shift.closeDocumentId)
                 val docNo = shift.closeDocumentId?.let { storage.findFiscalDocumentById(it)?.docNo?.toString() }
                 receiptRenderPort.renderCloseShiftHtml(shift, counters, kkm, ofdStatus, docNo, layout)
@@ -106,9 +106,40 @@ class GetPrintHtmlUseCase(
             ?: throw NotFoundException(CoreStrings.documentNotFound(), "DOCUMENT_NOT_FOUND")
         if (doc.cashboxId != kkm.id) throw NotFoundException(CoreStrings.documentNotFound(), "DOCUMENT_NOT_FOUND")
         return when (doc.docType) {
-            "CHECK" -> getReceiptHtml.execute(kkm.id, documentId, pin, layout)
+            "CHECK", "BUY", "SELL", "BUY_RETURN", "SELL_RETURN", "TICKET", "RECEIPT" -> getReceiptHtml.execute(
+                kkm.id,
+                documentId,
+                pin,
+                layout
+            )
             "CASH_IN", "CASH_OUT" -> receiptRenderPort.renderCashOperationHtml(doc, kkm, layout)
-            else -> throw NotFoundException(CoreStrings.documentNotFound(), "DOCUMENT_NOT_FOUND")
+            "REPORT_X", "X_REPORT" -> {
+                val shift = storage.findShiftById(doc.shiftId) ?: getOpenShift(kkm.id, pin)
+                val counters = storage.loadCounters(kkm.id, CounterScopes.SHIFT, shift.id)
+                receiptRenderPort.renderXReportHtml(shift, counters, kkm, null, layout)
+            }
+            "SHIFT_OPEN", "OPEN_SHIFT" -> {
+                val shift = storage.findShiftById(doc.shiftId) ?: getOpenShift(kkm.id, pin)
+                val ofdStatus = resolveOfdStatus(kkm.id, shift.openDocumentId)
+                val docNo = shift.openDocumentId?.let { storage.findFiscalDocumentById(it)?.docNo?.toString() }
+                receiptRenderPort.renderOpenShiftHtml(shift, kkm, ofdStatus, docNo, layout)
+            }
+            "REPORT_Z", "Z_REPORT", "SHIFT_CLOSE", "CLOSE_SHIFT", "COMMAND_CLOSE_SHIFT" -> {
+                val shift = storage.findShiftById(doc.shiftId)
+                    ?: throw NotFoundException(CoreStrings.shiftNotFound(), "SHIFT_NOT_FOUND")
+                val counters = storage.loadCounters(kkm.id, CounterScopes.SHIFT, shift.id)
+                val ofdStatus = resolveOfdStatus(kkm.id, shift.closeDocumentId)
+                val docNo = shift.closeDocumentId?.let { storage.findFiscalDocumentById(it)?.docNo?.toString() }
+                receiptRenderPort.renderCloseShiftHtml(shift, counters, kkm, ofdStatus, docNo, layout)
+            }
+            else -> {
+                val pair = storage.findFiscalDocumentWithReceiptPayload(documentId)
+                if (pair != null) {
+                    receiptRenderPort.renderHtml(pair.second, pair.first, kkm, layout)
+                } else {
+                    receiptRenderPort.renderCashOperationHtml(doc, kkm, layout)
+                }
+            }
         }
     }
 
@@ -119,7 +150,7 @@ class GetPrintHtmlUseCase(
         kkmCommonHelper.ensureSystemTimeValid()
         val kkm = authorizeUserUseCase.requireKkm(kkmId)
         if (kkm.state == KkmState.BLOCKED.name) {
-            throw ValidationException(CoreStrings.kkmBlocked(), "KKM_BLOCKED")
+            throw ValidationException(CoreStrings.kkmBlocked(kkm.blockReasonCode), "KKM_BLOCKED")
         }
         if (kkm.state == KkmState.PROGRAMMING.name) {
             throw ValidationException(CoreStrings.kkmInProgramming(), "KKM_IN_PROGRAMMING")

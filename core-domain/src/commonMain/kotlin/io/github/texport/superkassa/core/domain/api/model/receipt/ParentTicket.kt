@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.api.model.receipt
 
+import kotlinx.serialization.Serializable
+
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 
 /**
@@ -12,6 +14,7 @@ import io.github.texport.superkassa.core.domain.api.model.common.Money
  * @property parentTicketTotal Полная сумма исходного чека.
  * @property parentTicketIsOffline Признак того, был ли исходный чек оформлен в автономном режиме.
  */
+@Serializable
 data class ParentTicket(
     val parentTicketNumber: Long,
     val parentTicketDateTimeMillis: Long,

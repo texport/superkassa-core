@@ -16,10 +16,19 @@ data class OfdServiceInfoResponse(
     val orgInn: String,
     @Schema(description = "Код ОКЭД организации", example = "47111")
     val orgOkved: String,
-    @Schema(description = "Географическая широта места установки ККМ (в миллионных долях градуса)", example = "43250000")
+    @Schema(
+        description = "Географическая широта места установки ККМ (в миллионных долях градуса)",
+        example = "43250000"
+    )
     val geoLatitude: Int,
-    @Schema(description = "Географическая долгота места установки ККМ (в миллионных долях градуса)", example = "76900000")
+    @Schema(
+        description = "Географическая долгота места установки ККМ (в миллионных долях градуса)",
+        example = "76900000"
+    )
     val geoLongitude: Int,
-    @Schema(description = "Источник получения географических координат (например, GPS, GEOIP, MANUAL)", example = "GEOIP")
+    @Schema(
+        description = "Источник получения географических координат (например, GPS, GEOIP, MANUAL)",
+        example = "GEOIP"
+    )
     val geoSource: String
 )

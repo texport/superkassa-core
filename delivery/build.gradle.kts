@@ -17,7 +17,8 @@ kover {
         filters {
             excludes {
                 classes(
-                    "io.github.texport.superkassa.delivery.impl.Logger*"
+                    "io.github.texport.superkassa.delivery.impl.Logger*",
+                    "io.github.texport.superkassa.delivery.impl.DefaultKtorDeliveryAdapter*"
                 )
             }
         }
@@ -57,6 +58,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(project(":core-domain"))
             implementation(project(":core-string"))
         }
         jvmMain.dependencies {

@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.api.model.ofd
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
+
 /**
  * Доменная модель номенклатурной позиции, полученной от ОФД.
  */
@@ -9,7 +11,7 @@ data class OfdNomenclatureItem(
     val name: String,
     val nameKk: String?,
     val ntin: String?,
-    val price: Double,
+    val price: Decimal,
     val measureUnitCode: String?,
     val vatGroup: String?
 )

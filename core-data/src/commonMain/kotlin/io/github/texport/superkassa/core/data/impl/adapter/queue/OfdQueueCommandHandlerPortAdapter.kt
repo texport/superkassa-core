@@ -43,6 +43,7 @@ internal class OfdQueueCommandHandlerPortAdapter(
             status = when (result.status) {
                 QueueDispatchStatus.SENT -> QueueStatus.SENT
                 QueueDispatchStatus.FAILED -> QueueStatus.FAILED
+                QueueDispatchStatus.REJECTED -> QueueStatus.REJECTED
             },
             errorMessage = result.errorMessage,
             retryAt = result.retryAt,

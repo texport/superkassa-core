@@ -1,6 +1,7 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.receipt
 
 import io.github.texport.superkassa.core.string.api.CoreStrings
+import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
@@ -31,6 +32,7 @@ class RetryReceiptDeliveryUseCase(
      * @return Список пар, где первый элемент — имя канала доставки (например, "EMAIL", "SMS"),
      *         а второй — статус успеха отправки (true, если отправлено успешно).
      * @throws NotFoundException если документ с указанным идентификатором не найден или принадлежит другой ККМ.
+     * @throws ConflictException если документ не был фискализирован либо ни один канал доставки не настроен.
      */
     fun execute(kkmId: String, documentId: String, pin: String): List<Pair<String, Boolean>> {
         // Проверка существования ККМ и авторизация пользователя со считыванием роли
@@ -46,7 +48,22 @@ class RetryReceiptDeliveryUseCase(
             throw NotFoundException(CoreStrings.documentNotFound(), "DOCUMENT_NOT_FOUND")
         }
 
+        // Документ, который так и не стал фискальным, отправлять нечем:
+        // ни фискального признака, ни автономного у него нет. Ответить
+        // успехом означало бы сообщить кассиру о доставке чека, которого
+        // не существует.
+        if (snapshot.fiscalSign == null && snapshot.autonomousSign == null) {
+            throw ConflictException(CoreStrings.documentNotFiscalized(), "DOCUMENT_NOT_FISCALIZED")
+        }
+
         // Повторная отправка чека по доступным каналам доставки
-        return helper.retryDelivery(kkmId, documentId, receipt, snapshot)
+        val results = helper.retryDelivery(kkmId, documentId, receipt, snapshot)
+
+        // Пустой список означает, что ни один канал даже не пробовали.
+        // Прежде это отдавалось как успех повтора.
+        if (results.isEmpty()) {
+            throw ConflictException(CoreStrings.deliveryChannelsNotConfigured(), "DELIVERY_NOT_CONFIGURED")
+        }
+        return results
     }
 }

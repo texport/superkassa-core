@@ -23,8 +23,13 @@ data class FiscalDocumentResponse(
     @Schema(description = "Оформлен ли документ в автономном режиме", example = "false") val isAutonomous: Boolean,
     @Schema(description = "Статус доставки в ОФД", example = "DELIVERED") val ofdStatus: String?,
     @Schema(description = "Код ошибки ОФД (если документ отклонен)", example = "13") val ofdErrorCode: Int? = null,
-    @Schema(description = "Время доставки документа в ОФД (epoch ms)", example = "1700000000000") val deliveredAt: Long?,
-    @Schema(description = "Ссылка на электронный чек на сервере ОФД", example = "http://ofd.example.com/receipt/123") val receiptUrl: String? = null,
+    @Schema(description = "Время доставки документа в ОФД (epoch ms)", example = "1700000000000") val deliveredAt:
+    Long?,
+    @Schema(
+        description = "Ссылка на электронный чек на сервере ОФД",
+        example = "http://ofd.example.com/receipt/123"
+    ) val receiptUrl:
+    String? = null,
     @Schema(description = "Регистрационный номер ККМ", example = "123456789012") val registrationNumber: String? = null,
     @Schema(description = "Наименование налогоплательщика", example = "TOO Example") val taxpayerName: String? = null,
     @Schema(description = "БИН/ИИН налогоплательщика", example = "123456789012") val taxpayerBin: String? = null,

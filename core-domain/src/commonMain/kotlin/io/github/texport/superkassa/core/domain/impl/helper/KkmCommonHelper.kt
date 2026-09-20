@@ -17,6 +17,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidatorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.TokenCodecPort
+import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 
 /**
  * Вспомогательный класс, инкапсулирующий общую логику и утилиты для взаимодействия с ККМ (контрольно-кассовыми машинами)
@@ -42,6 +43,8 @@ class KkmCommonHelper(
     private val ofdCommandRequestFactory: OfdCommandRequestFactory,
     private val ofd: OfdManagerPort
 ) {
+    private val logger = getLogger(KkmCommonHelper::class)
+
     /**
      * Проверяет корректность текущего системного времени с помощью валидатора [timeValidator].
      * Если время невалидно, выбрасывает [ValidationException] с соответствующим сообщением об ошибке.
@@ -105,7 +108,7 @@ class KkmCommonHelper(
         val token = tokenOverride
             ?: tokenCodec.decodeToken(kkm.tokenEncryptedBase64)
             ?: throw ValidationException(CoreStrings.ofdTokenRequired(), "OFD_TOKEN_REQUIRED")
-        val reqNum = generateRequestNumberUseCase.execute(kkm.id)
+        val reqNum = generateRequestNumberUseCase.execute(kkm.id, persist = false)
         val now = clock.now()
         val request = ofdCommandRequestFactory.build(
             kkm = kkm,
@@ -120,36 +123,51 @@ class KkmCommonHelper(
             ofdProviderOverride = ofdProviderOverride,
             defaultServiceInfo = ::defaultServiceInfo
         )
+        logger.debug("Отправка команды $commandType в ОФД для ККМ ${kkm.id}. PayloadRef: $payloadRef, ReqNum: $reqNum")
         val result = ofd.send(request)
-        
+        logger.debug("Получен ответ от ОФД для ККМ ${kkm.id}. Результат: ${result.resultCode}")
+
+        if (result.resultCode != null) {
+            // Номер израсходован только теперь: ОФД запрос увидел. Без ответа
+            // повтор обязан уйти с тем же номером — так сервер отличает
+            // повтор от нового обращения (CPCR, «Работа в нормальном режиме»).
+            generateRequestNumberUseCase.commit(kkm.id, reqNum)
+        }
+
         val code = result.resultCode
         if (code != null) {
             if (code == 8 || code == 9) {
                 // Выбрасывается исключение, заставляющее ядро (или очередь) сгенерировать новый reqNum и повторить запрос
                 throw ValidationException(
                     io.github.texport.superkassa.core.string.api.TrilingualMessage(
-                        "Техническая ошибка синхронизации", 
-                        "Синхрондау қатесі", 
+                        "Техническая ошибка синхронизации",
+                        "Синхрондау қатесі",
                         "Sync error"
-                    ), 
+                    ),
                     "OFD_RETRY_REQUEST"
                 )
             }
-            val blockingCodes = setOf(1, 2, 3, 4, 5, 6, 7, 11, 12, 15)
+            // 18 и 19 добавлены протоколом 2.0.4: касса снята с учёта
+            // и касса отключена от ОФД. Обе означают остановку работы.
+            val blockingCodes = setOf(1, 2, 3, 4, 5, 6, 7, 11, 12, 15, 18, 19)
             if (code in blockingCodes && (kkm.state != io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.BLOCKED.name || kkm.blockReasonCode != (code + 1000))) {
                 val clearedToken = if (code == 2) null else kkm.tokenEncryptedBase64
-                storage.updateKkm(kkm.copy(
-                    updatedAt = now,
-                    state = io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.BLOCKED.name,
-                    blockReasonCode = code + 1000,
-                    tokenEncryptedBase64 = clearedToken
-                ))
+                storage.updateKkm(
+                    kkm.copy(
+                        updatedAt = now,
+                        state = io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.BLOCKED.name,
+                        blockReasonCode = code + 1000,
+                        tokenEncryptedBase64 = clearedToken
+                    )
+                )
             } else if (code == 0 && kkm.state == io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.BLOCKED.name) {
-                storage.updateKkm(kkm.copy(
-                    updatedAt = now,
-                    state = io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.ACTIVE.name,
-                    blockReasonCode = null
-                ))
+                storage.updateKkm(
+                    kkm.copy(
+                        updatedAt = now,
+                        state = io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.ACTIVE.name,
+                        blockReasonCode = null
+                    )
+                )
             }
         }
 
@@ -182,7 +200,11 @@ class KkmCommonHelper(
         queue: OfflineQueuePort
     ): KkmInfo {
         ensureSystemTimeValid()
-        authorization.requireRole(kkmId, pin, setOf(io.github.texport.superkassa.core.domain.api.model.auth.UserRole.ADMIN))
+        authorization.requireRole(
+            kkmId,
+            pin,
+            setOf(io.github.texport.superkassa.core.domain.api.model.auth.UserRole.ADMIN)
+        )
         return storage.inTransaction {
             val kkm = authorization.requireKkm(kkmId)
             if (!allowOpenShift) {

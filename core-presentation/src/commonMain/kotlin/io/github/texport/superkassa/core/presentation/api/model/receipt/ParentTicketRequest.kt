@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.api.model.receipt
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import io.github.texport.superkassa.core.presentation.api.annotations.Min
 import io.github.texport.superkassa.core.presentation.api.annotations.NotBlank
@@ -29,7 +30,7 @@ data class ParentTicketRequest(
     val kgdKkmId: String,
     @Schema(description = "Сумма исходного чека (в тенге)", example = "1500.75")
     @field:DecimalMin("0.01", message = "Сумма чека должна быть больше нуля")
-    val parentTicketTotal: Double,
+    val parentTicketTotal: Decimal,
     @Schema(
         description = "Был ли исходный чек пробит в офлайн-режиме",
         example = "false"

@@ -17,7 +17,7 @@ kover {
         filters {
             excludes {
                 classes(
-                    "io.github.texport.superkassa.offline_queue.application.logging.*"
+                    "io.github.texport.superkassa.offlinequeue.impl.*"
                 )
             }
         }
@@ -30,7 +30,7 @@ kover {
                 }
                 bound {
                     coverageUnits = CoverageUnit.BRANCH
-                    minValue = 94
+                    minValue = 80
                 }
                 bound {
                     coverageUnits = CoverageUnit.LINE

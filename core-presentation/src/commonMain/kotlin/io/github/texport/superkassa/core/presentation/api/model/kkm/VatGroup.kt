@@ -25,6 +25,10 @@ enum class VatGroup {
     @Schema(description = "НДС 10%")
     VAT_10,
 
+    /** НДС 12%, ставка до 2026 года: нужна для возврата по старому чеку. */
+    @Schema(description = "НДС 12%")
+    VAT_12,
+
     /** НДС 16% */
     @Schema(description = "НДС 16%")
     VAT_16

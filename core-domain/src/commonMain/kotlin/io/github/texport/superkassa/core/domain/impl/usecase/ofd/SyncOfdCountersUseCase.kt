@@ -13,8 +13,10 @@ import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.EnforceAutonomousLimitsUseCase
+import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
+import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.impl.helper.OfdInfoCountersSnapshotParser
 import io.github.texport.superkassa.core.domain.impl.helper.OfdResponseParser
 
@@ -106,14 +108,18 @@ class SyncOfdCountersUseCase(
                         storage.upsertCounter(kkmId, CounterScopes.SHIFT, currentShiftId, key, value)
                     }
                 } else {
-                    // Если в ОФД смена закрыта, но локально числится открытой — закрываем локальную смену
+                    // Смену закрывает Z-отчёт, а не сверка. Раньше здесь
+                    // стояло закрытие локальной смены временем из ответа
+                    // ОФД — временем чужого, прошлого документа: смена 7
+                    // получила закрытие 02:40:53 при открытии в 03:23:54,
+                    // то есть закрылась раньше, чем открылась, и без отчёта.
+                    // Расхождение объявляется кассиру, а записанное в этой
+                    // сверке откатывается вместе с транзакцией.
                     val localOpenShift = storage.findOpenShift(kkmId)
                     if (localOpenShift != null) {
-                        storage.closeShift(
-                            shiftId = localOpenShift.id,
-                            closedAt = snapshot.closeShiftTimeMillis ?: now,
-                            status = ShiftStatus.CLOSED,
-                            closeDocumentId = null
+                        throw ConflictException(
+                            CoreStrings.kkmSyncShiftDiverged(localOpenShift.shiftNo),
+                            "KKM_SYNC_SHIFT_DIVERGED"
                         )
                     }
                 }

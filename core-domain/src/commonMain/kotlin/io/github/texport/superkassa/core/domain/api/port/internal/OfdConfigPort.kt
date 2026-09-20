@@ -31,11 +31,11 @@ interface OfdConfigPort {
         OfdTagValidator.parseTag(tag)
 
     /**
-     * Проверяет, что существует конечная точка (endpoint) для данной пары providerId + environmentId.
+     * Проверяет, что для пары providerId + environmentId есть куда отправлять команды.
      *
      * @param providerId идентификатор провайдера ОФД.
      * @param environmentId идентификатор окружения.
-     * @return `true`, если endpoint зарегистрирован; `false` в противном случае.
+     * @return `true`, если адрес известен; `false` в противном случае.
      */
     fun hasEndpoint(providerId: String, environmentId: String): Boolean
 }

@@ -4,10 +4,14 @@ import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
+import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
+import io.github.texport.superkassa.core.domain.api.model.auth.StandardPin
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.port.internal.PinHasherPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+
+import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 
 /**
  * Сценарий проверки прав доступа (авторизации) пользователя ККМ.
@@ -22,6 +26,8 @@ class AuthorizeUserUseCase(
     private val storage: StoragePort,
     private val pinHasher: PinHasherPort
 ) {
+    private val logger = getLogger(AuthorizeUserUseCase::class)
+
     /**
      * Проверяет, существует ли пользователь с указанным ПИН-кодом на данной кассе и обладает ли он нужной ролью.
      *
@@ -33,18 +39,57 @@ class AuthorizeUserUseCase(
      * @throws ForbiddenException Если пользователь не найден или его роль не входит в список разрешенных.
      */
     fun execute(kkmId: String, pin: String, allowed: Set<UserRole>, allowDefaultPin: Boolean = false) {
-        if (pin.isBlank()) {
-            throw ValidationException(CoreStrings.userPinRequired(), "PIN_REQUIRED")
-        }
-        if (!allowDefaultPin && (pin == "0000" || pin == "1111")) {
-            throw ValidationException(CoreStrings.defaultPinNotAllowed(), "DEFAULT_PIN_NOT_ALLOWED")
-        }
-        val pinHash = pinHasher.hash(pin)
-        val user = storage.findUserByPin(kkmId, pinHash)
-            ?: throw ForbiddenException(CoreStrings.userNotFound(), "USER_NOT_FOUND")
+        logger.info(
+            "AuthorizeUserUseCase.execute: validating authorization for kkmId='{}', allowedRoles={}",
+            kkmId,
+            allowed
+        )
+        val user = identify(kkmId, pin, allowDefaultPin)
         if (!allowed.contains(user.role)) {
+            logger.warn(
+                "AuthorizeUserUseCase.execute FAILED: user role='{}' forbidden for kkmId='{}'",
+                user.role,
+                kkmId
+            )
             throw ForbiddenException(CoreStrings.userForbidden(), "USER_FORBIDDEN")
         }
+        logger.info(
+            "AuthorizeUserUseCase.execute SUCCESS: user userId='{}', role='{}' authorized for kkmId='{}'",
+            user.id,
+            user.role,
+            kkmId
+        )
+    }
+
+    /**
+     * Узнаёт, кто стоит за ПИН-кодом, не спрашивая о роли.
+     *
+     * Нужен там, где роль не проверяется, а выясняется: рабочее место
+     * показывает кассиру только доступные ему разделы, а не встречает
+     * его отказами на тех, куда ему нельзя.
+     *
+     * @param kkmId Идентификатор кассы.
+     * @param pin ПИН-код пользователя.
+     * @param allowDefaultPin Разрешить стандартные ПИН-коды.
+     * @return Пользователь кассы [KkmUser].
+     * @throws ValidationException Если ПИН-код пуст или стандартный, когда они запрещены.
+     * @throws ForbiddenException Если пользователя с таким ПИН-кодом на кассе нет.
+     */
+    fun identify(kkmId: String, pin: String, allowDefaultPin: Boolean = false): KkmUser {
+        if (pin.isBlank()) {
+            logger.warn("AuthorizeUserUseCase.identify FAILED: empty PIN provided for kkmId='{}'", kkmId)
+            throw ValidationException(CoreStrings.userPinRequired(), "PIN_REQUIRED")
+        }
+        if (!allowDefaultPin && StandardPin.isStandard(pin)) {
+            logger.warn("AuthorizeUserUseCase.identify FAILED: default PIN used when forbidden for kkmId='{}'", kkmId)
+            throw ValidationException(CoreStrings.defaultPinNotAllowed(), "DEFAULT_PIN_NOT_ALLOWED")
+        }
+        val user = storage.findUserByPin(kkmId, pinHasher.hash(pin))
+        if (user == null) {
+            logger.warn("AuthorizeUserUseCase.identify FAILED: no user found for kkmId='{}'", kkmId)
+            throw ForbiddenException(CoreStrings.userNotFound(), "USER_NOT_FOUND")
+        }
+        return user
     }
 
     /**

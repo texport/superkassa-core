@@ -40,19 +40,19 @@ object ZxTicketOperationsBlockBuilder {
                 val countKey = CounterKeyFormats.PAYMENT_COUNT.format(op, payKey)
                 val paySum = counters[sumKey] ?: 0L
                 val payCount = counters[countKey] ?: 0L
-                TicketPaymentAggregate(payment = payKey, sumBills = paySum, count = payCount)
+                TicketPaymentAggregate(payment = payKey, sumTiyn = paySum, count = payCount)
             }
 
             result += TicketOperationAggregate(
                 operation = op,
                 ticketsTotalCount = totalCount,
                 ticketsCount = count,
-                ticketsSumBills = sum,
+                ticketsSumTiyn = sum,
                 payments = payments,
                 offlineCount = offlineCount,
-                discountSumBills = discountSum,
-                markupSumBills = markupSum,
-                changeSumBills = changeSum
+                discountSumTiyn = discountSum,
+                markupSumTiyn = markupSum,
+                changeSumTiyn = changeSum
             )
         }
         return result

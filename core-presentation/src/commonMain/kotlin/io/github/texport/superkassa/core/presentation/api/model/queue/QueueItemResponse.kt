@@ -19,7 +19,10 @@ data class QueueItemResponse(
     val status: String,
     @Schema(description = "Порядковый номер попытки отправки", example = "2")
     val attempt: Int,
-    @Schema(description = "Время следующей попытки отправки (Unix timestamp в миллисекундах)", example = "1718000000000")
+    @Schema(
+        description = "Время следующей попытки отправки (Unix timestamp в миллисекундах)",
+        example = "1718000000000"
+    )
     val nextAttemptAt: Long?,
     @Schema(description = "Текст последней технической ошибки", example = "Timeout error")
     val lastError: String?,

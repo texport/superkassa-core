@@ -69,6 +69,39 @@ class OfdCommandRequestFactoryTest {
     }
 
     @Test
+    fun testBuildReportsRealOfflineWindow() {
+        // Касса ушла в автономный режим в 400-й миллисекунде, досылка идёт
+        // в 1000-й: ОФД обязан увидеть промежуток, а не нулевую точку.
+        val kkm = KkmInfo(
+            id = "kkm-1",
+            createdAt = 0L,
+            updatedAt = 0L,
+            mode = "ACTIVE",
+            state = "ACTIVE",
+            ofdProvider = "PROVIDER_TAG",
+            systemId = "12345",
+            registrationNumber = "REG_NUM",
+            factoryNumber = "FAC_NUM",
+            autonomousSince = 400L
+        )
+        every { ofdConfig.parseTag("PROVIDER_TAG") } returns ("PROVIDER" to "PRODUCTION")
+        every { ofdConfig.validateAndFormatTag("PROVIDER", "PRODUCTION") } returns "PROVIDER:PRODUCTION"
+
+        val request = factory.build(
+            kkm = kkm,
+            commandType = OfdCommandType.TICKET,
+            payloadRef = "payload-1",
+            token = 100L,
+            reqNum = 1,
+            now = 1000L,
+            defaultServiceInfo = { defaultService }
+        )
+
+        assertEquals(400L, request.offlineBeginMillis)
+        assertEquals(1000L, request.offlineEndMillis)
+    }
+
+    @Test
     fun testBuildMissingProvider() {
         val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
         assertFailsWith<ValidationException> {

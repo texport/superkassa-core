@@ -9,6 +9,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import kz.mybrain.ofdcodec.application.DefaultRegistry
 import kz.mybrain.ofdcodec.application.OfdCodec
 import kz.mybrain.ofdcodec.domain.model.OfdCodecException
+import kz.mybrain.ofdcodec.domain.registry.OfdRegistry
+import kz.mybrain.ofdcodec.ofd.kazakhtelecom.v203.KazakhtelecomV203Module
 
 /**
  * Сериализатор и декодировщик сообщений протокола ОФД через библиотеку `ofd-proto-codec`.
@@ -89,6 +91,25 @@ class OfdProtocolCodec(
     }
 
     companion object {
+        /**
+         * Кодек для указанного провайдера ОФД.
+         *
+         * Модуль 2.0.3 регистрируется под идентификатором провайдера: формат
+         * провода у версии протокола один, различается только адресат.
+         *
+         * Реестр держит ровно один ОФД намеренно. Заголовок CPCR не несёт
+         * признака ОФД, поэтому резолвер определяет адресата единственным
+         * способом — по единственной регистрации. Второй идентификатор
+         * в том же реестре ломает декодирование обоим.
+         */
+        fun forProvider(ofdProviderId: String): OfdProtocolCodec = OfdProtocolCodec(
+            OfdCodec(
+                OfdRegistry().apply {
+                    KazakhtelecomV203Module.register(this, ofdProviderId.lowercase())
+                }
+            )
+        )
+
         /**
          * Преобразует JSON-строку в объект [JsonElement].
          *

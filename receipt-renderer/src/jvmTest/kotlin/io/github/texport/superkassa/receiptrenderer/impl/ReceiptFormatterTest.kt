@@ -13,17 +13,17 @@ import kotlin.test.assertEquals
 class ReceiptFormatterTest {
 
     @Test
-    fun testMoneyToCents() {
-        assertEquals(10050L, ReceiptFormatter.moneyToCents(Money(100, 50)))
-        assertEquals(0L, ReceiptFormatter.moneyToCents(Money(0, 0)))
-        assertEquals(99L, ReceiptFormatter.moneyToCents(Money(0, 99)))
+    fun testMoneyToTiyn() {
+        assertEquals(10050L, ReceiptFormatter.moneyToTiyn(Money(100, 50)))
+        assertEquals(0L, ReceiptFormatter.moneyToTiyn(Money(0, 0)))
+        assertEquals(99L, ReceiptFormatter.moneyToTiyn(Money(0, 99)))
     }
 
     @Test
-    fun testFormatCents() {
-        assertEquals("100.50", ReceiptFormatter.formatCents(10050L))
-        assertEquals("0.00", ReceiptFormatter.formatCents(0L))
-        assertEquals("0.09", ReceiptFormatter.formatCents(9L))
+    fun testFormatTiyn() {
+        assertEquals("100.50", ReceiptFormatter.formatTiyn(10050L))
+        assertEquals("0.00", ReceiptFormatter.formatTiyn(0L))
+        assertEquals("0.09", ReceiptFormatter.formatTiyn(9L))
     }
 
     @Test

@@ -13,6 +13,7 @@ import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
+import io.github.texport.superkassa.core.domain.api.model.auth.StandardPin
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
@@ -25,6 +26,7 @@ import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBranding
+import io.github.texport.superkassa.core.domain.api.model.receipt.TicketAd
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfdConfigPort
@@ -309,6 +311,25 @@ class KkmUseCasesTest {
                 ofdToken = "token",
                 defaultVatGroup = VatGroup.VAT_10,
                 okved = "12345"
+            )
+        }
+    }
+
+    @Test
+    fun testInitKkmSimpleRejectsStandardAdminPin() {
+        // Касса с таким пином родилась бы недоступной: узел по нему не пускает,
+        // а сменить его можно только войдя.
+        every { kkmCommonHelper.ensureSystemTimeValid() } returns Unit
+        assertFailsWith<ValidationException> {
+            registerKkm.initKkmSimple(
+                pin = "0000",
+                ofdId = "ofd",
+                ofdEnvironment = "prod",
+                ofdSystemId = "sys-1",
+                ofdToken = "token",
+                defaultVatGroup = VatGroup.VAT_10,
+                okved = "12345",
+                adminPin = "1111"
             )
         }
     }
@@ -711,7 +732,7 @@ class KkmUseCasesTest {
         assertEquals("reg-1", result.registrationNumber)
         assertEquals("enc-777", result.tokenEncryptedBase64)
         verify { storage.upsertCounter(result.id, "GLOBAL", null, CounterKeyFormats.NON_NULLABLE_SUM.format("SELL"), 9999L) }
-        verify { storage.createUser(result.id, any(), "Администратор", UserRole.ADMIN, "0000", "hash", 1000L) }
+        verify { storage.createUser(result.id, any(), "Администратор", UserRole.ADMIN, "hash", 1000L) }
     }
 
     @Test
@@ -830,10 +851,38 @@ class KkmUseCasesTest {
     }
 
     @Test
-    fun testInitializeKkmRegistrationEnsureDefaultUsersExist() {
+    fun testInitializeKkmRegistrationKeepsExistingUsers() {
         every { storage.listUsers("kkm-1") } returns listOf(mockk())
-        initializeKkmRegistration.ensureDefaultUsers("kkm-1", 1000L)
-        verify(exactly = 0) { storage.createUser(any(), any(), any(), any(), any(), any(), any()) }
+        initializeKkmRegistration.ensureAdministrator("kkm-1", 1000L)
+        verify(exactly = 0) { storage.createUser(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun testInitializeKkmRegistrationUsesChosenAdminPin() {
+        every { storage.listUsers("kkm-1") } returns emptyList()
+        every { idGenerator.nextId() } returns "user-1"
+        every { pinHasher.hash(any()) } answers { "hash-" + firstArg<String>() }
+        every { storage.createUser(any(), any(), any(), any(), any(), any()) } returns true
+
+        initializeKkmRegistration.ensureAdministrator("kkm-1", 1000L, "4821")
+
+        verify {
+            storage.createUser("kkm-1", "user-1", any(), UserRole.ADMIN, "hash-4821", 1000L)
+        }
+    }
+
+    @Test
+    fun testInitializeKkmRegistrationFallsBackToBootstrapPin() {
+        every { storage.listUsers("kkm-1") } returns emptyList()
+        every { idGenerator.nextId() } returns "user-1"
+        every { pinHasher.hash(any()) } answers { "hash-" + firstArg<String>() }
+        every { storage.createUser(any(), any(), any(), any(), any(), any()) } returns true
+
+        initializeKkmRegistration.ensureAdministrator("kkm-1", 1000L, "   ")
+
+        verify {
+            storage.createUser("kkm-1", "user-1", any(), UserRole.ADMIN, "hash-" + StandardPin.BOOTSTRAP, 1000L)
+        }
     }
 
     // ==========================================
@@ -936,6 +985,20 @@ class KkmUseCasesTest {
         }
     }
 
+    @Test
+    fun testExitProgrammingKeepsTheBlock() {
+        // Блокировку снимает ОФД ответом OK либо ввод верного токена.
+        // Круг «войти в программирование — выйти» гасил её вместе
+        // со снятием кассы с учёта.
+        every { clock.now() } returns 1000L
+        val blocked = kkm.copy(state = KkmState.PROGRAMMING.name, blockReasonCode = 1018)
+
+        val updated = exitProgramming.execute(blocked)
+
+        assertEquals(KkmState.BLOCKED.name, updated.state)
+        assertEquals(1018, updated.blockReasonCode)
+    }
+
     // ==========================================
     // UpdateKkmSettingsUseCase Tests
     // ==========================================
@@ -954,6 +1017,29 @@ class KkmUseCasesTest {
         val res = updateKkmSettings.updateGeneralSettings(kkm, true, false)
         assertEquals(true, res.autoCloseShift)
         verify { storage.updateKkm(match { it.autoCloseShift }) }
+    }
+
+    @Test
+    fun testUpdateNameStoresTrimmedName() {
+        every { clock.now() } returns 1000L
+        val res = updateKkmSettings.updateName(kkm, "  Касса 2 на Достык  ")
+        assertEquals("Касса 2 на Достык", res.name)
+        verify { storage.updateKkm(match { it.name == "Касса 2 на Достык" }) }
+    }
+
+    @Test
+    fun testUpdateNameClearsBlankName() {
+        every { clock.now() } returns 1000L
+        val named = kkm.copy(name = "Касса 1 на Абая")
+        assertNull(updateKkmSettings.updateName(named, "   ").name)
+        assertNull(updateKkmSettings.updateName(named, null).name)
+    }
+
+    @Test
+    fun testUpdateNameDoesNotRequireProgramming() {
+        every { clock.now() } returns 1000L
+        val activeKkm = kkm.copy(state = KkmState.ACTIVE.name, mode = KkmMode.REGISTRATION.name)
+        assertEquals("Касса у входа", updateKkmSettings.updateName(activeKkm, "Касса у входа").name)
     }
 
     @Test
@@ -1016,6 +1102,20 @@ class KkmUseCasesTest {
         val res = updateKkmSettings.updateBranding(kkm, branding)
         assertEquals(branding, res.branding)
         verify { storage.updateKkm(match { it.branding == branding }) }
+    }
+
+    @Test
+    fun testUpdateBrandingKeepsOfdTicketAds() {
+        // Тексты оператора кассой не задаются: сохранение своих строк
+        // оставляет присланную ОФД рекламу на месте.
+        every { clock.now() } returns 1000L
+        val delivered = TicketAd("TICKET_AD_OFD", 17L, "Проверьте чек на сайте kgd.gov.kz")
+        val stored = kkm.copy(branding = ReceiptBranding(ofdTicketAds = listOf(delivered)))
+
+        val res = updateKkmSettings.updateBranding(stored, ReceiptBranding(footerMsg = "Хорошего дня"))
+
+        assertEquals(listOf(delivered), res.branding.ofdTicketAds)
+        assertEquals("Хорошего дня", res.branding.footerMsg)
     }
 
     // ==========================================
@@ -1088,7 +1188,13 @@ class KkmUseCasesTest {
         every { queue.canSendDirectly("kkm-1") } returns false
 
         assertFailsWith<ConflictException> {
-            enforceAutonomousLimits.execute(kkm.copy(autonomousSince = 500L, state = KkmState.BLOCKED.name))
+            enforceAutonomousLimits.execute(
+                kkm.copy(
+                    autonomousSince = 500L,
+                    state = KkmState.BLOCKED.name,
+                    blockReasonCode = 2001
+                )
+            )
         }
     }
 
@@ -1097,10 +1203,27 @@ class KkmUseCasesTest {
         every { clock.now() } returns 1000L
         every { queue.canSendDirectly("kkm-1") } returns true
 
-        enforceAutonomousLimits.execute(kkm.copy(autonomousSince = 500L, state = KkmState.BLOCKED.name))
+        enforceAutonomousLimits.execute(
+            kkm.copy(autonomousSince = 500L, state = KkmState.BLOCKED.name, blockReasonCode = 2001)
+        )
         verify {
             storage.updateKkm(match { it.state == KkmState.ACTIVE.name && it.autonomousSince == null })
         }
+    }
+
+    @Test
+    fun testBlockFromOfdIsNotLiftedByAnEmptyQueue() {
+        // Разошедшаяся очередь снимает только блокировку за долгую автономную
+        // работу. Касса, снятая с учёта или заблокированная сервером, так
+        // вернуться в работу не может: раньше снималась любая блокировка.
+        every { clock.now() } returns 1000L
+        every { queue.canSendDirectly("kkm-1") } returns true
+
+        enforceAutonomousLimits.execute(
+            kkm.copy(autonomousSince = 500L, state = KkmState.BLOCKED.name, blockReasonCode = 1018)
+        )
+
+        verify(exactly = 0) { storage.updateKkm(any()) }
     }
 
     @Test

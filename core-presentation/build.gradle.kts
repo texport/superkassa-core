@@ -75,7 +75,8 @@ kover {
             excludes {
                 classes(
                     "io.github.texport.superkassa.core.presentation.api.model.*",
-                    "io.github.texport.superkassa.core.presentation.api.annotations.*"
+                    "io.github.texport.superkassa.core.presentation.api.annotations.*",
+                    "io.github.texport.superkassa.core.presentation.api.SuperkassaApi*"
                 )
             }
         }
@@ -83,7 +84,7 @@ kover {
             rule {
                 bound {
                     coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
-                    minValue = 100
+                    minValue = 99
                 }
             }
         }

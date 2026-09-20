@@ -14,6 +14,14 @@ class OfdTagValidatorTest {
     }
 
     @Test
+    fun referenceProviderRejectsEnvironmentWithoutAddress() {
+        val ex = assertFailsWith<ValidationException> {
+            OfdTagValidator.validateAndFormatTag("KAZAKHTELECOM", "DEV")
+        }
+        assertEquals("OFD_ENVIRONMENT_UNKNOWN", ex.code)
+    }
+
+    @Test
     fun testValidateAndFormatTagUnknownProvider() {
         val ex = assertFailsWith<ValidationException> {
             OfdTagValidator.validateAndFormatTag("INVALID_PROVIDER", "PROD")

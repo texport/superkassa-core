@@ -15,7 +15,8 @@ internal object SaleItemsComponent {
         taxRegime: TaxRegime,
         receiptDiscount: Money?,
         t: (String) -> String,
-        translateInlineKey: (String) -> String
+        translateInlineKey: (String) -> String,
+        namePair: (String, String) -> String
     ): String {
         return items.joinToString("") { item ->
             val priceStr = item.price.formatted()
@@ -52,6 +53,10 @@ internal object SaleItemsComponent {
             } else {
                 ""
             }
+            // Наименование двуязычное, как и всё остальное на ленте: пара
+            // «казахское / русское» той же дробью, что и подписи. Если
+            // казахского нет, пара схлопывается в одну строку сама.
+            val nameHtml = namePair(item.name.escaped(), (item.nameKk ?: item.name).escaped())
             val itemClass = if (item.isStorno) "storno-item" else ""
             val stornoBadgeHtml = if (item.isStorno) {
                 """ <span class="storno-badge">${t("storno")}</span>"""
@@ -62,7 +67,7 @@ internal object SaleItemsComponent {
             <div class="item-row-card $itemClass">
                 <table class="item-row-table">
                     <tr>
-                        <td class="item-name-cell">${item.name.escaped()}$stornoBadgeHtml</td>
+                        <td class="item-name-cell">$nameHtml$stornoBadgeHtml</td>
                         <td class="item-sum-cell">${if (item.isStorno) "-" else ""}$sumStr</td>
                     </tr>
                     <tr>

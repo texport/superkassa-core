@@ -636,19 +636,19 @@ body {
 </div>
             <div class="status-chips-container">
     <span class="badge badge-warning">Фискальді емес / Не фискальный</span>
-    <span class="badge badge-neutral">Жіберілмейді / Не передается</span>
+    <span class="badge badge-success">Жіберілді / Отправлен</span>
 </div>
 
             <fieldset class="section-card">
-    <legend class="card-label">БАҚ туралы ақпарат / Информация о ККМ</legend>
+    <legend class="card-label">БКМ туралы ақпарат / Информация о ККМ</legend>
     <table class="meta-table" style="margin-top: 4px;">
-        <tr><td>БАҚ ID / ККМ ID</td><td style="word-break: break-all; white-space: normal;">kkm-123</td></tr>
-        <tr><td>ТНМ / РНМ</td><td>RN-999888777</td></tr>
+        <tr><td>БКМ ID / ККМ ID</td><td style="word-break: break-all; white-space: normal;">kkm-123</td></tr>
+        <tr><td>МТН / РНМ</td><td>RN-999888777</td></tr>
         <tr><td>МЗН / ЗНМ</td><td>FN-777666</td></tr>
         <tr><td>Ауысым № / Смена №</td><td>5</td></tr>
         
-        <tr><td>Күні мен уақыты / Дата и время</td><td>17.07.2026 23:31:50</td></tr>
-        <tr><td>Ашылған күні / Открыта</td><td style="word-break: break-all; white-space: normal;">22.06.2026 10:46:40</td></tr><tr><td>Есеп уақыты / Время отчета</td><td style="word-break: break-all; white-space: normal;">17.07.2026 23:31:50</td></tr>
+        <tr><td>Күні мен уақыты / Дата и время</td><td>20.09.2026 19:36:45</td></tr>
+        <tr><td>Ашылған күні / Открыта</td><td style="word-break: break-all; white-space: normal;">22.06.2026 08:46:40</td></tr><tr><td>Есеп уақыты / Время отчета</td><td style="word-break: break-all; white-space: normal;">20.09.2026 19:36:45</td></tr>
     </table>
 </fieldset>
             <div class="rule"></div>
@@ -819,7 +819,7 @@ body {
     <table class="tax-row-table">
         <tr>
             <td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Сомасы</span><span class="lang-fraction-bottom">Сумма</span></span></td>
-            <td class="tax-sum-cell" style="color: var(--m3-error); font-weight: bold;">-0.00</td>
+            <td class="tax-sum-cell">0.00</td>
         </tr>
     </table>
 </fieldset><fieldset class="tax-row-card">
@@ -827,7 +827,7 @@ body {
     <table class="tax-row-table">
         <tr>
             <td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Сомасы</span><span class="lang-fraction-bottom">Сумма</span></span></td>
-            <td class="tax-sum-cell" style="color: var(--m3-error); font-weight: bold;">-0.00</td>
+            <td class="tax-sum-cell">0.00</td>
         </tr>
     </table>
 </fieldset><fieldset class="tax-row-card">
@@ -835,7 +835,7 @@ body {
     <table class="tax-row-table">
         <tr>
             <td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Сомасы</span><span class="lang-fraction-bottom">Сумма</span></span></td>
-            <td class="tax-sum-cell" style="color: var(--m3-error); font-weight: bold;">-0.00</td>
+            <td class="tax-sum-cell">0.00</td>
         </tr>
     </table>
 </fieldset>
@@ -852,7 +852,7 @@ body {
     <table class="tax-row-table">
         <tr>
             <td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Сомасы</span><span class="lang-fraction-bottom">Сумма</span></span></td>
-            <td class="tax-sum-cell" style="color: var(--m3-success); font-weight: bold;">+0.00</td>
+            <td class="tax-sum-cell">0.00</td>
         </tr>
     </table>
 </fieldset><fieldset class="tax-row-card">
@@ -860,7 +860,7 @@ body {
     <table class="tax-row-table">
         <tr>
             <td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Сомасы</span><span class="lang-fraction-bottom">Сумма</span></span></td>
-            <td class="tax-sum-cell" style="color: var(--m3-success); font-weight: bold;">+0.00</td>
+            <td class="tax-sum-cell">0.00</td>
         </tr>
     </table>
 </fieldset><fieldset class="tax-row-card">
@@ -868,7 +868,7 @@ body {
     <table class="tax-row-table">
         <tr>
             <td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Сомасы</span><span class="lang-fraction-bottom">Сумма</span></span></td>
-            <td class="tax-sum-cell" style="color: var(--m3-success); font-weight: bold;">+0.00</td>
+            <td class="tax-sum-cell">0.00</td>
         </tr>
     </table>
 </fieldset>
@@ -984,6 +984,26 @@ body {
     </table>
 </fieldset><fieldset class="tax-row-card" style="margin-top: 14px; margin-bottom: 8px;">
     <legend class="card-label">ҚҚС 10% / НДС 10% (Сатып алуды қайтару / Возврат покупки)</legend>
+    <table class="tax-row-table">
+        <tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Салық сомасы</span><span class="lang-fraction-bottom">Сумма налога</span></span></td><td class="tax-sum-cell bold">0.00</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Айналым</span><span class="lang-fraction-bottom">Оборот</span></span></td><td class="tax-sum-cell num">0.00</td></tr>
+    </table>
+</fieldset><fieldset class="tax-row-card" style="margin-top: 14px; margin-bottom: 8px;">
+    <legend class="card-label">ҚҚС 12% / НДС 12% (Сату / Продажа)</legend>
+    <table class="tax-row-table">
+        <tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Салық сомасы</span><span class="lang-fraction-bottom">Сумма налога</span></span></td><td class="tax-sum-cell bold">0.00</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Айналым</span><span class="lang-fraction-bottom">Оборот</span></span></td><td class="tax-sum-cell num">0.00</td></tr>
+    </table>
+</fieldset><fieldset class="tax-row-card" style="margin-top: 14px; margin-bottom: 8px;">
+    <legend class="card-label">ҚҚС 12% / НДС 12% (Сатуды қайтару / Возврат продажи)</legend>
+    <table class="tax-row-table">
+        <tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Салық сомасы</span><span class="lang-fraction-bottom">Сумма налога</span></span></td><td class="tax-sum-cell bold">0.00</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Айналым</span><span class="lang-fraction-bottom">Оборот</span></span></td><td class="tax-sum-cell num">0.00</td></tr>
+    </table>
+</fieldset><fieldset class="tax-row-card" style="margin-top: 14px; margin-bottom: 8px;">
+    <legend class="card-label">ҚҚС 12% / НДС 12% (Сатып алу / Покупка)</legend>
+    <table class="tax-row-table">
+        <tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Салық сомасы</span><span class="lang-fraction-bottom">Сумма налога</span></span></td><td class="tax-sum-cell bold">0.00</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Айналым</span><span class="lang-fraction-bottom">Оборот</span></span></td><td class="tax-sum-cell num">0.00</td></tr>
+    </table>
+</fieldset><fieldset class="tax-row-card" style="margin-top: 14px; margin-bottom: 8px;">
+    <legend class="card-label">ҚҚС 12% / НДС 12% (Сатып алуды қайтару / Возврат покупки)</legend>
     <table class="tax-row-table">
         <tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Салық сомасы</span><span class="lang-fraction-bottom">Сумма налога</span></span></td><td class="tax-sum-cell bold">0.00</td></tr><tr><td class="tax-details-cell"><span class="lang-fraction"><span class="lang-fraction-top">Айналым</span><span class="lang-fraction-bottom">Оборот</span></span></td><td class="tax-sum-cell num">0.00</td></tr>
     </table>
@@ -1178,7 +1198,6 @@ body {
             
             <div class="footer center">
     
-    <div class="footer-item muted">Есептің баспа түрі. / Печатная форма отчета.</div>
     
 </div>
     </div>

@@ -12,5 +12,10 @@ data class QueueStatusResponse(
     @Schema(description = "Наличие неотправленных задач", example = "true")
     val hasPendingItems: Boolean,
     @Schema(description = "Количество неотправленных задач", example = "2")
-    val pendingCount: Int
+    val pendingCount: Int,
+    @Schema(
+        description = "Сколько документов до ОФД так и не дошло: отправка прекращена",
+        example = "0"
+    )
+    val rejectedCount: Int = 0
 )

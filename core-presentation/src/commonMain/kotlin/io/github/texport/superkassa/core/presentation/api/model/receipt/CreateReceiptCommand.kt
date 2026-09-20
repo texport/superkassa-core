@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.api.model.receipt
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import io.github.texport.superkassa.core.presentation.api.annotations.NotBlank
 import io.github.texport.superkassa.core.presentation.api.annotations.NotEmpty
@@ -32,25 +33,27 @@ data class CreateReceiptCommand(
     @Schema(description = "Процент скидки на чек (0-100)", example = "5.0")
     @field:DecimalMin("0.0")
     @field:DecimalMax("100.0")
-    val discountPercent: Double?,
+    val discountPercent: Decimal?,
     @Schema(description = "Сумма скидки на чек", example = "150.0")
     @field:DecimalMin("0.0")
-    val discountSum: Double?,
+    val discountSum: Decimal?,
     @Schema(description = "Процент наценки на чек (0-100)", example = "0.0")
     @field:DecimalMin("0.0")
     @field:DecimalMax("100.0")
-    val markupPercent: Double?,
+    val markupPercent: Decimal?,
     @Schema(description = "Сумма наценки на чек", example = "0.0")
     @field:DecimalMin("0.0")
-    val markupSum: Double?,
+    val markupSum: Decimal?,
     @Schema(description = "Способы оплаты чека")
     @field:NotEmpty(message = "Укажите хотя бы один способ оплаты")
     val payments: List<@Valid ReceiptPaymentRequest>,
     @Schema(description = "Сумма полученных средств от покупателя", example = "5000.0")
     @field:DecimalMin("0.0")
-    val taken: Double?,
+    val taken: Decimal?,
     @Schema(description = "Информация об исходном чеке (для чеков возврата)")
     val parentTicket: ParentTicketRequest? = null,
+    /** Отраслевые реквизиты чека. */
+    val domain: ReceiptDomainRequest? = null,
     @Schema(description = "Группа НДС по умолчанию для чека (NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16)", example = "NO_VAT")
     val defaultVatGroup: String? = null,
     @Schema(description = "БИН/ИИН покупателя (для юридических лиц)", example = "123456789012")

@@ -1,7 +1,12 @@
 package io.github.texport.superkassa.core.presentation.impl.mapper
 
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
+import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptDomainRequest
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDomainType
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDomain as DomainAttributes
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.receipt.ParentTicket
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem as DomainReceiptItem
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
 import io.github.texport.superkassa.core.domain.impl.usecase.receipt.CreateReceiptCommand
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptResult
@@ -20,6 +25,7 @@ object ReceiptMapper {
     fun toItemInput(dto: ReceiptItemRequest): CreateReceiptCommand.ItemInput {
         return CreateReceiptCommand.ItemInput(
             name = dto.name,
+            nameKk = dto.nameKk,
             price = dto.price,
             quantity = dto.quantity,
             barcode = dto.barcode,
@@ -78,15 +84,16 @@ object ReceiptMapper {
         operation: ReceiptOperationType,
         idempotencyKey: String,
         items: List<ReceiptItemRequest>,
-        discountPercent: Double?,
-        discountSum: Double?,
-        markupPercent: Double?,
-        markupSum: Double?,
+        discountPercent: Decimal?,
+        discountSum: Decimal?,
+        markupPercent: Decimal?,
+        markupSum: Decimal?,
         payments: List<ReceiptPaymentRequest>,
-        taken: Double?,
+        taken: Decimal?,
         parentTicket: ParentTicketRequest? = null,
         defaultVatGroup: String? = null,
-        customerBin: String? = null
+        customerBin: String? = null,
+        domain: ReceiptDomainRequest? = null
     ): CreateReceiptCommand {
         return CreateReceiptCommand(
             kkmId = kkmId,
@@ -102,7 +109,8 @@ object ReceiptMapper {
             taken = taken,
             parentTicket = toParentTicket(parentTicket),
             defaultVatGroup = defaultVatGroup,
-            customerBin = customerBin
+            customerBin = customerBin,
+            domain = toDomainAttributes(domain)
         )
     }
 
@@ -119,7 +127,9 @@ object ReceiptMapper {
         io.github.texport.superkassa.core.domain.impl.usecase.receipt.CreateReceiptCommand(
             kkmId = dto.kkmId,
             pin = dto.pin,
-            operation = io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType.valueOf(dto.operation),
+            operation = io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType.valueOf(
+                dto.operation
+            ),
             idempotencyKey = dto.idempotencyKey,
             items = dto.items.map { toItemInput(it) },
             discountPercent = dto.discountPercent,
@@ -138,4 +148,41 @@ object ReceiptMapper {
 
     fun toDomain(type: PrintDocumentType): io.github.texport.superkassa.core.domain.api.model.report.PrintDocumentType =
         io.github.texport.superkassa.core.domain.api.model.report.PrintDocumentType.valueOf(type.name)
+
+    /** Переводит отраслевые реквизиты внешнего запроса в доменную модель. */
+    private fun toDomainAttributes(dto: ReceiptDomainRequest?): DomainAttributes? {
+        if (dto == null) return null
+        val type = ReceiptDomainType.entries.firstOrNull { it.name == dto.type }
+            ?: throw IllegalArgumentException("Unknown domain type " + dto.type)
+        return DomainAttributes(
+            type = type,
+            services = dto.services?.let { DomainAttributes.Services(it.accountNumber) },
+            gasOil = dto.gasOil?.let {
+                DomainAttributes.GasOil(it.correctionNumber, it.correctionSum?.let(Money::fromTenge), it.cardNumber)
+            },
+            taxi = dto.taxi?.let { DomainAttributes.Taxi(it.carNumber, it.isOrder, Money.fromTenge(it.currentFee)) },
+            parking = dto.parking?.let { DomainAttributes.Parking(it.beginTimeMillis, it.endTimeMillis) }
+        )
+    }
 }
+
+/**
+ * Пробитая позиция — как её показать кассиру и как из неё собрать возврат.
+ *
+ * Количество остаётся в тысячных долях, как в протоколе: перевод в дробное
+ * число здесь означал бы второе округление того же значения.
+ */
+internal fun ReceiptMapper.toView(item: DomainReceiptItem): ReceiptItemView = ReceiptItemView(
+    name = item.name,
+    nameKk = item.nameKk,
+    price = Decimal.ofScaled(item.price.tiyn(), TIYN_SCALE),
+    quantityThousandths = item.quantity,
+    sum = Decimal.ofScaled(item.sum.tiyn(), TIYN_SCALE),
+    vatGroup = item.vatGroup?.name,
+    measureUnitCode = item.measureUnitCode,
+    barcode = item.barcode,
+    isStorno = item.isStorno
+)
+
+/** Знаков после запятой у тенге. */
+private const val TIYN_SCALE = 2

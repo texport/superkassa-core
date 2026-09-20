@@ -19,14 +19,16 @@ interface QueueStoragePort {
     fun enqueue(command: QueueCommand): Boolean
 
     /**
-     * Возвращает одну команду, готовую для обработки на момент времени `now`.
+     * Возвращает команды для кассы и линии очереди, отфильтрованные по набору статусов.
+     * Реализация (БД) не должна применять никакой бизнес-логики (например, проверку времени retryAt),
+     * а должна вернуть все элементы, чей статус совпадает с одним из переданных.
      *
      * @param cashboxId уникальный идентификатор кассы.
-     * @param lane линия очереди для поиска команды.
-     * @param now текущее системное время (в миллисекундах) для проверки времени следующей попытки.
-     * @return объект команды, готовой к выполнению, или null, если команд нет.
+     * @param lane линия очереди для поиска команд.
+     * @param statuses набор статусов для фильтрации.
+     * @return список найденных команд.
      */
-    fun nextPending(cashboxId: String, lane: QueueLane, now: Long): QueueCommand?
+    fun getCommandsByStatus(cashboxId: String, lane: QueueLane, statuses: Set<QueueStatus>): List<QueueCommand>
 
     /**
      * Обновляет статус команды, количество попыток, возможную ошибку и время следующего запуска.
@@ -73,13 +75,4 @@ interface QueueStoragePort {
      * @return true, если команды успешно удалены, иначе false.
      */
     fun deleteByCashbox(cashboxId: String): Boolean
-
-    /**
-     * Проверяет, существуют ли невыполненные команды в очереди для указанной кассы и линии.
-     *
-     * @param cashboxId уникальный идентификатор кассы.
-     * @param lane линия очереди.
-     * @return true, если невыполненные (или ожидающие повтора) команды существуют, иначе false.
-     */
-    fun hasPendingCommands(cashboxId: String, lane: QueueLane): Boolean
 }
