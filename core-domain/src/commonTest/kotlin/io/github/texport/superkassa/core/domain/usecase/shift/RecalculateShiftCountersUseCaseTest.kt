@@ -196,7 +196,11 @@ class RecalculateShiftCountersUseCaseTest {
         assertEquals(1L, rebuilt[CounterKeyFormats.TICKET_OFFLINE_COUNT.format("OPERATION_SELL_RETURN")])
         assertEquals(1L, rebuilt[CounterKeyFormats.TICKET_OFFLINE_COUNT.format("OPERATION_BUY_RETURN")])
 
-        val expectedRevenue = 216_000L - 60_000L + 96_000L - 52_000L
+        // Знак выручки у покупки тот же, что у денежного ящика: покупка
+        // деньги выдаёт и выручку уменьшает, возврат покупки возвращает
+        // их и увеличивает (эталон OperationCalculator.addTicket).
+        // Прежде здесь стоял обратный знак, и проверка закрепляла его.
+        val expectedRevenue = 216_000L - 60_000L - 96_000L + 52_000L
         assertEquals(expectedRevenue, rebuilt[CounterKeyFormats.REVENUE_SUM])
         assertEquals(0L, rebuilt[CounterKeyFormats.REVENUE_IS_NEGATIVE])
         assertTrue((rebuilt[CounterKeyFormats.TAX_SUM.format("VAT_16", "OPERATION_SELL")] ?: 0L) > 0L)
@@ -296,10 +300,14 @@ class RecalculateShiftCountersUseCaseTest {
 
             opCounts[operationKey] = (opCounts[operationKey] ?: 0L) + 1L
             opSums[operationKey] = (opSums[operationKey] ?: 0L) + total * 100L
+            // Знак выручки тот же, что у денежного ящика: покупка деньги
+            // выдаёт, возврат покупки возвращает (эталон
+            // OperationCalculator). Прежде ожидание считалось обратным
+            // правилом и закрепляло дефект.
             expectedRevenue +=
                 when (operation) {
-                    ReceiptOperationType.SELL, ReceiptOperationType.BUY -> total * 100L
-                    ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY_RETURN -> -total * 100L
+                    ReceiptOperationType.SELL, ReceiptOperationType.BUY_RETURN -> total * 100L
+                    ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY -> -total * 100L
                 }
         }
 

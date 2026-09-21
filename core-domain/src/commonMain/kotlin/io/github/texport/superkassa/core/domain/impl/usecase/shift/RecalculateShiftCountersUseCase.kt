@@ -243,10 +243,13 @@ class RecalculateShiftCountersUseCase(
             increment(counters, CounterKeyFormats.CASH_SUM, cashTiyn)
         }
 
-        // Рассчитываем влияние на общую выручку ККМ
+        // Рассчитываем влияние на общую выручку ККМ. Знак у покупки тот же,
+        // что у денежного ящика: покупка выдаёт деньги и выручку уменьшает,
+        // возврат покупки возвращает их и увеличивает — как в эталоне
+        // OperationCalculator.addTicket.
         val revenueDelta = when (request.operation) {
-            ReceiptOperationType.SELL, ReceiptOperationType.BUY -> sumValue
-            ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY_RETURN -> -sumValue
+            ReceiptOperationType.SELL, ReceiptOperationType.BUY_RETURN -> sumValue
+            ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY -> -sumValue
         }
         if (revenueDelta != 0L) {
             val current = counters[CounterKeyFormats.REVENUE_SUM] ?: 0L

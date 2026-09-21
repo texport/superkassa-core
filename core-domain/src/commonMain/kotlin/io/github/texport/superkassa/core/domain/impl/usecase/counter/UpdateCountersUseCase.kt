@@ -158,9 +158,15 @@ class UpdateCountersUseCase(
         if (cashTiyn != 0L) {
             increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.CASH_SUM, cashTiyn)
         }
+        // Знак выручки у покупки тот же, что у денежного ящика: покупка
+        // выдаёт деньги из кассы и выручку уменьшает, возврат покупки —
+        // возвращает их и увеличивает. Прежде знак у этой пары был
+        // обратный, и смена, за которую касса отдала денег, показывала
+        // выручку со знаком плюс. Совпадает с эталоном
+        // OperationCalculator.addTicket.
         val revenueDelta = when (request.operation) {
-            ReceiptOperationType.SELL, ReceiptOperationType.BUY -> sumValue
-            ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY_RETURN -> -sumValue
+            ReceiptOperationType.SELL, ReceiptOperationType.BUY_RETURN -> sumValue
+            ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY -> -sumValue
         }
         if (revenueDelta != 0L) {
             val currentRevenue = storage.loadCounters(kkmId, CounterScopes.SHIFT, shiftId)[CounterKeyFormats.REVENUE_SUM] ?: 0L

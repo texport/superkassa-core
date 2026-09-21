@@ -102,8 +102,10 @@ class UpdateCountersUseCaseTest {
         assertEquals(120_000L, shift["operation.OPERATION_BUY.sum"])
         assertEquals(1L, shift["ticket.OPERATION_BUY.payment.PAYMENT_MOBILE.count"])
         assertEquals(120_000L, shift["ticket.OPERATION_BUY.payment.PAYMENT_MOBILE.sum"])
-        assertEquals(120_000L, shift["revenue.sum"])
-        assertEquals(0L, shift["revenue.is_negative"])
+        // Покупка выдаёт деньги из кассы и выручку уменьшает — как
+        // в эталоне OperationCalculator.
+        assertEquals(-120_000L, shift["revenue.sum"])
+        assertEquals(1L, shift["revenue.is_negative"])
     }
 
     @Test
@@ -127,8 +129,10 @@ class UpdateCountersUseCaseTest {
         assertEquals(30_000L, shift["operation.OPERATION_BUY_RETURN.sum"])
         assertEquals(1L, shift["ticket.OPERATION_BUY_RETURN.payment.PAYMENT_ELECTRONIC.count"])
         assertEquals(30_000L, shift["ticket.OPERATION_BUY_RETURN.payment.PAYMENT_ELECTRONIC.sum"])
-        assertEquals(-30_000L, shift["revenue.sum"])
-        assertEquals(1L, shift["revenue.is_negative"])
+        // Возврат покупки возвращает деньги в кассу и выручку
+        // увеличивает — как в эталоне OperationCalculator.
+        assertEquals(30_000L, shift["revenue.sum"])
+        assertEquals(0L, shift["revenue.is_negative"])
     }
 
     @Test
@@ -271,9 +275,13 @@ class UpdateCountersUseCaseTest {
                 ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY -> -totalTiyn
             }
         }
+        // Знак выручки тот же, что у денежного ящика: покупка деньги
+        // выдаёт и выручку уменьшает, возврат покупки возвращает их
+        // и увеличивает — как в эталоне OperationCalculator. Прежде
+        // ожидание считалось обратным правилом и закрепляло дефект.
         val revSum = when(op) {
-            ReceiptOperationType.SELL, ReceiptOperationType.BUY -> totalTiyn
-            ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY_RETURN -> -totalTiyn
+            ReceiptOperationType.SELL, ReceiptOperationType.BUY_RETURN -> totalTiyn
+            ReceiptOperationType.SELL_RETURN, ReceiptOperationType.BUY -> -totalTiyn
         }
         expectedShift["revenue.sum"] = revSum
         expectedShift["revenue.is_negative"] = if (revSum < 0) 1L else 0L
