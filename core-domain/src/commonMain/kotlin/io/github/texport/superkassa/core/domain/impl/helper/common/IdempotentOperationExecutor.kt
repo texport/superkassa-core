@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.impl.helper.common
 
+import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
 import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
@@ -16,6 +17,7 @@ import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPor
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.impl.logging.getLogger
+import io.github.texport.superkassa.core.string.api.CoreStrings
 
 /**
  * Исполнитель идемпотентных фискальных операций.
@@ -37,6 +39,30 @@ class IdempotentOperationExecutor(
     private val requireOperationalUseCase: RequireOperationalUseCase
 ) {
     private val logger = getLogger(IdempotentOperationExecutor::class)
+
+    /**
+     * Смена не длиннее суток.
+     *
+     * Требование к ККМ (пункты 14, 52 и 93): сверх суток касса обязана
+     * перестать оформлять кассовые операции, пока смену не закроют.
+     * Проверка стоит здесь, потому что здесь проходят все они — чек,
+     * возврат, внесение и изъятие. X-отчёт и закрытие смены идут другим
+     * путём и остаются доступны: иначе кассиру было бы нечем ни посмотреть
+     * смену, ни выйти из запрета.
+     *
+     * Отсчёт идёт с первого платёжного документа смены, а не с её открытия:
+     * так велит требование, и открыть смену могут задолго до первой
+     * продажи. Смена без платёжных документов отсчёт ещё не начала.
+     */
+    private fun requireShiftWithinDay(kkmId: String) {
+        val shift = storage.findOpenShift(kkmId) ?: return
+        val since = storage.firstPaymentTimeInShift(shift.id) ?: return
+        if (clock.now() - since <= DAY_MILLIS) {
+            return
+        }
+        logger.warn("Shift {} is longer than a day: operations are refused until it is closed", shift.shiftNo)
+        throw ValidationException(CoreStrings.shiftLongerThanDay(), "SHIFT_LONGER_THAN_DAY")
+    }
 
     /**
      * Выполняет фискальную операцию с контролем идемпотентности в единой транзакции базы данных.
@@ -85,6 +111,7 @@ class IdempotentOperationExecutor(
         return storage.inTransaction {
             val kkm = authorizeUserUseCase.requireKkm(kkmId, forUpdate = true)
             requireOperationalUseCase.execute(kkm)
+            requireShiftWithinDay(kkmId)
             authorizeUserUseCase.requireRole(kkm.id, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
 
             // Проверка идемпотентности
@@ -168,3 +195,6 @@ class IdempotentOperationExecutor(
         }
     }
 }
+
+/** Сутки — предел продолжительности смены по требованиям к ККМ. */
+private const val DAY_MILLIS: Long = 24L * 60 * 60 * 1000

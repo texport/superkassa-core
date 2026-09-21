@@ -9,6 +9,8 @@ import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
@@ -29,7 +31,21 @@ class IdempotentOperationExecutorTest {
     private val requireOperationalUseCase = mockk<RequireOperationalUseCase>(relaxed = true)
     private val executor = IdempotentOperationExecutor(storage, idGenerator, clock, authorizeUserUseCase, requireOperationalUseCase)
 
+    private val shift = ShiftInfo(
+        id = "shift-1",
+        kkmId = "kkm-1",
+        shiftNo = 2,
+        status = ShiftStatus.OPEN,
+        openedAt = NOW - DAY
+    )
+
     init {
+        // Часы спрашиваются на каждой операции: касса сверяет
+        // продолжительность смены прежде, чем что-либо оформить.
+        every { clock.now() } returns NOW
+        // По умолчанию платёжных документов в смене нет: отсчёт суток
+        // ещё не начался, и проверка продолжительности пропускает.
+        every { storage.firstPaymentTimeInShift(any()) } returns null
     }
 
     @Test
@@ -96,6 +112,45 @@ class IdempotentOperationExecutorTest {
     }
 
     @Test
+    fun `смена длиннее суток операций не допускает`() {
+        // Требование к ККМ (пункты 14, 52 и 93): сверх суток касса обязана
+        // перестать оформлять кассовые операции, пока смену не закроют.
+        // Отсчёт идёт с первого платёжного документа смены.
+        val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = KkmState.ACTIVE.name)
+        every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
+        every { storage.findOpenShift("kkm-1") } returns shift
+        every { storage.firstPaymentTimeInShift("shift-1") } returns NOW - DAY - 1
+
+        val failure = assertFailsWith<ValidationException> { punch() }
+
+        assertEquals("SHIFT_LONGER_THAN_DAY", failure.code)
+    }
+
+    @Test
+    fun `смена ровно суток операции ещё допускает`() {
+        val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = KkmState.ACTIVE.name)
+        every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any(), any()) } returns mockk()
+        every { storage.findOpenShift("kkm-1") } returns shift
+        every { storage.firstPaymentTimeInShift("shift-1") } returns NOW - DAY
+        every { storage.findIdempotencyResponse("kkm-1", "key-1") } returns "doc-existing"
+
+        assertEquals("result-doc-existing-ONLINE_OK", punch())
+    }
+
+    private fun punch(): String = executor.executeIdempotentFiscalOperation(
+        kkmId = "kkm-1",
+        pin = "1234",
+        idempotencyKey = "key-1",
+        operationType = "CREATE_RECEIPT",
+        checkShift = { "shift-1" },
+        saveOperation = { _, _, _ -> },
+        sendOfdCommand = { _, _ -> mockk() },
+        processResult = { _, _, _, _, _, _, _ -> },
+        buildResult = { docId: String, _: OfdCommandResult, status: DeliveryStatus -> "result-$docId-$status" }
+    )
+
+    @Test
     fun testExecuteKkmProgrammingState() {
         val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = KkmState.PROGRAMMING.name)
         every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
@@ -120,3 +175,9 @@ class IdempotentOperationExecutorTest {
         }
     }
 }
+
+/** Время, которое показывают часы в проверках. */
+private const val NOW: Long = 1_700_000_000_000L
+
+/** Сутки в миллисекундах. */
+private const val DAY: Long = 24L * 60 * 60 * 1000

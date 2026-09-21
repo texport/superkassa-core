@@ -5,6 +5,7 @@ import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.common.CounterSnapshot
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDocumentTypes
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
@@ -383,6 +384,11 @@ class TestStoragePort : StoragePort {
         val receipt = receiptPayloads[documentId] ?: return null
         return doc to receipt
     }
+
+    override fun firstPaymentTimeInShift(shiftId: String): Long? =
+        documents.values
+            .filter { it.shiftId == shiftId && it.docType in ReceiptDocumentTypes.ALL }
+            .minOfOrNull { it.createdAt }
 
     override fun listFiscalDocumentsByShift(
         kkmId: String,

@@ -34,6 +34,18 @@ interface FiscalDocumentDao {
         offset: Int
     ): List<FiscalDocumentEntity>
 
+    /**
+     * Время первого платёжного документа смены.
+     *
+     * Одним запросом, а не перебором документов смены: проверка
+     * продолжительности смены идёт на каждую кассовую операцию, а чеков
+     * за смену бывают сотни.
+     */
+    @Query(
+        "SELECT MIN(createdAt) FROM fiscal_documents WHERE shiftId = :shiftId AND docType IN (:docTypes)"
+    )
+    suspend fun firstPaymentTime(shiftId: String, docTypes: Collection<String>): Long?
+
     @Query("DELETE FROM fiscal_documents WHERE cashboxId = :kkmId")
     suspend fun deleteByKkm(kkmId: String)
 }

@@ -197,6 +197,10 @@ object RoomStorageFactory {
         val fiscalDocumentDao = object : FiscalDocumentDao {
             override suspend fun insert(entity: FiscalDocumentEntity) { docMap[entity.id] = entity }
             override suspend fun getById(id: String): FiscalDocumentEntity? = docMap[id]
+            override suspend fun firstPaymentTime(shiftId: String, docTypes: Collection<String>): Long? =
+                docMap.values
+                    .filter { it.shiftId == shiftId && it.docType in docTypes }
+                    .minOfOrNull { it.createdAt }
             override suspend fun listByShift(
                 kkmId: String,
                 shiftId: String,

@@ -672,6 +672,8 @@ private class InMemoryStoragePort : StoragePort {
 
     override fun findFiscalDocumentWithReceiptPayload(documentId: String): Pair<FiscalDocumentSnapshot, ReceiptRequest>? = null
 
+    override fun firstPaymentTimeInShift(shiftId: String): Long? = null
+
     override fun listFiscalDocumentsByShift(
         kkmId: String,
         shiftId: String,

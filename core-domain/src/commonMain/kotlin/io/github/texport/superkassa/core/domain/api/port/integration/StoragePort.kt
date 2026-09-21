@@ -454,6 +454,16 @@ interface StoragePort {
      * @param offset смещение.
      * @return список снимков документов [FiscalDocumentSnapshot].
      */
+    /**
+     * Время первого платёжного документа смены; `null` — их в смене ещё нет.
+     *
+     * Продолжительность смены отсчитывается с него, а не с открытия смены:
+     * открыть смену могут задолго до первой продажи.
+     *
+     * @param shiftId идентификатор смены.
+     */
+    fun firstPaymentTimeInShift(shiftId: String): Long?
+
     fun listFiscalDocumentsByShift(
         kkmId: String,
         shiftId: String,

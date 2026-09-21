@@ -5,6 +5,7 @@ import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.common.CounterSnapshot
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDocumentTypes
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
@@ -404,6 +405,10 @@ internal class DefaultRoomStorageAdapter(
         fiscalDocumentDao.insert(FiscalDocumentEntity.fromDomain(updated, storedPayload(documentId)))
         logger.info("updateReceiptStatus: updated document status to $ofdStatus for docId=$documentId")
         true
+    }
+
+    override fun firstPaymentTimeInShift(shiftId: String): Long? = runBlocking {
+        fiscalDocumentDao.firstPaymentTime(shiftId, ReceiptDocumentTypes.ALL)
     }
 
     override fun listFiscalDocumentsByShift(kkmId: String, shiftId: String, limit: Int, offset: Int): List<FiscalDocumentSnapshot> = runBlocking {

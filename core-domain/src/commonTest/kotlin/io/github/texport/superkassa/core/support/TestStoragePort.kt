@@ -389,6 +389,11 @@ class TestStoragePort : StoragePort {
         return doc to receipt
     }
 
+    override fun firstPaymentTimeInShift(shiftId: String): Long? =
+        documents.values
+            .filter { it.shiftId == shiftId && it.docType in ReceiptDocumentTypes.ALL }
+            .minOfOrNull { it.createdAt }
+
     override fun listFiscalDocumentsByShift(
         kkmId: String,
         shiftId: String,

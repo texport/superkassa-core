@@ -32,6 +32,19 @@ internal object CoreStringsImpl {
         en = "Shift is not open"
     )
 
+    /**
+     * Смена перевалила сутки.
+     *
+     * Кассиру говорится, что делать: закрыть смену. Требование к ККМ
+     * (пункты 14, 52 и 93) запрещает оформлять кассовые операции, пока
+     * смену не закрыли, а не советует поторопиться.
+     */
+    internal fun shiftLongerThanDay(): TrilingualMessage = TrilingualMessage(
+        ru = "Смена длится больше суток. Закройте смену — до этого касса операций не оформляет.",
+        kk = "Ауысым тәуліктен асты. Ауысымды жабыңыз — оған дейін касса операция жасамайды.",
+        en = "The shift is longer than 24 hours. Close the shift: until then no operations are issued."
+    )
+
     internal fun shiftAlreadyOpen(): TrilingualMessage = TrilingualMessage(
         ru = "Смена уже открыта",
         kk = "Ауысым ашылып қойған",
