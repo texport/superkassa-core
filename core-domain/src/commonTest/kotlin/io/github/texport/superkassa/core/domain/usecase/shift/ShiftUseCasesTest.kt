@@ -216,6 +216,48 @@ class ShiftUseCasesTest {
                 createdAt = 2000L
             )
         }
+        // Документ изъятия записывается один раз: второй раз тем же
+        // номером база его не принимает, и закрытие смены падало
+        // на ограничении первичного ключа.
+        verify(exactly = 0) {
+            storage.saveShiftDocument("kkm-1", "CASH_OUT", any(), any(), any())
+        }
+    }
+
+    /**
+     * Доставленное автоизъятие перестаёт числиться ожидающим отправки.
+     *
+     * Отправку только записывали в журнал, и документ оставался
+     * «ожидает отправки» даже после того, как ОФД его принял.
+     */
+    @Test
+    fun `доставленное автоизъятие отмечается отправленным`() {
+        every { storage.findKkm("kkm-1") } returns kkm.copy(autoCashout = true)
+        val shift = ShiftInfo(id = "shift-1", kkmId = "kkm-1", shiftNo = 7L, status = ShiftStatus.OPEN, openedAt = 1000L)
+        every { storage.findOpenShift("kkm-1") } returns shift
+        every { idGenerator.nextId() } returns "doc-1"
+        every { clock.now() } returns 2000L
+        every { queue.canSendDirectly("kkm-1") } returns true
+        every {
+            sendFiscalCommandUseCase.execute("kkm-1", any(), any())
+        } returns OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        every { storage.loadCounters("kkm-1", CounterScopes.GLOBAL, null) } returns
+            mapOf(CounterKeyFormats.CASH_SUM to 510_100L)
+
+        closeShift.execute("kkm-1", "1234")
+
+        verify {
+            storage.updateReceiptStatus(
+                documentId = "doc-1",
+                fiscalSign = null,
+                autonomousSign = null,
+                ofdStatus = "SENT",
+                ofdErrorCode = null,
+                deliveredAt = 2000L,
+                isAutonomous = false,
+                ofdErrorText = null
+            )
+        }
     }
 
     @Test

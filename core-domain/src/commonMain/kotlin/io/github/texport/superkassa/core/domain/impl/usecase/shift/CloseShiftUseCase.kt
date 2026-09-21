@@ -8,6 +8,7 @@ import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryStatus
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.model.queue.OfflineQueueCommandRequest
@@ -166,25 +167,13 @@ class CloseShiftUseCase(
                 )
                 storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.CASH_SUM, 0L)
                 storage.upsertCounter(kkmId, CounterScopes.SHIFT, shift.id, CounterKeyFormats.CASH_SUM, 0L)
-                storage.saveShiftDocument(kkmId, "CASH_OUT", cashOutDocId, shift.id, now)
+                // Документ уже записан изъятием выше: второй раз тем же
+                // номером база его не принимает — закрытие смены падало
+                // на ограничении первичного ключа, как только автоизъятие
+                // становилось включаемым.
                 assignPrintedDocumentNumber(storage, kkmId, cashOutDocId)
 
-                val placementCommand = OfflineQueueCommandRequest(
-                    kkmId = kkmId,
-                    type = OfdCommandType.MONEY_PLACEMENT.value,
-                    payloadRef = cashOutDocId
-                )
-                if (queue.canSendDirectly(kkmId)) {
-                    try {
-                        sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.MONEY_PLACEMENT, cashOutDocId)
-                        logger.debug("Автоизъятие успешно отправлено в ОФД")
-                    } catch (e: Exception) {
-                        logger.error("Ошибка при отправке автоизъятия в ОФД: ${e.message}", e)
-                        // игнорируем ошибку отправки автоизъятия при закрытии смены
-                    }
-                } else {
-                    queue.enqueueOffline(placementCommand)
-                }
+                deliverAutoCashout(kkmId, cashOutDocId, now)
             }
 
             // Фиксируем закрытие смены в локальной базе данных
@@ -198,6 +187,57 @@ class CloseShiftUseCase(
                 deliveryError = deliveryError
             ).also { logger.debug("Процедура закрытия смены завершена с результатом: {}", it) }
         }
+    }
+
+    /**
+     * Отправляет автоизъятие и записывает, чем дело кончилось.
+     *
+     * Состояние документа ставится по ответу так же, как у самого
+     * Z-отчёта: прежде отправку только записывали в журнал, и документ
+     * оставался «ожидает отправки» даже после того, как ОФД его принял —
+     * в журнале кассира он висел так навсегда.
+     *
+     * Отказ отправки закрытие смены не отменяет: смена уже закрыта,
+     * а изъятие доедет из очереди. Но и молчать о нём нельзя — отказ
+     * виден кассиру состоянием документа.
+     */
+    private fun deliverAutoCashout(kkmId: String, documentId: String, now: Long) {
+        val queued = OfflineQueueCommandRequest(
+            kkmId = kkmId,
+            type = OfdCommandType.MONEY_PLACEMENT.value,
+            payloadRef = documentId
+        )
+        if (!queue.canSendDirectly(kkmId)) {
+            queue.enqueueOffline(queued)
+            return
+        }
+        val result = runCatching {
+            sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.MONEY_PLACEMENT, documentId)
+        }.getOrElse { failure ->
+            logger.error("Автоизъятие не ушло в ОФД: ${failure.message}")
+            OfdCommandResult(status = OfdCommandStatus.TIMEOUT)
+        }
+        val delivered = result.status == OfdCommandStatus.OK
+        storage.updateReceiptStatus(
+            documentId = documentId,
+            fiscalSign = result.fiscalSign,
+            autonomousSign = result.autonomousSign,
+            ofdStatus = statusOf(result.status),
+            ofdErrorCode = result.resultCode?.takeIf { !delivered },
+            deliveredAt = if (delivered) now else null,
+            isAutonomous = result.status == OfdCommandStatus.TIMEOUT,
+            ofdErrorText = result.resultText?.takeIf { !delivered && it.isNotBlank() }
+        )
+        if (result.status == OfdCommandStatus.TIMEOUT) {
+            queue.enqueueOffline(queued)
+        }
+    }
+
+    /** Состояние доставки словами журнала. */
+    private fun statusOf(status: OfdCommandStatus): String = when (status) {
+        OfdCommandStatus.OK -> "SENT"
+        OfdCommandStatus.TIMEOUT -> "PENDING"
+        OfdCommandStatus.FAILED -> "FAILED"
     }
 
     /**
