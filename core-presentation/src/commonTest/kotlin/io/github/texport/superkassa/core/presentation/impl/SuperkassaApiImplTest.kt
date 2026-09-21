@@ -1270,8 +1270,8 @@ class SuperkassaApiImplTest {
         assertEquals("KAZAKHTELECOM", api.getOfdProviders()[0].code)
         assertEquals("oofd.kz", api.getOfdProviders()[0].website)
         assertEquals("BFD", api.getOfdProviders()[1].code)
-        assertEquals("ОФД БФД", api.getOfdProviders()[1].name.ru)
-        assertEquals("БФД ОФД", api.getOfdProviders()[1].name.kk)
+        assertEquals("ТОО «БФД»", api.getOfdProviders()[1].name.ru)
+        assertEquals("«БФД» ЖШС", api.getOfdProviders()[1].name.kk)
 
         assertEquals(2, api.getCoreModes().size)
         assertEquals("DESKTOP", api.getCoreModes()[0].code)

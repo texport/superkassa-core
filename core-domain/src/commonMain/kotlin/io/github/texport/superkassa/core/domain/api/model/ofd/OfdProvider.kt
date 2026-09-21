@@ -39,8 +39,8 @@ enum class OfdProvider(
     /** ТОО «БФД» */
     BFD(
         id = "BFD",
-        nameRu = "ОФД БФД",
-        nameKk = "БФД ОФД",
+        nameRu = "ТОО «БФД»",
+        nameKk = "«БФД» ЖШС",
         website = "ofd.example.kz",
         endpoints = mapOf(
             // Стенд разработки БФД: сервис приёма данных от касс в контуре

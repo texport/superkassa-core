@@ -739,7 +739,7 @@ internal object CoreStringsImpl {
 
     internal fun ofdProvider(code: String): TrilingualMessage = when (code) {
         "KAZAKHTELECOM" -> TrilingualMessage("АО «Казахтелеком»", "«Қазақтелеком» АҚ", "JSC Kazakhtelecom")
-        "BFD" -> TrilingualMessage("ОФД БФД", "БФД ОФД", "BFD OFD")
+        "BFD" -> TrilingualMessage("ТОО «БФД»", "«БФД» ЖШС", "BFD LLP")
         else -> TrilingualMessage(code, code, code)
     }
 

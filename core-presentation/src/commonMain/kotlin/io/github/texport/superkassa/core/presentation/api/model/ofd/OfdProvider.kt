@@ -17,6 +17,6 @@ enum class OfdProvider {
     KAZAKHTELECOM,
 
     /** ТОО «БФД» */
-    @Schema(description = "ОФД БФД")
+    @Schema(description = "ТОО «БФД»")
     BFD
 }
