@@ -21,14 +21,21 @@ import io.github.texport.superkassa.core.domain.impl.logging.getLogger
  * Внутренняя реализация движка рендеринга чеков.
  */
 internal class ReceiptRendererApiImpl(
-    qrCodeGenerator: QrCodeGeneratorPort
+    qrCodeGenerator: QrCodeGeneratorPort,
+    /**
+     * Часы печатных форм: X-отчёт с открытой смены ставит в шапку время
+     * снятия, образец брендирования — время, в которое его показали.
+     * Часы параметром, а не системным вызовом внутри: иначе образцы форм
+     * нельзя сверить между прогонами.
+     */
+    private val now: () -> Long = { kotlin.time.Clock.System.now().toEpochMilliseconds() }
 ) : ReceiptRendererApi {
 
     private val logger = getLogger(ReceiptRendererApiImpl::class)
 
     private val saleRenderer = SaleReceiptRenderer(qrCodeGenerator)
-    private val xReportRenderer = XReportRenderer()
-    private val zReportRenderer = ZReportRenderer()
+    private val xReportRenderer = XReportRenderer(now)
+    private val zReportRenderer = ZReportRenderer(now)
     private val openShiftRenderer = OpenShiftRenderer()
     private val cashOperationRenderer = CashOperationRenderer()
 
@@ -167,7 +174,7 @@ internal class ReceiptRendererApiImpl(
             docType = "CHECK",
             docNo = 12345,
             shiftNo = 7,
-            createdAt = kotlin.time.Clock.System.now().toEpochMilliseconds(),
+            createdAt = now(),
             totalAmount = 65000L,
             currency = "KZT",
             fiscalSign = "987654321012",

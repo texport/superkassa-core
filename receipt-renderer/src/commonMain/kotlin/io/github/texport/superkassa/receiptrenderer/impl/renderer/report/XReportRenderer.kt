@@ -4,7 +4,9 @@ import io.github.texport.superkassa.core.domain.api.model.kkm.*
 import io.github.texport.superkassa.core.domain.api.model.shift.*
 import io.github.texport.superkassa.core.domain.api.model.zxreport.ZxReportInput
 
-internal class XReportRenderer : ZxReportCommonRenderer() {
+internal class XReportRenderer(
+    now: () -> Long = { kotlin.time.Clock.System.now().toEpochMilliseconds() }
+) : ZxReportCommonRenderer(now) {
 
     fun render(
         shift: ShiftInfo,

@@ -663,7 +663,11 @@ class ReceiptRendererApiImplTest {
 
     @Test
     fun testGenerateExampleHtmlFiles() {
-        val renderer = ReceiptRendererApiImpl(StubQrCodeGenerator())
+        // Часы образцов стоят: X-отчёт снимают с открытой смены, и без
+        // остановленных часов каждый прогон переписывал полсотни файлов
+        // одним лишь временем снятия — содержательная правка формы тонула
+        // в этом шуме.
+        val renderer = ReceiptRendererApiImpl(StubQrCodeGenerator(), now = { EXAMPLE_TIME })
         val rootOutputDir = java.io.File("src/test/resources/receipt-examples")
         if (rootOutputDir.exists()) {
             rootOutputDir.deleteRecursively()
@@ -1598,3 +1602,6 @@ class ReceiptRendererApiImplTest {
         return result.replace(Regex("<[^>]*>"), "")
     }
 }
+
+/** Время образцов печатных форм: то же, что у документов в них. */
+private const val EXAMPLE_TIME = 1782200000000L

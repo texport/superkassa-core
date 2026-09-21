@@ -61,6 +61,7 @@ object CoreStrings {
 
     /** Блокировка с причиной и с тем, что делать; код — из состояния кассы. */
     fun kkmBlocked(code: Int?): TrilingualMessage = CoreStringsImpl.kkmBlockedWithReason(code)
+
     /** Смена перевалила сутки: оформлять операции нельзя до её закрытия. */
     fun shiftLongerThanDay(): TrilingualMessage = CoreStringsImpl.shiftLongerThanDay()
     fun kkmSettingsRequiresProgramming(): TrilingualMessage = CoreStringsImpl.kkmSettingsRequiresProgramming()

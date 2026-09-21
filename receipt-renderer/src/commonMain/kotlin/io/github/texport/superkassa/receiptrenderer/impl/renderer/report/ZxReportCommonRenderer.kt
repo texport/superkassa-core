@@ -16,7 +16,18 @@ import io.github.texport.superkassa.receiptrenderer.impl.renderer.component.repo
 
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.MetadataBuilder
 
-abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
+/**
+ * Общее для X- и Z-отчёта.
+ *
+ * @param now часы отчёта. X-отчёт снимают с открытой смены, и время
+ *   закрытия у неё ещё не наступило — в шапке стоит время снятия.
+ *   Часы здесь параметром, а не обращением к системным: печатная форма,
+ *   зависящая от того, в какую минуту её нарисовали, не поддаётся
+ *   сверке образцом.
+ */
+abstract class ZxReportCommonRenderer(
+    private val now: () -> Long = { kotlin.time.Clock.System.now().toEpochMilliseconds() }
+) : BaseDocumentRenderer() {
 
     /**
      * Рисует отчёт по счётчикам смены этой кассы.
@@ -37,7 +48,7 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
         titleKey = titleKey,
         report = ZxReportBuilder.build(
             counters = counters,
-            dateTimeMillis = shift.closedAt ?: kotlin.time.Clock.System.now().toEpochMilliseconds(),
+            dateTimeMillis = shift.closedAt ?: now(),
             shiftNumber = shift.shiftNo.toInt(),
             openShiftTimeMillis = shift.openedAt,
             closeShiftTimeMillis = shift.closedAt
