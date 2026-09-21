@@ -212,6 +212,9 @@ object OfdTicketRequestBuilder {
                                                         }
                                                         item.ntin?.takeIf { it.isNotBlank() }?.let { ntin ->
                                                             put("ntin", JsonPrimitive(ntin))
+                                                            if (commodityTypeExpected(protocolVersion)) {
+                                                                put("commodityType", JsonPrimitive(PRODUCT))
+                                                            }
                                                         }
 
                                                         // Налог на уровне позиции (commodity.taxes[])
@@ -397,4 +400,28 @@ object OfdTicketRequestBuilder {
             )
         }
     }
+
+    /**
+     * Обязателен ли тип предмета потребления у позиции с НТИН.
+     *
+     * Реквизит введён версией 2.0.4 и с неё обязателен для товаров
+     * из национального каталога: ОФД на позицию с НТИН без него
+     * отвечает кодом 15, а по нему касса уходит в блокировку. В более
+     * ранних версиях поля в протоколе нет, и посылать его нельзя —
+     * там ОФД отвергнет сам реквизит.
+     */
+    private fun commodityTypeExpected(protocolVersion: String): Boolean =
+        (protocolVersion.filter { it.isDigit() }.toIntOrNull() ?: 0) >= COMMODITY_TYPE_SINCE
+
+    /** Версия протокола, с которой тип предмета потребления обязателен. */
+    private const val COMMODITY_TYPE_SINCE = 204
+
+    /**
+     * Тип предмета потребления у позиции с НТИН.
+     *
+     * НТИН выдаёт национальный каталог товаров: работ и услуг в нём нет,
+     * поэтому позиция, пришедшая с НТИН, — всегда товар, и спрашивать
+     * тип у кассира незачем.
+     */
+    private const val PRODUCT = "COMMODITY_TYPE_PRODUCT"
 }
