@@ -13,7 +13,11 @@ data class FiscalDocumentResponse(
     @Schema(description = "ID кассы (ККМ)", example = "kkm-uuid") val cashboxId: String,
     @Schema(description = "ID смены", example = "shift-uuid") val shiftId: String,
     @Schema(description = "Тип документа (например, TICKET, REPORT)", example = "TICKET") val docType: String,
-    @Schema(description = "Порядковый номер документа", example = "101") val docNo: Long?,
+    @Schema(description = "Номер документа, присвоенный ОФД", example = "101") val docNo: Long?,
+    @Schema(
+        description = "Порядковый номер документа, присвоенный кассой: он стоит на чеке",
+        example = "5"
+    ) val printedDocumentNumber: Long? = null,
     @Schema(description = "Номер смены", example = "10") val shiftNo: Long?,
     @Schema(description = "Время создания (epoch ms)", example = "1700000000000") val createdAt: Long,
     @Schema(description = "Итоговая сумма по документу (в тиынах)", example = "150000") val totalAmount: Long?,

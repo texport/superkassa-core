@@ -27,6 +27,13 @@ internal object SaleItemsComponent {
                 UnitOfMeasurement.DEFAULT
             }
             val unitStr = translateInlineKey("unit_" + unit.name.lowercase())
+            // Код национального каталога — обязательный реквизит чека
+            // (требования к содержанию чека, пункт 56.8): товар в чеке
+            // называется и кодом каталога, а не только наименованием.
+            // Позиция кассира, которой в каталоге нет, строку не занимает.
+            val ntinHtml = item.ntin?.takeIf { it.isNotBlank() }?.let {
+                "<div class=\"item-ntin\">${t("ntin")} ${it.escaped()}</div>"
+            } ?: ""
             val exciseStamps = item.listExciseStamp
             val exciseHtml = if (!exciseStamps.isNullOrEmpty()) {
                 val stamps = exciseStamps.joinToString(", ") { it.escaped() }
@@ -73,6 +80,7 @@ internal object SaleItemsComponent {
                     <tr>
                         <td class="item-details-cell" colspan="2">
                             ${item.quantity.formatQuantity()} $unitStr × $priceStr
+                            $ntinHtml
                             $exciseHtml
                             $vatHtml
                             $discountHtml

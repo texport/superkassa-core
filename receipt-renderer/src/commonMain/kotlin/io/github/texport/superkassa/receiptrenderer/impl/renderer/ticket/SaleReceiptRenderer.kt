@@ -161,7 +161,12 @@ internal class SaleReceiptRenderer(
                 kkm = kkm,
                 createdAt = doc.createdAt,
                 shiftNo = doc.shiftNo,
-                docNo = doc.docNo?.toString() ?: doc.id,
+                // Порядковый номер чека — требование 56.6, и он свой
+                // у кассы: номер от ОФД не последователен, а у чека,
+                // который ОФД отверг или который пробит автономно, его
+                // нет вовсе — на ленте оставалась пустая строка.
+                // Фискальный признак стоит отдельным реквизитом (56.14).
+                docNo = doc.printedDocumentNumber?.toString() ?: doc.docNo?.toString() ?: doc.id,
                 ofdStatus = doc.ofdStatus,
                 isFiscal = true,
                 isAutonomous = doc.isAutonomous,

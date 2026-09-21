@@ -106,6 +106,9 @@ object KkmMapper {
         shiftId = doc.shiftId,
         docType = ReceiptDocumentTypes.canonical(doc.docType),
         docNo = doc.docNo,
+        // Номер, которым чек назван на бумаге: у ОФД номер свой, и у чека,
+        // который ОФД отверг, его нет вовсе — кассиру не с чем сверять.
+        printedDocumentNumber = doc.printedDocumentNumber,
         shiftNo = doc.shiftNo,
         createdAt = doc.createdAt,
         totalAmount = doc.totalAmount,

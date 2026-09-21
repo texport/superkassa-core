@@ -197,6 +197,60 @@ class ReceiptRendererApiImplTest {
     }
 
     @Test
+    fun `на ленте стоят обязательные реквизиты чека`() {
+        // Чек не несёт трёх вещей сразу: кода национального каталога
+        // (требование 56.8), порядкового номера (56.6 — вместо него стоял
+        // номер от ОФД, то есть фискальный признак вторым разом) —
+        // и несёт лишнюю: внутренний идентификатор узла, которого
+        // в требованиях нет.
+        val renderer = ReceiptRendererApiImpl(StubQrCodeGenerator())
+        val request = ReceiptRequest(
+            kkmId = "kkm-123",
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            items = listOf(
+                ReceiptItem(
+                    name = "Котёл отопительный",
+                    sectionCode = "001",
+                    quantity = 1_000,
+                    price = Money(2_500, 0),
+                    sum = Money(2_500, 0),
+                    ntin = "0200198799025"
+                )
+            ),
+            payments = listOf(ReceiptPayment(PaymentType.CASH, Money(2_500, 0))),
+            total = Money(2_500, 0),
+            idempotencyKey = "key-requisites"
+        )
+        val doc = FiscalDocumentSnapshot(
+            id = "doc-requisites",
+            cashboxId = "kkm-123",
+            shiftId = "shift-456",
+            docType = "TICKET",
+            docNo = 852_804_071L,
+            printedDocumentNumber = 5L,
+            shiftNo = 2,
+            createdAt = 1782200000000L,
+            totalAmount = 250_000L,
+            currency = "KZT",
+            fiscalSign = "852804071",
+            autonomousSign = null,
+            isAutonomous = false,
+            ofdStatus = "DELIVERED",
+            deliveredAt = 1782200010000L,
+            receiptUrl = "https://receipt.ecc.kz?i=852804071",
+            registrationNumber = "RN-999",
+            ofdProvider = "BFD:DEV"
+        )
+
+        val clean = stripHtml(renderer.renderHtml(request, doc, defaultKkm))
+
+        assertTrue(clean.contains("Код НТИН: 0200198799025"), "кода каталога нет на ленте")
+        assertTrue(Regex("""Документ №\s*5\b""").containsMatchIn(clean), "порядкового номера нет на ленте")
+        assertTrue(!clean.contains("kkm-123"), "внутренний идентификатор ушёл на ленту")
+    }
+
+    @Test
     fun testOfdProviderNameKeepsBilingualMarkup() {
         // Название оператора на двух языках — готовая двухэтажная разметка.
         // Экранирование результата печатало на чеке сам тег <span class=...>.
@@ -232,9 +286,9 @@ class ReceiptRendererApiImplTest {
 
         val html = renderer.renderHtml(request, doc, defaultKkm)
 
-        assertTrue(html.contains("<span class=\"lang-fraction-top\">БФД ОФД</span>"))
+        assertTrue(html.contains("<span class=\"lang-fraction-top\">«БФД» ЖШС</span>"))
         assertTrue(!html.contains("&lt;span"))
-        assertTrue(stripHtml(html).contains("БФД ОФД / ОФД БФД"))
+        assertTrue(stripHtml(html).contains("«БФД» ЖШС / ТОО «БФД»"))
     }
 
     @Test
