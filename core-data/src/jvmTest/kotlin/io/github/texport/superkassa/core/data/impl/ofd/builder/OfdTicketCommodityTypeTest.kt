@@ -41,6 +41,40 @@ class OfdTicketCommodityTypeTest {
         assertNull(commodityOf(protocolVersion = "204", ntin = null)["commodityType"])
     }
 
+    @Test
+    fun `БИН покупателя уходит в ОФД`() {
+        // Касса спрашивала БИН покупателя, печатала его на чеке и не
+        // отправляла: фискальный документ уходил без покупателя, хотя
+        // на бумаге он стоял.
+        val ticket = OfdTicketRequestBuilder.buildTicketRequest(
+            ofdId = "bfd",
+            protocolVersion = "204",
+            deviceId = 11L,
+            token = 22L,
+            reqNum = 33,
+            request = sale(NTIN).copy(customerBin = "920313351246")
+        )["payload"]!!.jsonObject["ticket"]!!.jsonObject
+
+        assertEquals(
+            "920313351246",
+            ticket["extensionOptions"]!!.jsonObject["customerIinOrBin"]!!.jsonPrimitive.content
+        )
+    }
+
+    @Test
+    fun `чек без БИНа покупателя расширений не несёт`() {
+        val ticket = OfdTicketRequestBuilder.buildTicketRequest(
+            ofdId = "bfd",
+            protocolVersion = "204",
+            deviceId = 11L,
+            token = 22L,
+            reqNum = 33,
+            request = sale(NTIN)
+        )["payload"]!!.jsonObject["ticket"]!!.jsonObject
+
+        assertNull(ticket["extensionOptions"])
+    }
+
     private fun commodityOf(protocolVersion: String, ntin: String? = NTIN) =
         OfdTicketRequestBuilder.buildTicketRequest(
             ofdId = "bfd",
