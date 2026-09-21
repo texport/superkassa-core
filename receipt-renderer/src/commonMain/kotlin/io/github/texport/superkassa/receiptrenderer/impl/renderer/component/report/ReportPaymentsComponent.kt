@@ -13,7 +13,11 @@ internal object ReportPaymentsComponent {
     ): String {
         val paymentSectionsHtml = ticketOperations.joinToString("") { op ->
             val opLabel = translateInlineKey(op.operation.toOperationKey())
-            val payRows = op.payments.joinToString("") { pay ->
+            // На ленте остаются виды оплаты, которыми платили. Нулевые
+            // строки не сообщают ничего, а две из них — «Кредит» и «Тара» —
+            // ещё и называют виды, которых в протоколе 2.0.4 нет вовсе:
+            // кассир читал на чеке то, чем касса заплатить не может.
+            val payRows = op.payments.filter { it.count > 0 || it.sumTiyn != 0L }.joinToString("") { pay ->
                 val payLabel = t(pay.payment.toPaymentKey())
                 val formattedSum = formatAmount(pay.sumTiyn)
                 """

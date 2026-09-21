@@ -120,6 +120,36 @@ class ReportPrintRendererTest {
     }
 
     @Test
+    fun `на ленте остаются только виды оплаты, которыми платили`() {
+        // Печатались все шесть видов, включая «Кредит» и «Тару»: их в
+        // протоколе 2.0.4 нет вовсе, и кассир читал на чеке то, чем касса
+        // заплатить не может. Нулевая строка не сообщает ничего, а лента
+        // 58 мм коротка.
+        val shift = ShiftInfo(
+            id = "shift-123",
+            kkmId = "kkm-123",
+            shiftNo = 13,
+            status = ShiftStatus.CLOSED,
+            openedAt = 1782200000000L,
+            closedAt = 1782200050000L
+        )
+        val counters = mapOf(
+            "operation.OPERATION_SELL.count" to 1L,
+            "operation.OPERATION_SELL.sum" to 50000L,
+            "ticket.OPERATION_SELL.count" to 1L,
+            "ticket.OPERATION_SELL.sum" to 50000L,
+            "ticket.OPERATION_SELL.payment.PAYMENT_CASH.count" to 1L,
+            "ticket.OPERATION_SELL.payment.PAYMENT_CASH.sum" to 50000L
+        )
+
+        val clean = stripHtml(zRenderer.render(shift, counters, kkm, "DELIVERED"))
+
+        assertTrue(clean.contains("Қолма-қол / Наличные"), "наличных на ленте нет")
+        assertTrue(!clean.contains("Несие"), "«Кредит» остался на ленте")
+        assertTrue(!clean.contains("Ыдыс"), "«Тара» осталась на ленте")
+    }
+
+    @Test
     fun testRenderCloseShiftHtmlNullClosedAt() {
         val shift = ShiftInfo(
             id = "shift-123",
