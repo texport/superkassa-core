@@ -405,6 +405,8 @@ interface StoragePort {
      * @param ofdStatus строковый статус доставки в ОФД.
      * @param deliveredAt время доставки документа в ОФД (epoch millis).
      * @param isAutonomous признак того, был ли чек пробит в автономном режиме без связи с ОФД.
+     * @param ofdErrorText причина отказа словами ОФД: по одному коду
+     *                     обслуживание причину не находит.
      * @return `true`, если статус успешно обновлен; `false` в противном случае.
      */
     fun updateReceiptStatus(
@@ -414,7 +416,8 @@ interface StoragePort {
         ofdStatus: String,
         ofdErrorCode: Int? = null,
         deliveredAt: Long?,
-        isAutonomous: Boolean? = null
+        isAutonomous: Boolean? = null,
+        ofdErrorText: String? = null
     ): Boolean
 
     /**

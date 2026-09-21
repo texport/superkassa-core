@@ -167,6 +167,51 @@ class ReceiptUseCasesTest {
     }
 
     @Test
+    fun `причина отказа сохраняется словами ОФД`() {
+        // По одному коду обслуживание причину не находит: «Код отказа 15»
+        // стоит и за снятой с учёта кассой, и за нехваткой обязательного
+        // реквизита в позиции. Слова ОФД оставались только в журнале узла.
+        var reason: String? = null
+        every {
+            storage.updateReceiptStatus(any(), any(), any(), any(), any(), any(), any(), any())
+        } answers {
+            reason = arg<String?>(7)
+            true
+        }
+
+        processOfdDocumentResult.execute(
+            kkm, "doc-reason", kkm.id,
+            OfdCommandResult(
+                status = OfdCommandStatus.OK,
+                resultCode = 15,
+                resultText = "Commodity with ntin has no commodity type"
+            ),
+            OfdCommandType.TICKET, 100L, null
+        )
+
+        assertEquals("Commodity with ntin has no commodity type", reason)
+    }
+
+    @Test
+    fun `принятый чек причины отказа не несёт`() {
+        var reason: String? = "осталось с прошлого раза"
+        every {
+            storage.updateReceiptStatus(any(), any(), any(), any(), any(), any(), any(), any())
+        } answers {
+            reason = arg<String?>(7)
+            true
+        }
+
+        processOfdDocumentResult.execute(
+            kkm, "doc-ok", kkm.id,
+            OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0, resultText = "OK"),
+            OfdCommandType.TICKET, 100L, null
+        )
+
+        assertEquals(null, reason)
+    }
+
+    @Test
     fun `отвергнутый ОФД чек не попадает в счётчики`() {
         // Отказ ОФД — не продажа: ни выручка, ни налоги, ни наличные
         // от него не меняются. Иначе Z-отчёт разошёлся бы с ОФД на сумму

@@ -387,7 +387,8 @@ internal class DefaultRoomStorageAdapter(
         ofdStatus: String,
         ofdErrorCode: Int?,
         deliveredAt: Long?,
-        isAutonomous: Boolean?
+        isAutonomous: Boolean?,
+        ofdErrorText: String?
     ): Boolean = runBlocking {
         logger.debug("updateReceiptStatus: updating docId=$documentId status=$ofdStatus sign=$fiscalSign")
         val current = findFiscalDocumentById(documentId) ?: run {
@@ -399,6 +400,7 @@ internal class DefaultRoomStorageAdapter(
             autonomousSign = autonomousSign ?: current.autonomousSign,
             ofdStatus = ofdStatus,
             ofdErrorCode = ofdErrorCode ?: current.ofdErrorCode,
+            ofdErrorText = ofdErrorText ?: current.ofdErrorText,
             deliveredAt = deliveredAt,
             isAutonomous = isAutonomous ?: current.isAutonomous
         )

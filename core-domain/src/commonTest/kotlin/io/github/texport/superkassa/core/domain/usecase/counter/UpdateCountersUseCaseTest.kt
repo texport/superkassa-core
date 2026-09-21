@@ -626,7 +626,8 @@ private class InMemoryStoragePort : StoragePort {
         ofdStatus: String,
         ofdErrorCode: Int?,
         deliveredAt: Long?,
-        isAutonomous: Boolean?
+        isAutonomous: Boolean?,
+        ofdErrorText: String?
     ): Boolean = true
 
     override fun loadCounters(kkmId: String, scope: String, shiftId: String?): Map<String, Long> {

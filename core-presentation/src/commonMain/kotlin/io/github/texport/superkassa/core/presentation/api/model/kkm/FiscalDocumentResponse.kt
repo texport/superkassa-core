@@ -27,6 +27,10 @@ data class FiscalDocumentResponse(
     @Schema(description = "Оформлен ли документ в автономном режиме", example = "false") val isAutonomous: Boolean,
     @Schema(description = "Статус доставки в ОФД", example = "DELIVERED") val ofdStatus: String?,
     @Schema(description = "Код ошибки ОФД (если документ отклонен)", example = "13") val ofdErrorCode: Int? = null,
+    @Schema(
+        description = "Причина отказа словами ОФД (если документ отклонен)",
+        example = "Commodity with ntin has no commodity type"
+    ) val ofdErrorText: String? = null,
     @Schema(description = "Время доставки документа в ОФД (epoch ms)", example = "1700000000000") val deliveredAt:
     Long?,
     @Schema(

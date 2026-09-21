@@ -364,7 +364,8 @@ class TestStoragePort : StoragePort {
         ofdStatus: String,
         ofdErrorCode: Int?,
         deliveredAt: Long?,
-        isAutonomous: Boolean?
+        isAutonomous: Boolean?,
+        ofdErrorText: String?
     ): Boolean {
         val current = documents[documentId] ?: return false
         documents[documentId] =
@@ -373,6 +374,7 @@ class TestStoragePort : StoragePort {
                 autonomousSign = autonomousSign ?: current.autonomousSign,
                 ofdStatus = ofdStatus,
                 ofdErrorCode = ofdErrorCode ?: current.ofdErrorCode,
+                ofdErrorText = ofdErrorText ?: current.ofdErrorText,
                 deliveredAt = deliveredAt,
                 isAutonomous = isAutonomous ?: current.isAutonomous
             )

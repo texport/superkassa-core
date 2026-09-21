@@ -4,6 +4,7 @@ package io.github.texport.superkassa.coredatabase.api
 
 import androidx.room.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import io.github.texport.superkassa.coredatabase.impl.db.MIGRATION_DOCUMENT_REFUSAL_TEXT
 import io.github.texport.superkassa.coredatabase.impl.db.MIGRATION_DROP_KKM_OFD_ADDRESS
 import io.github.texport.superkassa.coredatabase.impl.db.MIGRATION_DROP_USER_PIN
 import io.github.texport.superkassa.coredatabase.impl.db.MIGRATION_KKM_NAME
@@ -23,7 +24,8 @@ fun getRoomDatabase(builder: RoomDatabase.Builder<SuperkassaAppDatabase>): Super
             MIGRATION_DROP_USER_PIN,
             MIGRATION_KKM_OFD_ADDRESS,
             MIGRATION_DROP_KKM_OFD_ADDRESS,
-            MIGRATION_KKM_NAME
+            MIGRATION_KKM_NAME,
+            MIGRATION_DOCUMENT_REFUSAL_TEXT
         )
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.Default)

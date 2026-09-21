@@ -58,7 +58,7 @@ class ProcessQueueCommandUseCase(
                     // Ответ получен, и он отказной. Документ фискальным не стал,
                     // и оставлять ему «ожидает отправки» нельзя: в журнале
                     // он висел бы так, пока задача бесконечно повторяется.
-                    markDocumentRejected(command, code)
+                    markDocumentRejected(command, code, result.resultText)
                     val errorMsg = "OFD returned code $code"
                     val trilingual = CoreStrings.ofdDeliveryFailure(errorMsg)
                     // Повтора не будет: по спецификации любой код, кроме 0,
@@ -145,14 +145,15 @@ class ProcessQueueCommandUseCase(
             // Признак автономности снимать нельзя: он говорит не о том, доставлен
             // ли документ, а о том, что он был фискализирован в разрыве связи.
             // Доставка снимает PENDING, но истории оформления не отменяет.
-            isAutonomous = doc.isAutonomous
+            isAutonomous = doc.isAutonomous,
+            ofdErrorText = if (success) null else result.resultText?.takeIf { it.isNotBlank() }
         )
     }
 
     /**
      * Помечает документ отвергнутым с кодом отказа ОФД.
      */
-    private fun markDocumentRejected(command: QueueTask, code: Int) {
+    private fun markDocumentRejected(command: QueueTask, code: Int, reason: String?) {
         val doc = storage.findFiscalDocumentById(command.payloadRef) ?: return
         storage.updateReceiptStatus(
             documentId = command.payloadRef,
@@ -163,7 +164,8 @@ class ProcessQueueCommandUseCase(
             deliveredAt = null,
             // Признак автономности снимать нельзя: он говорит о том, что
             // документ был оформлен в разрыве связи, а не о его доставке.
-            isAutonomous = doc.isAutonomous
+            isAutonomous = doc.isAutonomous,
+            ofdErrorText = reason?.takeIf { it.isNotBlank() }
         )
     }
 

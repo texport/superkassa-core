@@ -43,6 +43,15 @@ data class FiscalDocumentSnapshot(
     val isAutonomous: Boolean,
     val ofdStatus: String?,
     val ofdErrorCode: Int? = null,
+    /**
+     * Причина отказа словами ОФД.
+     *
+     * Код отказа обслуживанию мало что говорит: «Код отказа 15» стоит и за
+     * снятой с учёта кассой, и за нехваткой обязательного реквизита
+     * в позиции. Текст ОФД называет причину, и без него её искали
+     * в журнале узла.
+     */
+    val ofdErrorText: String? = null,
     val deliveredAt: Long?,
     val receiptUrl: String? = null,
     val registrationNumber: String? = null,

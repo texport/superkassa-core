@@ -29,7 +29,7 @@ import io.github.texport.superkassa.coredatabase.impl.entity.ShiftEntity
         FiscalDocumentEntity::class,
         CounterEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @ConstructedBy(SuperkassaAppDatabaseConstructor::class)

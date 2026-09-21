@@ -151,7 +151,11 @@ class ProcessOfdDocumentResultUseCase(
             // причина отказа терялась везде, кроме трёх известных кодов.
             ofdErrorCode = if (success) null else resultCode,
             deliveredAt = if (success) now else null,
-            isAutonomous = false
+            isAutonomous = false,
+            // Причина отказа словами ОФД: по одному коду обслуживание её
+            // не находит — «Код отказа 15» стоит и за снятой с учёта
+            // кассой, и за нехваткой реквизита в позиции.
+            ofdErrorText = if (success) null else ofdResult.resultText?.takeIf { it.isNotBlank() }
         )
 
         if (success) {

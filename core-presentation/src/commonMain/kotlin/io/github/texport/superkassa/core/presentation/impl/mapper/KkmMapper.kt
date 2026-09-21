@@ -120,6 +120,8 @@ object KkmMapper {
         // Код отказа доходил до представления, но в ответ не попадал:
         // кассир видел «ошибка» и ни слова о причине.
         ofdErrorCode = doc.ofdErrorCode,
+        // Причина словами: по одному коду обслуживание её не находит.
+        ofdErrorText = doc.ofdErrorText,
         deliveredAt = doc.deliveredAt,
         receiptUrl = doc.receiptUrl,
         registrationNumber = doc.registrationNumber,
