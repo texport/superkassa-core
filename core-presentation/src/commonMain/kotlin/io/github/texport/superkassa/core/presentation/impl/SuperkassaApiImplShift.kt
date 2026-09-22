@@ -36,12 +36,21 @@ fun SuperkassaApiImpl.closeShiftImpl(kkmId: String, pin: String): ReportResponse
     }
 }
 
+/**
+ * Открытая смена заблокированной кассы читается, как и любая другая.
+ *
+ * Рабочего состояния здесь не требуется: смена не пробивается, а только
+ * называется. Пока требовалось, касса с недействительным токеном
+ * отвечала KKM_BLOCKED на свои же документы, и главный экран писал
+ * «Документов за смену 0» над сменой, в которой их четыре, — при том
+ * что сам же обещал кассиру оставшееся чтение. Список смен и журнал
+ * за срок рабочего состояния не требуют давно.
+ */
 fun SuperkassaApiImpl.getOpenShiftImpl(kkmId: String, pin: String): ShiftResponse {
     logger.debug("API -> getOpenShift: kkmId='$kkmId'")
     return try {
         kkmCommonHelper.ensureSystemTimeValid()
-        val kkm = authorization.requireKkm(kkmId)
-        requireOperational(kkm)
+        authorization.requireKkm(kkmId)
         authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
         (
             storage.findOpenShift(kkmId)
@@ -81,8 +90,7 @@ fun SuperkassaApiImpl.listShiftDocumentsImpl(
     pin: String
 ): List<FiscalDocumentResponse> {
     logger.debug("API -> listShiftDocuments: kkmId='$kkmId', shiftId='$shiftId'")
-    val kkm = authorization.requireKkm(kkmId)
-    requireOperational(kkm)
+    authorization.requireKkm(kkmId)
     authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
     return storage.listFiscalDocumentsByShift(kkmId, shiftId, limit.coerceIn(1, 500), offset).map {
         KkmMapper.toResponse(it)
@@ -130,14 +138,17 @@ fun SuperkassaApiImpl.createReportImpl(kkmId: String, pin: String): ReportRespon
  *
  * У отчётов и операций с наличными состава нет: список позиций пуст,
  * и это не ошибка.
+ *
+ * Состав читается и у заблокированной кассы: разбор отказа нужен именно
+ * тогда, когда касса встала, а вернуть по такому чеку всё равно нечего —
+ * возврат закрыт своей проверкой.
  */
 fun SuperkassaApiImpl.getDocumentDetailsImpl(
     kkmId: String,
     documentId: String,
     pin: String
 ): DocumentDetailsResponse {
-    val kkm = authorization.requireKkm(kkmId)
-    requireOperational(kkm)
+    authorization.requireKkm(kkmId)
     authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
     val stored = storage.findFiscalDocumentWithReceiptPayload(documentId)
     val document = stored?.first

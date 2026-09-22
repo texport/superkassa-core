@@ -1075,6 +1075,49 @@ class SuperkassaApiImplTest {
         }
     }
 
+    /**
+     * Заблокированной кассе остаётся чтение — это обещано кассиру на экране.
+     *
+     * Пока смена, её документы и состав документа требовали рабочего
+     * состояния, касса с недействительным токеном отвечала KKM_BLOCKED
+     * на собственные документы: главный экран показывал ноль над сменой,
+     * в которой четыре чека, и прятал отказы БФД вместе с их причиной.
+     */
+    @Test
+    fun `заблокированная касса отдаёт смену, её документы и состав документа`() {
+        every { storage.findKkm("kkm-1") } returns testKkmInfo.copy(state = "BLOCKED")
+        every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
+        every { pinHasher.hash("1234") } returns "hash-admin"
+        every { storage.findUserByPin("kkm-1", "hash-admin") } returns adminUser
+
+        val shift = ShiftInfo("shift-1", "kkm-1", 1L, ShiftStatus.OPEN, 1000L)
+        every { storage.findOpenShift("kkm-1") } returns shift
+        assertEquals("shift-1", api.getOpenShift("kkm-1", "1234").id)
+
+        val refused = FiscalDocumentSnapshot(
+            id = "doc-1",
+            cashboxId = "kkm-1",
+            shiftId = "shift-1",
+            docType = "CHECK",
+            docNo = 1L,
+            shiftNo = 1L,
+            createdAt = 1000L,
+            totalAmount = 100L,
+            currency = "KZT",
+            fiscalSign = null,
+            autonomousSign = null,
+            isAutonomous = false,
+            ofdStatus = "FAILED",
+            deliveredAt = null
+        )
+        every { storage.listFiscalDocumentsByShift("kkm-1", "shift-1", 10, 0) } returns listOf(refused)
+        assertEquals(1, api.listShiftDocuments("kkm-1", "shift-1", 10, 0, "1234").size)
+
+        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns null
+        every { storage.findFiscalDocumentById("doc-1") } returns refused
+        assertEquals("doc-1", api.getDocumentDetails("kkm-1", "doc-1", "1234").document.id)
+    }
+
     @Test
     fun `createReceipt and createReport in offline mode`() {
         every { storage.findKkm("kkm-1") } returns testKkmInfo
