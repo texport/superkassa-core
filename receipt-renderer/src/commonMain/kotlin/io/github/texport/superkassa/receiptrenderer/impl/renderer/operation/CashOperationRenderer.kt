@@ -17,14 +17,15 @@ internal class CashOperationRenderer : BaseDocumentRenderer() {
             "CASH_OUT" -> "cash_out"
             else -> "cash_operation"
         }
-        val sumStr = doc.totalAmount?.let { formatAmount(it) } ?: "0.00"
-        val currencyCode = doc.currency ?: "KZT"
-        val currency = translate(currencyCode, lang)
+        // Знак тенге ставит сам форматировщик суммы: касса казахстанская,
+        // других валют на её ленте не бывает, а знак, приписанный здесь
+        // вторым, встал бы рядом со своим же.
+        val sumStr = doc.totalAmount?.let { formatAmount(it) } ?: formatAmount(0L)
 
         val sumLabel = translateInline("sum", lang)
         val bodyContent = """
             <table class="meta-table">
-                <tr class="bold"><td>$sumLabel</td><td>$sumStr $currency</td></tr>
+                <tr class="bold"><td>$sumLabel</td><td>$sumStr</td></tr>
             </table>
         """.trimIndent()
 
