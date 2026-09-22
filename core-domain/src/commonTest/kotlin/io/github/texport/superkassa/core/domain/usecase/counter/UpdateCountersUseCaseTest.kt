@@ -24,6 +24,40 @@ import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 
 
 class UpdateCountersUseCaseTest {
+    /**
+     * Сторно снимает с отдела сумму, но не число проданного.
+     *
+     * Так считает референс: `OperationCalculator.extractSections` ставит
+     * сторно-позиции `count = 0` и вычитает только сумму. Когда счётчик
+     * уменьшался на единицу, чек, в котором одну позицию сняли, а другую
+     * продали, уходил в отчёт по отделу нулём — отдел показывал на чек
+     * меньше, чем сама смена.
+     */
+    @Test
+    fun stornoTakesSumFromSectionButNotCount() {
+        val storage = InMemoryStoragePort()
+        val updater = UpdateCountersUseCase(storage)
+        val request = ReceiptRequest(
+            kkmId = "kkm-1",
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            items = listOf(
+                ReceiptItem("Шоколад", "001", 1, Money(850, 0), Money(850, 0)),
+                ReceiptItem("Печенье", "001", 1, Money(300, 0), Money(300, 0), isStorno = true)
+            ),
+            payments = listOf(ReceiptPayment(PaymentType.CASH, Money(550, 0))),
+            total = Money(550, 0),
+            idempotencyKey = "key-storno-section"
+        )
+
+        updater.execute("kkm-1", "shift-1", request, isOffline = true)
+
+        val shift = storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1")
+        assertEquals(1L, shift["operation.OPERATION_SELL.count"], "чек смены посчитан не один раз")
+        assertEquals(1L, shift["section.001.operation.OPERATION_SELL.count"], "сторно съело чек отдела")
+        assertEquals(55_000L, shift["section.001.operation.OPERATION_SELL.sum"], "сумма отдела без сторно")
+    }
+
     @Test
     fun shouldUpdateShiftAndGlobalCounters() {
         val storage = InMemoryStoragePort()

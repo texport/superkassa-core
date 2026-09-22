@@ -174,7 +174,13 @@ class RecalculateShiftCountersUseCase(
         // Обновляем счетчики по секциям/отделам
         request.items.forEach { item ->
             val sectionCode = item.sectionCode.ifBlank { "001" }
-            val countDelta = if (item.isStorno) -1L else 1L
+            // Сторно вычитает из отдела сумму, но не число проданного:
+            // так считает референс (`OperationCalculator.extractSections`
+            // ставит сторно-позиции `count = 0`). Прежде сторно уменьшало
+            // счётчик на единицу, и чек, где одну позицию сняли, а другую
+            // продали, уходил в отчёт по отделу нулём — отдел показывал
+            // шесть чеков там, где смена знала семь.
+            val countDelta = if (item.isStorno) 0L else 1L
             val sumDelta = if (item.isStorno) -item.sum.tiyn() else item.sum.tiyn()
             increment(
                 counters,
