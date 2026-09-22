@@ -584,32 +584,16 @@ interface StoragePort {
 @OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
 @kotlin.native.HiddenFromObjC
 inline fun <T> StoragePort.inTransaction(block: () -> T): T {
-    println("[StoragePort.kt] inTransaction: ENTER")
     return try {
-        println("[StoragePort.kt] calling startTransaction()")
         startTransaction()
-        println("[StoragePort.kt] startTransaction() DONE")
-
-        println("[StoragePort.kt] calling block()")
         val result = block()
-        println("[StoragePort.kt] block() DONE")
-
-        println("[StoragePort.kt] calling commitTransaction()")
         commitTransaction()
-        println("[StoragePort.kt] commitTransaction() DONE")
-
-        println("[StoragePort.kt] returning result")
         result
     } catch (e: Exception) {
-        println("[StoragePort.kt] caught Exception: ${e::class.simpleName} - ${e.message}")
-        println("[StoragePort.kt] calling rollbackTransaction()")
-        try {
-            rollbackTransaction()
-            println("[StoragePort.kt] rollbackTransaction() DONE")
-        } catch (rErr: Exception) {
-            println("[StoragePort.kt] rollbackTransaction() FAILED: ${rErr.message}")
-        }
-        println("[StoragePort.kt] re-throwing exception")
+        // Отказ самого отката не заменяет причину: наружу уходит исходная
+        // ошибка, иначе вызывающий узнает про откат вместо того, что сорвало
+        // транзакцию.
+        runCatching { rollbackTransaction() }
         throw e
     }
 }
