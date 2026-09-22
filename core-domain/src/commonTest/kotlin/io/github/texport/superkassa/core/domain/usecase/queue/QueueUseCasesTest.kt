@@ -230,9 +230,9 @@ class QueueUseCasesTest {
         // молча. Повтор ограничен числом попыток.
         assertEquals(QueueDispatchStatus.FAILED, res.status)
         assertEquals("Server error", res.errorMessage)
-        assertEquals("Ошибка отправки в ОФД: Server error", res.errorRu)
-        assertEquals("ОФД-ға жіберу қатесі: Server error", res.errorKk)
-        assertEquals("OFD delivery failure: Server error", res.errorEn)
+        assertEquals("Ошибка отправки в БФД: Server error", res.errorRu)
+        assertEquals("БФД-ға жіберу қатесі: Server error", res.errorKk)
+        assertEquals("BFD delivery failure: Server error", res.errorEn)
     }
 
     @Test
@@ -258,11 +258,11 @@ class QueueUseCasesTest {
 
         val res = processQueueCommand.execute(mockCommand)
         assertEquals(QueueDispatchStatus.FAILED, res.status)
-        assertEquals("OFD timeout", res.errorMessage)
+        assertEquals("BFD timeout", res.errorMessage)
         assertEquals(32000L, res.retryAt)
-        assertEquals("Тайм-аут ожидания ответа от ОФД", res.errorRu)
-        assertEquals("ОФД жауабын күту уақыты бітті", res.errorKk)
-        assertEquals("OFD connection timeout", res.errorEn)
+        assertEquals("Тайм-аут ожидания ответа от БФД", res.errorRu)
+        assertEquals("БФД жауабын күту уақыты бітті", res.errorKk)
+        assertEquals("BFD connection timeout", res.errorEn)
     }
 
     @Test

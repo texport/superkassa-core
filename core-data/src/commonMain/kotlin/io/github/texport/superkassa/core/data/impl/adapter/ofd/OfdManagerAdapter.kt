@@ -100,7 +100,7 @@ internal class OfdManagerAdapter(
                 ?: return OfdCommandResult(
                     status = OfdCommandStatus.FAILED,
                     errorMessage = CoreStrings.ofdRequestFailedData(
-                        "Invalid OFD configuration: provider or endpoint not found"
+                        "Invalid BFD configuration: provider or endpoint not found"
                     )
                 )
             val json = buildRequest(command)
@@ -124,7 +124,7 @@ internal class OfdManagerAdapter(
                 } catch (_: TimeoutCancellationException) {
                     logger.warn("OFD request timeout after $timeoutSeconds seconds")
                     Result.failure<ByteArray>(
-                        Exception("OFD request timeout after ${timeoutSeconds}s")
+                        Exception("BFD request timeout after ${timeoutSeconds}s")
                     )
                 }
             }

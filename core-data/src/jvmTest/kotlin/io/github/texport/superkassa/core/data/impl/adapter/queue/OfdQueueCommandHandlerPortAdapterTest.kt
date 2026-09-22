@@ -99,8 +99,8 @@ class OfdQueueCommandHandlerPortAdapterTest {
         assertEquals("Server error", result.errorMessage)
         val err = result.error
         assertNotNull(err)
-        assertEquals("Ошибка отправки в ОФД: Server error", err.ru)
-        assertEquals("ОФД-ға жіберу қатесі: Server error", err.kk)
-        assertEquals("OFD delivery failure: Server error", err.en)
+        assertEquals("Ошибка отправки в БФД: Server error", err.ru)
+        assertEquals("БФД-ға жіберу қатесі: Server error", err.kk)
+        assertEquals("BFD delivery failure: Server error", err.en)
     }
 }

@@ -35,7 +35,7 @@ enum class OfdCommandType(val value: String) {
          */
         fun fromString(value: String): OfdCommandType {
             return entries.find { it.value == value }
-                ?: throw IllegalArgumentException("Unknown OFD command type: $value")
+                ?: throw IllegalArgumentException("Unknown BFD command type: $value")
         }
     }
 }

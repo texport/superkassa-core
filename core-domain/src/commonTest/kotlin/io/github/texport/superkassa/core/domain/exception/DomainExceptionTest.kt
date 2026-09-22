@@ -161,14 +161,14 @@ class DomainExceptionTest {
         assertTrue(unknownEnv.en.contains("PROD"))
 
         // ofdProviderRequired
-        assertEquals("ОФД обязателен", CoreStrings.ofdProviderRequired().ru)
+        assertEquals("БФД обязателен", CoreStrings.ofdProviderRequired().ru)
 
         // ofdProviderTagInvalid
         val tagInvalid = CoreStrings.ofdProviderTagInvalid("TAG")
         assertTrue(tagInvalid.ru.contains("TAG"))
 
         // ofdTokenRequired
-        assertEquals("Токен ОФД обязателен", CoreStrings.ofdTokenRequired().ru)
+        assertEquals("Токен БФД обязателен", CoreStrings.ofdTokenRequired().ru)
 
         // ofdTokenInvalid
         val tokenInvalid = CoreStrings.ofdTokenInvalid("TOKEN")
@@ -223,7 +223,7 @@ class DomainExceptionTest {
         assertEquals("Нельзя удалить кассу с открытой сменой. Сначала закройте смену.", CoreStrings.kkmDeleteShiftOpen().ru)
 
         // kkmDeleteQueueNotEmpty
-        assertEquals("Нельзя удалить кассу, пока есть неотправленные документы в ОФД.", CoreStrings.kkmDeleteQueueNotEmpty().ru)
+        assertEquals("Нельзя удалить кассу, пока есть неотправленные документы в БФД.", CoreStrings.kkmDeleteQueueNotEmpty().ru)
 
         // kkmSyncShiftOpen
         assertEquals("Смена не закрыта", CoreStrings.kkmSyncShiftOpen().ru)
@@ -235,7 +235,7 @@ class DomainExceptionTest {
         assertEquals("Автономный режим превышает 72 часа", CoreStrings.kkmAutonomousTooLong().ru)
 
         // kkmBlocked
-        assertEquals("ККМ заблокирована по требованию ОФД", CoreStrings.kkmBlocked().ru)
+        assertEquals("ККМ заблокирована по требованию БФД", CoreStrings.kkmBlocked().ru)
         // Блокировка называет причину и действие: снимаются они разным,
         // и угадывать это у прилавка кассир не должен.
         assertTrue(CoreStrings.kkmBlocked(OPEN_SHIFT_TIMEOUT_BLOCK).ru.contains("Z-отчётом"))
@@ -260,12 +260,12 @@ class DomainExceptionTest {
         assertTrue(ofdFailedWithDetails.en.contains("connection timeout"))
 
         val ofdFailedNoDetails = CoreStrings.ofdRequestFailed(null)
-        assertEquals("Ошибка ОФД", ofdFailedNoDetails.ru)
-        assertEquals("ОФД қатесі", ofdFailedNoDetails.kk)
-        assertEquals("OFD request failed", ofdFailedNoDetails.en)
+        assertEquals("Ошибка БФД", ofdFailedNoDetails.ru)
+        assertEquals("БФД қатесі", ofdFailedNoDetails.kk)
+        assertEquals("BFD request failed", ofdFailedNoDetails.en)
 
         val ofdFailedBlankDetails = CoreStrings.ofdRequestFailed("   ")
-        assertEquals("Ошибка ОФД", ofdFailedBlankDetails.ru)
+        assertEquals("Ошибка БФД", ofdFailedBlankDetails.ru)
 
         // measureUnitCodeInvalid
         val measureInvalid = CoreStrings.measureUnitCodeInvalid("M1")

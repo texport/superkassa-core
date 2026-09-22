@@ -64,39 +64,39 @@ internal object CoreStringsImpl {
     )
 
     internal fun ofdProviderUnknown(id: String): TrilingualMessage = TrilingualMessage(
-        ru = "Неизвестный ОФД: $id",
-        kk = "Белгісіз ОФД: $id",
-        en = "Unknown OFD provider: $id"
+        ru = "Неизвестный БФД: $id",
+        kk = "Белгісіз БФД: $id",
+        en = "Unknown BFD provider: $id"
     )
 
     internal fun ofdEnvironmentUnknown(env: String): TrilingualMessage = TrilingualMessage(
-        ru = "Неизвестная площадка ОФД: $env",
-        kk = "Белгісіз ОФД алаңы: $env",
-        en = "Unknown OFD environment: $env"
+        ru = "Неизвестная площадка БФД: $env",
+        kk = "Белгісіз БФД алаңы: $env",
+        en = "Unknown BFD environment: $env"
     )
 
     internal fun ofdProviderRequired(): TrilingualMessage = TrilingualMessage(
-        ru = "ОФД обязателен",
-        kk = "ОФД міндетті",
-        en = "OFD provider required"
+        ru = "БФД обязателен",
+        kk = "БФД міндетті",
+        en = "BFD provider required"
     )
 
     internal fun ofdProviderTagInvalid(tag: String): TrilingualMessage = TrilingualMessage(
-        ru = "Неверный тег ОФД: $tag",
-        kk = "ОФД қате тегі: $tag",
-        en = "Invalid OFD tag: $tag"
+        ru = "Неверный тег БФД: $tag",
+        kk = "БФД қате тегі: $tag",
+        en = "Invalid BFD tag: $tag"
     )
 
     internal fun ofdTokenRequired(): TrilingualMessage = TrilingualMessage(
-        ru = "Токен ОФД обязателен",
-        kk = "ОФД токені міндетті",
-        en = "OFD token required"
+        ru = "Токен БФД обязателен",
+        kk = "БФД токені міндетті",
+        en = "BFD token required"
     )
 
     internal fun ofdTokenInvalid(token: String): TrilingualMessage = TrilingualMessage(
-        ru = "Неверный токен ОФД: $token",
-        kk = "ОФД қате токені: $token",
-        en = "Invalid OFD token: $token"
+        ru = "Неверный токен БФД: $token",
+        kk = "БФД қате токені: $token",
+        en = "Invalid BFD token: $token"
     )
 
     internal fun kkmRegistrationRequired(): TrilingualMessage = TrilingualMessage(
@@ -246,9 +246,9 @@ internal object CoreStringsImpl {
     )
 
     internal fun kkmSettingsQueueNotEmpty(): TrilingualMessage = TrilingualMessage(
-        ru = "Нельзя менять настройки кассы, пока есть неотправленные документы в ОФД.",
-        kk = "ОФД-ға жіберілмеген құжаттар бар кезде касса баптауларын өзгертуге болмайды.",
-        en = "Cannot change cash register settings while documents are undelivered to the OFD."
+        ru = "Нельзя менять настройки кассы, пока есть неотправленные документы в БФД.",
+        kk = "БФД-ға жіберілмеген құжаттар бар кезде касса баптауларын өзгертуге болмайды.",
+        en = "Cannot change cash register settings while documents are undelivered to the BFD."
     )
 
     internal fun queueRetryShiftOpen(): TrilingualMessage = TrilingualMessage(
@@ -258,8 +258,8 @@ internal object CoreStringsImpl {
     )
 
     internal fun kkmDeleteQueueNotEmpty(): TrilingualMessage = TrilingualMessage(
-        ru = "Нельзя удалить кассу, пока есть неотправленные документы в ОФД.",
-        kk = "ОФД-ға жіберілмеген құжаттар бар кезде кассаны өшіруге болмайды.",
+        ru = "Нельзя удалить кассу, пока есть неотправленные документы в БФД.",
+        kk = "БФД-ға жіберілмеген құжаттар бар кезде кассаны өшіруге болмайды.",
         en = "Cannot delete cash register while unsent documents remain."
     )
 
@@ -282,11 +282,11 @@ internal object CoreStringsImpl {
     )
 
     internal fun kkmSyncShiftDiverged(shiftNo: Long): TrilingualMessage = TrilingualMessage(
-        ru = "ОФД считает смену закрытой, а на кассе смена $shiftNo открыта. " +
+        ru = "БФД считает смену закрытой, а на кассе смена $shiftNo открыта. " +
             "Снимите Z-отчёт и повторите сверку",
-        kk = "ОФД ауысымды жабық деп санайды, ал кассада $shiftNo ауысымы ашық. " +
+        kk = "БФД ауысымды жабық деп санайды, ал кассада $shiftNo ауысымы ашық. " +
             "Z-есепті алып, салыстыруды қайталаңыз",
-        en = "OFD considers the shift closed while shift $shiftNo is open on the register. " +
+        en = "BFD considers the shift closed while shift $shiftNo is open on the register. " +
             "Take a Z-report and repeat the reconciliation"
     )
 
@@ -297,9 +297,9 @@ internal object CoreStringsImpl {
     )
 
     internal fun kkmBlocked(): TrilingualMessage = TrilingualMessage(
-        ru = "ККМ заблокирована по требованию ОФД",
-        kk = "БКМ ОФД талабы бойынша бұғатталған",
-        en = "KKM is blocked by OFD instruction"
+        ru = "ККМ заблокирована по требованию БФД",
+        kk = "БКМ БФД талабы бойынша бұғатталған",
+        en = "KKM is blocked by BFD instruction"
     )
 
     /**
@@ -318,14 +318,14 @@ internal object CoreStringsImpl {
             en = "The shift has been open too long - close it with a Z-report"
         )
         INVALID_TOKEN_BLOCK -> TrilingualMessage(
-            ru = "Токен ОФД недействителен — замените токен в настройках",
-            kk = "ОФД токені жарамсыз — баптауларда токенді ауыстырыңыз",
-            en = "The OFD token is invalid - replace it in the settings"
+            ru = "Токен БФД недействителен — замените токен в настройках",
+            kk = "БФД токені жарамсыз — баптауларда токенді ауыстырыңыз",
+            en = "The BFD token is invalid - replace it in the settings"
         )
         AUTONOMOUS_LIMIT_BLOCK -> TrilingualMessage(
-            ru = "Автономная работа дольше допустимого — восстановите связь с ОФД",
-            kk = "Автономды жұмыс рұқсат етілгеннен ұзақ — ОФД байланысын қалпына келтіріңіз",
-            en = "Autonomous work has lasted too long - restore the link to the OFD"
+            ru = "Автономная работа дольше допустимого — восстановите связь с БФД",
+            kk = "Автономды жұмыс рұқсат етілгеннен ұзақ — БФД байланысын қалпына келтіріңіз",
+            en = "Autonomous work has lasted too long - restore the link to the BFD"
         )
         else -> kkmBlocked()
     }
@@ -349,9 +349,9 @@ internal object CoreStringsImpl {
     )
 
     internal fun ofdRequestFailed(details: String?): TrilingualMessage = TrilingualMessage(
-        ru = if (details.isNullOrBlank()) "Ошибка ОФД" else "Ошибка ОФД: $details",
-        kk = if (details.isNullOrBlank()) "ОФД қатесі" else "ОФД қатесі: $details",
-        en = if (details.isNullOrBlank()) "OFD request failed" else "OFD request failed: $details"
+        ru = if (details.isNullOrBlank()) "Ошибка БФД" else "Ошибка БФД: $details",
+        kk = if (details.isNullOrBlank()) "БФД қатесі" else "БФД қатесі: $details",
+        en = if (details.isNullOrBlank()) "BFD request failed" else "BFD request failed: $details"
     )
 
     internal fun measureUnitCodeInvalid(code: String): TrilingualMessage = TrilingualMessage(
@@ -483,9 +483,9 @@ internal object CoreStringsImpl {
     internal fun ofdRequestFailedData(details: String?): String {
         val errorText = details ?: "unknown"
         return TrilingualMessage(
-            ru = "Ошибка запроса к ОФД: $errorText",
-            kk = "ОФД-ға сұраныс қатесі: $errorText",
-            en = "OFD request failed: $errorText"
+            ru = "Ошибка запроса к БФД: $errorText",
+            kk = "БФД-ға сұраныс қатесі: $errorText",
+            en = "BFD request failed: $errorText"
         ).compact()
     }
 
@@ -516,15 +516,15 @@ internal object CoreStringsImpl {
         // над ней давала «Ошибка отправки в ОФД: Ошибка запроса к ОФД: …» —
         // две строки об одном и том же перед единственным полезным словом.
         TrilingualMessage.ofCompact(errorMsg) ?: TrilingualMessage(
-            ru = "Ошибка отправки в ОФД: {}",
-            kk = "ОФД-ға жіберу қатесі: {}",
-            en = "OFD delivery failure: {}"
+            ru = "Ошибка отправки в БФД: {}",
+            kk = "БФД-ға жіберу қатесі: {}",
+            en = "BFD delivery failure: {}"
         ).wrapping(errorMsg)
 
     internal fun ofdTimeout(): TrilingualMessage = TrilingualMessage(
-        ru = "Тайм-аут ожидания ответа от ОФД",
-        kk = "ОФД жауабын күту уақыты бітті",
-        en = "OFD connection timeout"
+        ru = "Тайм-аут ожидания ответа от БФД",
+        kk = "БФД жауабын күту уақыты бітті",
+        en = "BFD connection timeout"
     )
 
     internal fun noAdapterForChannel(channel: String): TrilingualMessage = TrilingualMessage(
@@ -534,9 +534,9 @@ internal object CoreStringsImpl {
     )
 
     internal fun ofdErrorReason(): TrilingualMessage = TrilingualMessage(
-        ru = "Ошибка передачи в ОФД: Документ не доставлен в налоговый орган.",
-        kk = "ОФД-ға жіберу қатесі: Құжат салық органына жеткізілмеді.",
-        en = "OFD delivery failure: Document not delivered to tax authority."
+        ru = "Ошибка передачи в БФД: Документ не доставлен в налоговый орган.",
+        kk = "БФД-ға жіберу қатесі: Құжат салық органына жеткізілмеді.",
+        en = "BFD delivery failure: Document not delivered to tax authority."
     )
 
     internal fun statusError(): TrilingualMessage = TrilingualMessage(
@@ -669,7 +669,7 @@ internal object CoreStringsImpl {
         "ACTIVE" -> TrilingualMessage("Активна", "Белсенді", "Active")
         "ONLINE" -> TrilingualMessage("Онлайн", "Онлайн", "Online")
         "OFFLINE_QUEUE" -> TrilingualMessage("Офлайн очередь", "Офлайн кезегі", "Offline Queue")
-        "NO_TOKEN" -> TrilingualMessage("Нет токена ОФД", "ОФД токені жоқ", "No OFD Token")
+        "NO_TOKEN" -> TrilingualMessage("Нет токена БФД", "БФД токені жоқ", "No BFD Token")
         "BLOCKED" -> TrilingualMessage("Заблокирована", "Блокталған", "Blocked")
         "PROGRAMMING" -> TrilingualMessage("Программирование", "Бағдарламалау", "Programming")
         "IDLE" -> TrilingualMessage("Смена закрыта", "Ауысым жабық", "Idle")
@@ -683,9 +683,9 @@ internal object CoreStringsImpl {
     )
 
     internal fun kkmLabelConnection(): TrilingualMessage = TrilingualMessage(
-        ru = "Связь с ОФД",
-        kk = "ОФД байланысы",
-        en = "OFD Connection"
+        ru = "Связь с БФД",
+        kk = "БФД байланысы",
+        en = "BFD Connection"
     )
 
     internal fun kkmStatusOnline(): TrilingualMessage = TrilingualMessage(
@@ -839,9 +839,9 @@ internal object CoreStringsImpl {
             en = "Receipts not sent (72 hours)"
         )
         1001 -> TrilingualMessage(
-            ru = "Неизвестный ID устройства в ОФД",
-            kk = "ОФД жүйесінде белгісіз құрылғы ID",
-            en = "Unknown device ID in OFD"
+            ru = "Неизвестный ID устройства в БФД",
+            kk = "БФД жүйесінде белгісіз құрылғы ID",
+            en = "Unknown device ID in BFD"
         )
         1002 -> TrilingualMessage(
             ru = "Неверный токен. Произведите сброс/авторизацию",
@@ -849,29 +849,29 @@ internal object CoreStringsImpl {
             en = "Invalid token. Please reauthorize"
         )
         1003 -> TrilingualMessage(
-            ru = "Ошибка протокола ОФД",
-            kk = "ОФД хаттамасының қатесі",
-            en = "OFD protocol error"
+            ru = "Ошибка протокола БФД",
+            kk = "БФД хаттамасының қатесі",
+            en = "BFD protocol error"
         )
         1004 -> TrilingualMessage(
-            ru = "Неизвестная команда ОФД",
-            kk = "ОФД жүйесінде белгісіз пәрмен",
-            en = "Unknown OFD command"
+            ru = "Неизвестная команда БФД",
+            kk = "БФД жүйесінде белгісіз пәрмен",
+            en = "Unknown BFD command"
         )
         1005 -> TrilingualMessage(
-            ru = "Команда не поддерживается ОФД",
-            kk = "Пәрменді ОФД қолдамайды",
-            en = "Command not supported by OFD"
+            ru = "Команда не поддерживается БФД",
+            kk = "Пәрменді БФД қолдамайды",
+            en = "Command not supported by BFD"
         )
         1006 -> TrilingualMessage(
-            ru = "Неверные настройки ОФД",
-            kk = "ОФД қате баптаулары",
-            en = "Invalid OFD configuration"
+            ru = "Неверные настройки БФД",
+            kk = "БФД қате баптаулары",
+            en = "Invalid BFD configuration"
         )
         1007 -> TrilingualMessage(
-            ru = "SSL не разрешен ОФД",
-            kk = "ОФД SSL рұқсат етпейді",
-            en = "SSL is not allowed by OFD"
+            ru = "SSL не разрешен БФД",
+            kk = "БФД SSL рұқсат етпейді",
+            en = "SSL is not allowed by BFD"
         )
         1011 -> TrilingualMessage(
             ru = "Смена открыта более 24 часов",
@@ -879,14 +879,14 @@ internal object CoreStringsImpl {
             en = "Shift is open for more than 24 hours"
         )
         1012 -> TrilingualMessage(
-            ru = "Неверный логин/пароль ОФД",
-            kk = "ОФД логині/құпия сөзі қате",
-            en = "Invalid OFD login/password"
+            ru = "Неверный логин/пароль БФД",
+            kk = "БФД логині/құпия сөзі қате",
+            en = "Invalid BFD login/password"
         )
         1015 -> TrilingualMessage(
-            ru = "Касса заблокирована ОФД",
-            kk = "Касса ОФД жүйесінде бұғатталған",
-            en = "Cash register is blocked by OFD"
+            ru = "Касса заблокирована БФД",
+            kk = "Касса БФД жүйесінде бұғатталған",
+            en = "Cash register is blocked by BFD"
         )
         else -> TrilingualMessage(
             ru = "Неизвестная причина блокировки (Код $code)",
@@ -898,9 +898,9 @@ internal object CoreStringsImpl {
     internal fun documentFailedReason(ofdErrorCode: Int): TrilingualMessage = when (ofdErrorCode) {
         // Отказ на стороне кассы: документ не удалось собрать по протоколу ОФД.
         -1 -> TrilingualMessage(
-            ru = "Чек не соответствует протоколу ОФД. Проверьте данные и пробейте заново.",
-            kk = "Чек ОФД хаттамасына сәйкес келмейді. Мәліметтерді тексеріп қайта соғыңыз.",
-            en = "Receipt does not conform to the OFD protocol. Fix and resend."
+            ru = "Чек не соответствует протоколу БФД. Проверьте данные и пробейте заново.",
+            kk = "Чек БФД хаттамасына сәйкес келмейді. Мәліметтерді тексеріп қайта соғыңыз.",
+            en = "Receipt does not conform to the BFD protocol. Fix and resend."
         )
         13 -> TrilingualMessage(
             ru = "Неверные данные чека. Проверьте данные и пробейте заново.",
@@ -918,9 +918,9 @@ internal object CoreStringsImpl {
             en = "Taxpayer and customer ID match."
         )
         else -> TrilingualMessage(
-            ru = "Ошибка отправки в ОФД (Код $ofdErrorCode)",
-            kk = "ОФД жүйесіне жіберу қатесі (Код $ofdErrorCode)",
-            en = "Error sending to OFD (Code $ofdErrorCode)"
+            ru = "Ошибка отправки в БФД (Код $ofdErrorCode)",
+            kk = "БФД жүйесіне жіберу қатесі (Код $ofdErrorCode)",
+            en = "Error sending to BFD (Code $ofdErrorCode)"
         )
     }
 }

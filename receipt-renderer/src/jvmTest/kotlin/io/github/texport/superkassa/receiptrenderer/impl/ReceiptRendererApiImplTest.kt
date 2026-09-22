@@ -563,7 +563,7 @@ class ReceiptRendererApiImplTest {
         val html = renderer.renderHtml(request, doc, kkm)
 
         assertTrue(html.contains("SUPERKASSA"))
-        assertTrue(!html.contains("ОФД / ОФД:"))
+        assertTrue(!html.contains("БФД / БФД:"))
         assertTrue(!html.contains("Ссылка на чек"))
     }
 
