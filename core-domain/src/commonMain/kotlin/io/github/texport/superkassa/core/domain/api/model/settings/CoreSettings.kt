@@ -23,9 +23,5 @@ data class CoreSettings(
     val ofdTimeoutSeconds: Long = 7L,
     val ofdReconnectIntervalSeconds: Long = 60L,
     val kkmFactoryNumberPrefix: String = "KZT",
-    val delivery: DeliverySettings? = null,
-    val defaultAdminPin: String = "0000",
-    val defaultAdminName: String = "Администратор",
-    val defaultCashierPin: String = "1111",
-    val defaultCashierName: String = "Кассир"
+    val delivery: DeliverySettings? = null
 )
