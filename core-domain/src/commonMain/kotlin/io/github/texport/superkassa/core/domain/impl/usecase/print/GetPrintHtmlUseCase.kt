@@ -72,7 +72,8 @@ class GetPrintHtmlUseCase(
             PrintDocumentType.X_REPORT -> {
                 val shift = (shiftId?.let { storage.findShiftById(it) }) ?: getOpenShift(kkmId, pin)
                 val counters = storage.loadCounters(kkmId, CounterScopes.SHIFT, shift.id)
-                receiptRenderPort.renderXReportHtml(shift, counters, kkm, null, layout)
+                // Отчёт снимают с открытой смены: документа ещё нет, и номера у него тоже.
+                receiptRenderPort.renderXReportHtml(shift, counters, kkm, null, null, layout)
             }
             PrintDocumentType.OPEN_SHIFT -> {
                 val shift = (shiftId?.let { storage.findShiftById(it) }) ?: getOpenShift(kkmId, pin)
@@ -116,7 +117,7 @@ class GetPrintHtmlUseCase(
             "REPORT_X", "X_REPORT" -> {
                 val shift = storage.findShiftById(doc.shiftId) ?: getOpenShift(kkm.id, pin)
                 val counters = storage.loadCounters(kkm.id, CounterScopes.SHIFT, shift.id)
-                receiptRenderPort.renderXReportHtml(shift, counters, kkm, null, layout)
+                receiptRenderPort.renderXReportHtml(shift, counters, kkm, null, doc.docNo?.toString(), layout)
             }
             "SHIFT_OPEN", "OPEN_SHIFT" -> {
                 val shift = storage.findShiftById(doc.shiftId) ?: getOpenShift(kkm.id, pin)

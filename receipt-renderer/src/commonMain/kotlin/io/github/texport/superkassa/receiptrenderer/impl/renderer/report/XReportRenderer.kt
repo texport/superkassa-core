@@ -12,7 +12,8 @@ internal class XReportRenderer(
         shift: ShiftInfo,
         counters: Map<String, Long>,
         kkm: KkmInfo,
-        ofdStatus: String?
+        ofdStatus: String?,
+        docNo: String? = null
     ): String {
         return renderZxReportHtml(
             titleKey = TITLE_KEY,
@@ -20,7 +21,8 @@ internal class XReportRenderer(
             counters = counters,
             isZReport = false,
             kkm = kkm,
-            ofdStatus = ofdStatus
+            ofdStatus = ofdStatus,
+            docNo = docNo
         )
     }
 

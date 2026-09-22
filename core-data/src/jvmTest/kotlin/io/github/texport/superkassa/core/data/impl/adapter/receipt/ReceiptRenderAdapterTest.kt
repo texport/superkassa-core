@@ -96,7 +96,7 @@ class ReceiptRenderAdapterTest {
             closedAt = null,
             status = ShiftStatus.OPEN
         )
-        val html = adapter.renderXReportHtml(shift, emptyMap(), defaultKkm, "DELIVERED", ReceiptLayoutType.TAPE_80MM)
+        val html = adapter.renderXReportHtml(shift, emptyMap(), defaultKkm, "DELIVERED", null, ReceiptLayoutType.TAPE_80MM)
         assertTrue(html.isNotEmpty())
     }
 

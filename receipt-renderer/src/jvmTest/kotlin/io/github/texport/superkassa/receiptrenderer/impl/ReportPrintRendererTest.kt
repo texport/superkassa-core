@@ -241,4 +241,29 @@ class ReportPrintRendererTest {
         result = result.replace(Regex("""<span\s+class="badge\s+[^"]*">\s*<span\s+class="badge-main">([\s\S]*?)</span>\s*<span\s+class="badge-divider"></span>\s*<span\s+class="badge-sub">([\s\S]*?)</span>\s*</span>"""), "$1 / $2")
         return result.replace(Regex("<[^>]*>"), "")
     }
+
+    /**
+     * X-отчёт, нарисованный по счётчикам кассы, несёт номер документа.
+     *
+     * У отчёта, снятого с открытой смены, номера нет — его печатают без
+     * этой строки. У перепечатки сохранённого отчёта он есть, и в шапке
+     * он стоит так же, как у Z-отчёта.
+     */
+    @Test
+    fun `X-отчёт по счётчикам печатает номер документа`() {
+        val shift = ShiftInfo(
+            id = "shift-123",
+            kkmId = "kkm-123",
+            shiftNo = 12,
+            status = ShiftStatus.OPEN,
+            openedAt = 1782200000000L
+        )
+
+        val withoutDocNo = stripHtml(xRenderer.render(shift, emptyMap(), kkm, null))
+        assertTrue(!withoutDocNo.contains("Құжат № / Документ №"))
+
+        val withDocNo = stripHtml(xRenderer.render(shift, emptyMap(), kkm, null, "77"))
+        assertTrue(withDocNo.contains("Құжат № / Документ №"))
+        assertTrue(withDocNo.contains("77"))
+    }
 }

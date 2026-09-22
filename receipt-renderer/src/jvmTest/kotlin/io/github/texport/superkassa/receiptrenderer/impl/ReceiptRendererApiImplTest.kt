@@ -1586,7 +1586,7 @@ class ReceiptRendererApiImplTest {
             )
 
             renderer.renderHtml(request, doc, kkm, layout)
-            renderer.renderXReportHtml(shift, emptyMap(), kkm, ofdStatus, layout)
+            renderer.renderXReportHtml(shift, emptyMap(), kkm, ofdStatus, null, layout)
             renderer.renderOpenShiftHtml(shift, kkm, ofdStatus, "1", layout)
             renderer.renderCloseShiftHtml(shift, emptyMap(), kkm, ofdStatus, "2", layout)
             renderer.renderCashOperationHtml(doc, kkm, layout)

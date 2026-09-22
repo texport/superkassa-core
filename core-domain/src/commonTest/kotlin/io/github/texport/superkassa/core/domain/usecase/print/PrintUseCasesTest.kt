@@ -107,7 +107,7 @@ class PrintUseCasesTest {
         val shift = ShiftInfo(id = "shift-1", kkmId = "kkm-1", shiftNo = 1L, status = ShiftStatus.OPEN, openedAt = 100L)
         every { storage.findOpenShift("kkm-1") } returns shift
         every { storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1") } returns emptyMap()
-        every { receiptRenderPort.renderXReportHtml(shift, emptyMap(), kkm, null, null) } returns "<html>xreport</html>"
+        every { receiptRenderPort.renderXReportHtml(shift, emptyMap(), kkm, null, null, null) } returns "<html>xreport</html>"
         every { documentConvertPort.htmlToPdf("<html>xreport</html>") } returns byteArrayOf(1, 2, 3)
 
         val pdf = getPrintPdf.execute("kkm-1", PrintDocumentType.X_REPORT, null, null, "1234")
@@ -406,5 +406,35 @@ class PrintUseCasesTest {
 
         val res = getPrintHtml.execute("kkm-1", PrintDocumentType.CLOSE_SHIFT, null, "shift-1", "1234", ReceiptLayoutType.TAPE_80MM)
         assertEquals("<html>close_shift</html>", res)
+    }
+
+    /**
+     * Перепечатка сохранённого X-отчёта несёт его номер документа.
+     *
+     * Перепечатывается уже выданный отчёт, у него номер есть, и в шапке
+     * он стоит — как у Z-отчёта. Прежде номер не доходил до формы,
+     * и строка «Документ №» на перепечатке отсутствовала вовсе.
+     */
+    @Test
+    fun `перепечатка X-отчёта несёт номер документа`() {
+        every { authorizeUserUseCase.requireKkm("kkm-1") } returns kkm
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", setOf(UserRole.CASHIER, UserRole.ADMIN)) } returns mockk()
+
+        val shift = ShiftInfo(
+            id = "shift-1",
+            kkmId = "kkm-1",
+            shiftNo = 1L,
+            status = ShiftStatus.OPEN,
+            openedAt = 100L
+        )
+        val xReportDoc = snapshot.copy(id = "doc-x", docType = "REPORT_X", docNo = 77L)
+        every { storage.findFiscalDocumentById("doc-x") } returns xReportDoc
+        every { storage.findShiftById("shift-1") } returns shift
+        every { storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1") } returns emptyMap()
+        every { receiptRenderPort.renderXReportHtml(shift, emptyMap(), kkm, null, "77", null) } returns "<html>xreport 77</html>"
+
+        val res = getPrintHtml.execute("kkm-1", PrintDocumentType.DOCUMENT, "doc-x", null, "1234")
+        assertEquals("<html>xreport 77</html>", res)
+        verify { receiptRenderPort.renderXReportHtml(shift, emptyMap(), kkm, null, "77", null) }
     }
 }
