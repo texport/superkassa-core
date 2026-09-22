@@ -252,11 +252,7 @@ class SettingsModelTest {
             deliveryChannels = listOf("SMS"),
             ofdTimeoutSeconds = 15L,
             ofdReconnectIntervalSeconds = 45L,
-            delivery = delivery,
-            defaultAdminPin = "1111",
-            defaultAdminName = "Admin",
-            defaultCashierPin = "2222",
-            defaultCashierName = "Cashier"
+            delivery = delivery
         )
         val c1Copy = c1.copy()
         val cSame = c1.copy()
@@ -269,10 +265,6 @@ class SettingsModelTest {
         val cDiffTimeout = c1.copy(ofdTimeoutSeconds = 30L)
         val cDiffReconnect = c1.copy(ofdReconnectIntervalSeconds = 60L)
         val cDiffDelivery = c1.copy(delivery = null)
-        val cDiffAdminPin = c1.copy(defaultAdminPin = "0000")
-        val cDiffAdminName = c1.copy(defaultAdminName = "Admin2")
-        val cDiffCashierPin = c1.copy(defaultCashierPin = "3333")
-        val cDiffCashierName = c1.copy(defaultCashierName = "Cashier2")
 
         assertEquals(c1, c1)
         assertEquals(c1, c1Copy)
@@ -290,10 +282,6 @@ class SettingsModelTest {
         assertNotEquals(c1, cDiffTimeout)
         assertNotEquals(c1, cDiffReconnect)
         assertNotEquals(c1, cDiffDelivery)
-        assertNotEquals(c1, cDiffAdminPin)
-        assertNotEquals(c1, cDiffAdminName)
-        assertNotEquals(c1, cDiffCashierPin)
-        assertNotEquals(c1, cDiffCashierName)
 
         assertTrue(c1.toString().contains("nodeId=node-1"))
     }
