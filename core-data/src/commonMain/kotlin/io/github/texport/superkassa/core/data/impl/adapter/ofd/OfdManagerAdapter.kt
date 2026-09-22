@@ -41,8 +41,8 @@ internal class OfdManagerAdapter(
     private val codec: OfdProtocolCodec,
     private val networkClient: OfdNetworkClient,
     private val requestBuilders: List<OfdRequestBuilderStrategy>,
-    /** Общее время на обработку транзакции (протокол п. 5), не менее 5 с. */
-    private val timeoutSeconds: Long = 30L,
+    /** Сколько касса ждёт ответа БФД, прежде чем счесть связь пропавшей. */
+    internal val timeoutSeconds: Long = DEFAULT_RESPONSE_TIMEOUT_SECONDS,
     /** Интервал задержки между попытками восстановления связи (протокол п. 5), не менее 60 с. */
     private val reconnectIntervalSeconds: Long = 60L
 ) : OfdManagerPort {
@@ -77,12 +77,28 @@ internal class OfdManagerAdapter(
         MIN_RECONNECT_INTERVAL_SECONDS
     ) * SECONDS_TO_MILLIS
 
+    /**
+     * Страховочный предел вокруг всего обмена.
+     *
+     * Свой срок сетевой клиент считает сам и по нему возвращает отказ,
+     * который касса умеет отличить от отказа БФД по существу. Здесь предел
+     * заведомо больше, чтобы первым срабатывал именно он, а этот остался
+     * на случай, когда клиент не вернулся вовсе.
+     */
+    internal val guardTimeoutSeconds: Long = timeoutSeconds + GUARD_MARGIN_SECONDS
+
     /** Время последней неудачи по связи (нет ответа ОФД) по kkmId. */
     private val lastNoConnectionMillis = createConcurrentMap<String, Long>()
 
     companion object {
         private const val SECONDS_TO_MILLIS = 1000L
         private const val MIN_RECONNECT_INTERVAL_SECONDS = 60L
+
+        /** Умолчание ожидания ответа БФД: столько кассир ждёт у экрана. */
+        internal const val DEFAULT_RESPONSE_TIMEOUT_SECONDS = 7L
+
+        /** Запас страховочного предела над сроком сетевого клиента. */
+        private const val GUARD_MARGIN_SECONDS = 1L
         private const val HEADER_FIELD = "header"
         private const val TOKEN_FIELD = "token"
         private const val TOKEN_MASK = "***"
@@ -136,13 +152,13 @@ internal class OfdManagerAdapter(
             val bytes = codec.encode(json)
             val response = runBlocking {
                 try {
-                    withTimeout(timeoutSeconds.seconds) {
+                    withTimeout(guardTimeoutSeconds.seconds) {
                         networkClient.sendAndReceive(endpoint, bytes)
                     }
                 } catch (_: TimeoutCancellationException) {
-                    logger.warn("OFD request timeout after $timeoutSeconds seconds")
+                    logger.warn("OFD request timeout after $guardTimeoutSeconds seconds")
                     Result.failure<ByteArray>(
-                        Exception("BFD request timeout after ${timeoutSeconds}s")
+                        Exception("BFD request timeout after ${guardTimeoutSeconds}s")
                     )
                 }
             }

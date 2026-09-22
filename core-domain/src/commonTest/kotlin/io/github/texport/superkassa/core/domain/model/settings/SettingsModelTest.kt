@@ -297,4 +297,17 @@ class SettingsModelTest {
 
         assertTrue(c1.toString().contains("nodeId=node-1"))
     }
+
+    /**
+     * Дольше семи секунд кассир ответа БФД не ждёт: по истечении срока
+     * чек оформляется автономно, а не превращается в отказ на экране.
+     */
+    @Test
+    fun testOfdResponseWaitDefaultsToSevenSeconds() {
+        val defaults = CoreSettings(
+            mode = CoreMode.DESKTOP,
+            storage = StorageSettings("sqlite", "jdbc:sqlite")
+        )
+        assertEquals(7L, defaults.ofdTimeoutSeconds)
+    }
 }
