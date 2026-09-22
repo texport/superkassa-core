@@ -57,6 +57,35 @@ class ReceiptFormatterTest {
         assertEquals("123,45$NBSP₸", ReceiptFormatter.formatMoney(Money(123, 45)))
     }
 
+    /** Количество без дробной части печатается целым, хвостовые нули не печатаются. */
+    @Test
+    fun testFormatQuantity() {
+        assertEquals("1", ReceiptFormatter.formatQuantity(1000L))
+        assertEquals("2,5", ReceiptFormatter.formatQuantity(2500L))
+        assertEquals("2,005", ReceiptFormatter.formatQuantity(2005L))
+        assertEquals("0", ReceiptFormatter.formatQuantity(0L))
+        assertEquals("-1,5", ReceiptFormatter.formatQuantity(-1500L))
+    }
+
+    /**
+     * Большое дробное количество печатается числом, а не показательной записью:
+     * перевод через `Double` выводил на ленту «1.00000005E7».
+     */
+    @Test
+    fun testFormatQuantityStaysDecimal() {
+        assertEquals("10${NBSP}000${NBSP}000,5", ReceiptFormatter.formatQuantity(10_000_000_500L))
+        assertEquals("1${NBSP}000${NBSP}000,001", ReceiptFormatter.formatQuantity(1_000_000_001L))
+    }
+
+    /**
+     * Дробная часть количества не округляется по дороге: `Double` не хранит
+     * тысячные больших чисел, и последний знак терялся.
+     */
+    @Test
+    fun testFormatQuantityKeepsThousandths() {
+        assertEquals("9${NBSP}007${NBSP}199${NBSP}254${NBSP}740,993", ReceiptFormatter.formatQuantity(9_007_199_254_740_993L))
+    }
+
     @Test
     fun testFormatDate() {
         val millis = 1782200000000L // Some epoch millis

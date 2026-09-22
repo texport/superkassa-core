@@ -30,6 +30,9 @@ internal object ReceiptFormatter {
     /** Знаков после запятой у суммы: тиын — сотая доля тенге. */
     private const val TIYN_SCALE = 2
 
+    /** Знаков после запятой у количества: оно приходит в тысячных долях. */
+    private const val QUANTITY_SCALE = 3
+
     /**
      * Конвертирует денежную структуру [Money] в общее количество тиын.
      *
@@ -90,25 +93,15 @@ internal object ReceiptFormatter {
      * Форматирует количество товара (переданное в тысячных долях) в читаемый вид.
      * Например:
      * 1000 -> "1"
-     * 2500 -> "2.5"
-     * 2005 -> "2.005"
+     * 2500 -> "2,5"
+     * 2005 -> "2,005"
+     *
+     * Тысячные — точное десятичное число, а не доля от деления: перевод
+     * через `Double` печатал большое дробное количество показательной
+     * записью «1.00000005E7» и терял последнюю тысячную.
      */
-    fun formatQuantity(quantityThousandths: Long): String {
-        val qtyDouble = quantityThousandths / 1000.0
-        if (quantityThousandths % 1000L == 0L) {
-            return (quantityThousandths / 1000L).toString()
-        }
-        var str = qtyDouble.toString()
-        if (str.contains('.')) {
-            while (str.endsWith('0')) {
-                str = str.substring(0, str.length - 1)
-            }
-            if (str.endsWith('.')) {
-                str = str.substring(0, str.length - 1)
-            }
-        }
-        return str
-    }
+    fun formatQuantity(quantityThousandths: Long): String =
+        decimalOnForm(Decimal.ofScaled(quantityThousandths, QUANTITY_SCALE), dropTrailingZeros = true)
 
     /**
      * Десятичная запись числа так, как её набирает форма: разряды целой части
