@@ -75,8 +75,11 @@ class SuperkassaCoreEngine(
         val ofdConfig = OfdConfigAdapter()
         val ofdProtocolConfig = ImplOfdConfig(coreSettings.ofdProtocolVersion)
         val codec = OfdProtocolCodec()
+        // Срок ожидания ответа у сетевого клиента и у менеджера — один
+        // и тот же из настроек: соединение, отправка и чтение укладываются
+        // в него целиком, поэтому отдельного срока на соединение нет.
         val networkClient = OfdTcpNetworkClient(
-            timeoutMillis = (coreSettings.ofdTimeoutSeconds * 1000).toInt()
+            timeoutMillis = (coreSettings.ofdTimeoutSeconds * SECONDS_TO_MILLIS).toInt()
         )
 
         // 2. Инициализируем стратегии ОФД
@@ -174,6 +177,9 @@ class SuperkassaCoreEngine(
 
         /** Версия протокола по умолчанию, если вызывающий не указал другую. */
         const val DEFAULT_OFD_PROTOCOL_VERSION: String = "203"
+
+        /** Перевод срока ожидания из секунд настройки в миллисекунды клиента. */
+        private const val SECONDS_TO_MILLIS = 1000L
 
         /**
          * Быстрый метод инициализации ядра по умолчанию с in-memory хранилищем.

@@ -954,4 +954,70 @@ class OfdManagerAdapterTest {
         assertEquals(OfdCommandStatus.OK, result.status)
         assertEquals("87654321", result.fiscalSign)
     }
+
+    /**
+     * Дольше семи секунд кассир ответа БФД не ждёт.
+     */
+    @Test
+    fun testResponseWaitDefaultsToSevenSeconds() {
+        val adapterWithDefaults = OfdManagerAdapter(
+            config = config,
+            codec = codec,
+            networkClient = networkClient,
+            requestBuilders = listOf(builder)
+        )
+        assertEquals(7L, adapterWithDefaults.timeoutSeconds)
+    }
+
+    /**
+     * Страховочный предел не срабатывает раньше срока сетевого клиента:
+     * иначе отказ по связи приходил бы без разбора, что именно не удалось —
+     * соединиться или дождаться ответа.
+     */
+    @Test
+    fun testGuardTimeoutNeverPrecedesResponseWait() {
+        val adapterWithDefaults = OfdManagerAdapter(
+            config = config,
+            codec = codec,
+            networkClient = networkClient,
+            requestBuilders = listOf(builder)
+        )
+        assertTrue(adapterWithDefaults.guardTimeoutSeconds > adapterWithDefaults.timeoutSeconds)
+    }
+
+    /**
+     * Сетевой клиент не вернулся вовсе — обмен всё равно завершается отказом
+     * по связи, по которому касса уходит в автономный режим.
+     */
+    @Test
+    fun testSendGuardTimeoutWhenClientNeverAnswers() {
+        val request = OfdCommandRequest(
+            kkmId = "kkm-guard",
+            ofdProviderId = "KAZAKHTELECOM",
+            ofdEnvironmentId = "PROD",
+            commandType = OfdCommandType.TICKET,
+            payloadRef = "doc-guard",
+            token = 123L,
+            reqNum = 10,
+            deviceId = 1L
+        )
+
+        every { builder.canHandle(OfdCommandType.TICKET) } returns true
+        every { builder.build(request, config) } returns JsonObject(emptyMap())
+        every { codec.encode(any()) } returns byteArrayOf(1)
+
+        coEvery { networkClient.sendAndReceive(any(), any()) } coAnswers {
+            kotlinx.coroutines.delay(NEVER_ANSWERS_MILLIS)
+            Result.success(byteArrayOf())
+        }
+
+        val result = adapter.send(request)
+        assertEquals(OfdCommandStatus.TIMEOUT, result.status)
+        assertNotNull(result.errorMessage)
+    }
+
+    private companion object {
+        /** Заведомо больше страховочного предела тестового адаптера. */
+        const val NEVER_ANSWERS_MILLIS = 60_000L
+    }
 }
