@@ -23,7 +23,7 @@ object CoreStrings {
     fun ofdProviderRequired(): TrilingualMessage = CoreStringsImpl.ofdProviderRequired()
     fun ofdProviderTagInvalid(tag: String): TrilingualMessage = CoreStringsImpl.ofdProviderTagInvalid(tag)
     fun ofdTokenRequired(): TrilingualMessage = CoreStringsImpl.ofdTokenRequired()
-    fun ofdTokenInvalid(token: String): TrilingualMessage = CoreStringsImpl.ofdTokenInvalid(token)
+    fun ofdTokenInvalid(): TrilingualMessage = CoreStringsImpl.ofdTokenInvalid()
     fun kkmRegistrationRequired(): TrilingualMessage = CoreStringsImpl.kkmRegistrationRequired()
     fun kkmFactoryRequired(): TrilingualMessage = CoreStringsImpl.kkmFactoryRequired()
     fun kkmSystemIdRequired(): TrilingualMessage = CoreStringsImpl.kkmSystemIdRequired()

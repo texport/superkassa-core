@@ -171,8 +171,10 @@ class DomainExceptionTest {
         assertEquals("Токен БФД обязателен", CoreStrings.ofdTokenRequired().ru)
 
         // ofdTokenInvalid
-        val tokenInvalid = CoreStrings.ofdTokenInvalid("TOKEN")
-        assertTrue(tokenInvalid.ru.contains("TOKEN"))
+        val tokenInvalid = CoreStrings.ofdTokenInvalid()
+        assertEquals("Токен БФД неверен: получите новый в кабинете", tokenInvalid.ru)
+        assertTrue(tokenInvalid.kk.isNotBlank())
+        assertTrue(tokenInvalid.en.isNotBlank())
 
         // kkmRegistrationRequired
         assertEquals("Регистрационный номер ККМ обязателен", CoreStrings.kkmRegistrationRequired().ru)

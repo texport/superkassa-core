@@ -93,10 +93,17 @@ internal object CoreStringsImpl {
         en = "BFD token required"
     )
 
-    internal fun ofdTokenInvalid(token: String): TrilingualMessage = TrilingualMessage(
-        ru = "Неверный токен БФД: $token",
-        kk = "БФД қате токені: $token",
-        en = "Invalid BFD token: $token"
+    /**
+     * Токен не разобран.
+     *
+     * Само значение в сообщение не попадает: кто прочитал токен — тот
+     * отправляет фискальные документы от имени этой кассы. Кассиру нужно
+     * знать, что делать, а не какую строку он ввёл.
+     */
+    internal fun ofdTokenInvalid(): TrilingualMessage = TrilingualMessage(
+        ru = "Токен БФД неверен: получите новый в кабинете",
+        kk = "БФД токені жарамсыз: жаңасын кабинеттен алыңыз",
+        en = "The BFD token is invalid: get a new one in the BFD cabinet"
     )
 
     internal fun kkmRegistrationRequired(): TrilingualMessage = TrilingualMessage(

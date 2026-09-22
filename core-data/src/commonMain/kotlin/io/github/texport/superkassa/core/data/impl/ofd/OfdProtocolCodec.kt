@@ -33,7 +33,6 @@ class OfdProtocolCodec(
     fun encode(json: JsonElement): ByteArray {
         val result = codec.encode(json)
         if (result.isFailure) {
-            println("FAILED TO ENCODE JSON: $json")
             val formatted = formatOfdCodecErrors(result.exceptionOrNull())
             throw OfdProtocolException(formatted, result.exceptionOrNull())
         }
