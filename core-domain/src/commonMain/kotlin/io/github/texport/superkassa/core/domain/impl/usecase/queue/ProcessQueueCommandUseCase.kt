@@ -59,7 +59,7 @@ class ProcessQueueCommandUseCase(
                     // и оставлять ему «ожидает отправки» нельзя: в журнале
                     // он висел бы так, пока задача бесконечно повторяется.
                     markDocumentRejected(command, code, result.resultText)
-                    val errorMsg = "OFD returned code $code"
+                    val errorMsg = "BFD returned code $code"
                     val trilingual = CoreStrings.ofdDeliveryFailure(errorMsg)
                     // Повтора не будет: по спецификации любой код, кроме 0,
                     // 254 и 255, означает негодный документ, а не временную
@@ -77,7 +77,7 @@ class ProcessQueueCommandUseCase(
                 }
             }
             OfdCommandStatus.FAILED -> {
-                val errorMsg = result.errorMessage ?: "OFD command failed"
+                val errorMsg = result.errorMessage ?: "BFD command failed"
                 val trilingual = CoreStrings.ofdDeliveryFailure(errorMsg)
                 // Обмена не было: запрос не удалось ни собрать, ни отправить.
                 // Это состояние кассы, а не негодный документ: X-отчёт,
@@ -98,7 +98,7 @@ class ProcessQueueCommandUseCase(
                 val trilingual = CoreStrings.ofdTimeout()
                 QueueDispatchResult(
                     status = QueueDispatchStatus.FAILED,
-                    errorMessage = "OFD timeout",
+                    errorMessage = "BFD timeout",
                     retryAt = clock.now() + 30_000,
                     errorRu = trilingual.ru,
                     errorKk = trilingual.kk,

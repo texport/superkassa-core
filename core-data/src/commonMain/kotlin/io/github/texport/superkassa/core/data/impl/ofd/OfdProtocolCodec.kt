@@ -33,18 +33,17 @@ class OfdProtocolCodec(
     fun encode(json: JsonElement): ByteArray {
         val result = codec.encode(json)
         if (result.isFailure) {
-            println("FAILED TO ENCODE JSON: $json")
             val formatted = formatOfdCodecErrors(result.exceptionOrNull())
             throw OfdProtocolException(formatted, result.exceptionOrNull())
         }
         val output = result.getOrNull()
-            ?: throw OfdProtocolException("OFD encode returned null")
+            ?: throw OfdProtocolException("BFD encode returned null")
         val base64 = output["messageBase64"]?.jsonPrimitive?.content
-            ?: throw OfdProtocolException("messageBase64 missing in OFD encode output")
+            ?: throw OfdProtocolException("messageBase64 missing in BFD encode output")
         return try {
             Base64Coder.decode(base64)
         } catch (e: IllegalArgumentException) {
-            throw OfdProtocolException("Invalid Base64 format in OFD response: ${e.message}", e)
+            throw OfdProtocolException("Invalid Base64 format in BFD response: ${e.message}", e)
         }
     }
 
@@ -62,7 +61,7 @@ class OfdProtocolCodec(
             throw OfdProtocolException(formatted, result.exceptionOrNull())
         }
         return result.getOrNull()
-            ?: throw OfdProtocolException("OFD decode returned null")
+            ?: throw OfdProtocolException("BFD decode returned null")
     }
 
     /**
@@ -75,7 +74,7 @@ class OfdProtocolCodec(
      * @return Строка с описанием всех обнаруженных ошибок.
      */
     private fun formatOfdCodecErrors(ex: Throwable?): String {
-        val errors = (ex as? OfdCodecException)?.errors ?: return ex?.message ?: "Unknown OFD error"
+        val errors = (ex as? OfdCodecException)?.errors ?: return ex?.message ?: "Unknown BFD error"
         return errors.joinToString("; ") { err ->
             val msg = err.messageRu.takeIf { it.isNotBlank() }
                 ?: err.messageEn.takeIf { it.isNotBlank() }

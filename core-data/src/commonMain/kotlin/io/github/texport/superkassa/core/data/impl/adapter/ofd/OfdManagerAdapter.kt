@@ -50,11 +50,27 @@ internal class OfdManagerAdapter(
     private val prettyJson = kotlinx.serialization.json.Json { prettyPrint = true }
 
     private fun formatJson(json: kotlinx.serialization.json.JsonElement): String {
+        val safe = withoutToken(json)
         return if (config.prettyPrintJson) {
-            prettyJson.encodeToString(kotlinx.serialization.json.JsonElement.serializer(), json)
+            prettyJson.encodeToString(kotlinx.serialization.json.JsonElement.serializer(), safe)
         } else {
-            json.toString()
+            safe.toString()
         }
+    }
+
+    /**
+     * Убирает токен из пакета перед записью в журнал.
+     *
+     * Токен — это право отправлять фискальные документы от имени кассы,
+     * и в журнале ему места нет. Остальной пакет для разбора обмена нужен,
+     * поэтому прячется одно поле, а не весь дамп.
+     */
+    private fun withoutToken(json: kotlinx.serialization.json.JsonElement): kotlinx.serialization.json.JsonElement {
+        val packet = json as? JsonObject ?: return json
+        val header = packet[HEADER_FIELD] as? JsonObject ?: return json
+        if (!header.containsKey(TOKEN_FIELD)) return json
+        val hidden = JsonObject(header + (TOKEN_FIELD to kotlinx.serialization.json.JsonPrimitive(TOKEN_MASK)))
+        return JsonObject(packet + (HEADER_FIELD to hidden))
     }
 
     private val reconnectIntervalMs: Long = reconnectIntervalSeconds.coerceAtLeast(
@@ -67,6 +83,9 @@ internal class OfdManagerAdapter(
     companion object {
         private const val SECONDS_TO_MILLIS = 1000L
         private const val MIN_RECONNECT_INTERVAL_SECONDS = 60L
+        private const val HEADER_FIELD = "header"
+        private const val TOKEN_FIELD = "token"
+        private const val TOKEN_MASK = "***"
 
         /**
          * Дефолтный набор стратегий (без StoragePort).
@@ -100,7 +119,7 @@ internal class OfdManagerAdapter(
                 ?: return OfdCommandResult(
                     status = OfdCommandStatus.FAILED,
                     errorMessage = CoreStrings.ofdRequestFailedData(
-                        "Invalid OFD configuration: provider or endpoint not found"
+                        "Invalid BFD configuration: provider or endpoint not found"
                     )
                 )
             val json = buildRequest(command)
@@ -112,8 +131,7 @@ internal class OfdManagerAdapter(
                 )
             logger.debug("OFD SEND JSON: ${formatJson(json)}")
             val sendMsg = "OFD SEND: commandType=${command.commandType}, " +
-                "kkmId=${command.kkmId}, reqNum=${command.reqNum}, " +
-                "token=${command.token}"
+                "kkmId=${command.kkmId}, reqNum=${command.reqNum}"
             logger.info(sendMsg)
             val bytes = codec.encode(json)
             val response = runBlocking {
@@ -124,7 +142,7 @@ internal class OfdManagerAdapter(
                 } catch (_: TimeoutCancellationException) {
                     logger.warn("OFD request timeout after $timeoutSeconds seconds")
                     Result.failure<ByteArray>(
-                        Exception("OFD request timeout after ${timeoutSeconds}s")
+                        Exception("BFD request timeout after ${timeoutSeconds}s")
                     )
                 }
             }
@@ -174,8 +192,7 @@ internal class OfdManagerAdapter(
 
             if (status == OfdCommandStatus.OK) {
                 val successMsg = "OFD RECV SUCCESS: commandType=${command.commandType}, " +
-                    "resultCode=0, responseToken=$responseToken, " +
-                    "responseReqNum=$responseReqNum, fiscalSign=$fiscalSign"
+                    "resultCode=0, responseReqNum=$responseReqNum, fiscalSign=$fiscalSign"
                 logger.info(successMsg)
             } else {
                 val errorMsg = "OFD RECV ERROR: commandType=${command.commandType}, " +

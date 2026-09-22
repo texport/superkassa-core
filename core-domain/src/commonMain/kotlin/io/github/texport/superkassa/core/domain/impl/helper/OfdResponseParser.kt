@@ -189,7 +189,7 @@ object OfdResponseParser {
                 found = false,
                 item = null,
                 resultCode = defaultResultCode ?: -1,
-                resultText = defaultError ?: "OFD command execution failed"
+                resultText = defaultError ?: "BFD command execution failed"
             )
         }
 
@@ -198,7 +198,7 @@ object OfdResponseParser {
                 found = false,
                 item = null,
                 resultCode = defaultResultCode ?: -1,
-                resultText = "Missing payload envelope in OFD response"
+                resultText = "Missing payload envelope in BFD response"
             )
 
         val nomenclatureObj = payload["nomenclature"] as? JsonObject
@@ -206,7 +206,7 @@ object OfdResponseParser {
                 found = false,
                 item = null,
                 resultCode = defaultResultCode ?: -1,
-                resultText = "Missing nomenclature payload in OFD response"
+                resultText = "Missing nomenclature payload in BFD response"
             )
 
         val resultCodeVal = nomenclatureObj["result"]?.jsonObject?.get("code")?.jsonPrimitive?.intOrNull ?: 0

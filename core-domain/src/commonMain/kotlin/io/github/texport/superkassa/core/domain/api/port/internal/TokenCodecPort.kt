@@ -32,7 +32,7 @@ interface TokenCodecPort {
     fun parseToken(token: String): Long {
         return token.toLongOrNull()
             ?: throw io.github.texport.superkassa.core.domain.api.exception.ValidationException(
-                io.github.texport.superkassa.core.string.api.CoreStrings.ofdTokenInvalid(token),
+                io.github.texport.superkassa.core.string.api.CoreStrings.ofdTokenInvalid(),
                 "OFD_TOKEN_INVALID"
             )
     }
