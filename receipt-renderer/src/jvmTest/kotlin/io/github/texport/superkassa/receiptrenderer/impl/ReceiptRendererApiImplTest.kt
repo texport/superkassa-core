@@ -1433,8 +1433,8 @@ class ReceiptRendererApiImplTest {
         kotlin.test.assertEquals("Same", t8)
 
         // Additional direct formatting boosters
-        kotlin.test.assertEquals("-5.00", ReceiptFormatter.formatTiyn(-500L))
-        kotlin.test.assertEquals("1.50", ReceiptFormatter.formatTiyn(150L))
+        kotlin.test.assertEquals("-5,00\u00A0\u20B8", ReceiptFormatter.formatTiyn(-500L))
+        kotlin.test.assertEquals("1,50\u00A0\u20B8", ReceiptFormatter.formatTiyn(150L))
         kotlin.test.assertEquals("&amp; &lt; &gt; &quot;", ReceiptFormatter.escape("& < > \""))
         kotlin.test.assertEquals(-150L, ReceiptFormatter.moneyToTiyn(Money(-1, -50)))
 
@@ -1586,7 +1586,7 @@ class ReceiptRendererApiImplTest {
             )
 
             renderer.renderHtml(request, doc, kkm, layout)
-            renderer.renderXReportHtml(shift, emptyMap(), kkm, ofdStatus, layout)
+            renderer.renderXReportHtml(shift, emptyMap(), kkm, ofdStatus, null, layout)
             renderer.renderOpenShiftHtml(shift, kkm, ofdStatus, "1", layout)
             renderer.renderCloseShiftHtml(shift, emptyMap(), kkm, ofdStatus, "2", layout)
             renderer.renderCashOperationHtml(doc, kkm, layout)

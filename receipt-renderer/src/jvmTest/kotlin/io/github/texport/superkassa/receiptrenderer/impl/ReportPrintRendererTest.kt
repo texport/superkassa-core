@@ -56,10 +56,10 @@ class ReportPrintRendererTest {
         assertTrue(cleanHtml.contains("12"))
         assertTrue(cleanHtml.contains("Сату / Продажа"))
         assertTrue(cleanHtml.contains("10"))
-        assertTrue(cleanHtml.contains("1000.50"))
+        assertTrue(cleanHtml.contains("1\u00A0000,50\u00A0\u20B8"))
         // Zero counters should be displayed with 0.00 value
         assertTrue(cleanHtml.contains("Возврат продажи"))
-        assertTrue(cleanHtml.contains("0.00"))
+        assertTrue(cleanHtml.contains("0,00\u00A0\u20B8"))
     }
 
     @Test
@@ -74,7 +74,7 @@ class ReportPrintRendererTest {
         val html = xRenderer.render(shift, emptyMap(), kkm, null)
         val cleanHtml = stripHtml(html)
         assertTrue(cleanHtml.contains("Сату / Продажа"))
-        assertTrue(cleanHtml.contains("0.00"))
+        assertTrue(cleanHtml.contains("0,00\u00A0\u20B8"))
     }
 
     @Test
@@ -116,7 +116,7 @@ class ReportPrintRendererTest {
         assertTrue(cleanHtml.contains("Ауысым № / Смена №"))
         assertTrue(cleanHtml.contains("12"))
         assertTrue(cleanHtml.contains("Сату / Продажа"))
-        assertTrue(cleanHtml.contains("1000.50"))
+        assertTrue(cleanHtml.contains("1\u00A0000,50\u00A0\u20B8"))
     }
 
     @Test
@@ -187,7 +187,7 @@ class ReportPrintRendererTest {
         val htmlIn = cashOperationRenderer.render(docIn, kkm)
         val cleanHtmlIn = stripHtml(htmlIn)
         assertTrue(cleanHtmlIn.contains("ВНЕСЕНИЕ НАЛИЧНЫХ"))
-        assertTrue(cleanHtmlIn.contains("2500.00 ₸") || cleanHtmlIn.contains("2500,00 ₸"))
+        assertTrue(cleanHtmlIn.contains("2\u00A0500,00\u00A0\u20B8"))
         assertTrue(cleanHtmlIn.contains("Құжат № / Документ №"))
 
         val docOut = FiscalDocumentSnapshot(
@@ -210,7 +210,7 @@ class ReportPrintRendererTest {
         val htmlOut = cashOperationRenderer.render(docOut, kkm)
         val cleanHtmlOut = stripHtml(htmlOut)
         assertTrue(cleanHtmlOut.contains("ИЗЪЯТИЕ НАЛИЧНЫХ"))
-        assertTrue(cleanHtmlOut.contains("100.00 ₸") || cleanHtmlOut.contains("100,00 ₸"))
+        assertTrue(cleanHtmlOut.contains("100,00\u00A0\u20B8"))
 
         val docOther = FiscalDocumentSnapshot(
             id = "doc-3",
@@ -232,7 +232,7 @@ class ReportPrintRendererTest {
         val htmlOther = cashOperationRenderer.render(docOther, kkm)
         val cleanHtmlOther = stripHtml(htmlOther)
         assertTrue(cleanHtmlOther.contains("ОПЕРАЦИЯ С НАЛИЧНЫМИ"))
-        assertTrue(cleanHtmlOther.contains("0.00 ₸"))
+        assertTrue(cleanHtmlOther.contains("0,00\u00A0\u20B8"))
     }
 
     private fun stripHtml(html: String): String {
@@ -240,5 +240,30 @@ class ReportPrintRendererTest {
         result = result.replace(Regex("""<span\s+class="lang-fraction">\s*<span\s+class="lang-fraction-top">([\s\S]*?)</span>\s*<span\s+class="lang-fraction-bottom">([\s\S]*?)</span>\s*</span>"""), "$1 / $2")
         result = result.replace(Regex("""<span\s+class="badge\s+[^"]*">\s*<span\s+class="badge-main">([\s\S]*?)</span>\s*<span\s+class="badge-divider"></span>\s*<span\s+class="badge-sub">([\s\S]*?)</span>\s*</span>"""), "$1 / $2")
         return result.replace(Regex("<[^>]*>"), "")
+    }
+
+    /**
+     * X-отчёт, нарисованный по счётчикам кассы, несёт номер документа.
+     *
+     * У отчёта, снятого с открытой смены, номера нет — его печатают без
+     * этой строки. У перепечатки сохранённого отчёта он есть, и в шапке
+     * он стоит так же, как у Z-отчёта.
+     */
+    @Test
+    fun `X-отчёт по счётчикам печатает номер документа`() {
+        val shift = ShiftInfo(
+            id = "shift-123",
+            kkmId = "kkm-123",
+            shiftNo = 12,
+            status = ShiftStatus.OPEN,
+            openedAt = 1782200000000L
+        )
+
+        val withoutDocNo = stripHtml(xRenderer.render(shift, emptyMap(), kkm, null))
+        assertTrue(!withoutDocNo.contains("Құжат № / Документ №"))
+
+        val withDocNo = stripHtml(xRenderer.render(shift, emptyMap(), kkm, null, "77"))
+        assertTrue(withDocNo.contains("Құжат № / Документ №"))
+        assertTrue(withDocNo.contains("77"))
     }
 }

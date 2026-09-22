@@ -35,8 +35,9 @@ internal class ReceiptRenderAdapter(
         counters: Map<String, Long>,
         kkm: KkmInfo,
         ofdStatus: String?,
+        docNo: String?,
         layoutType: ReceiptLayoutType?
-    ): String = renderer.renderXReportHtml(shift, counters, kkm, ofdStatus, layoutType)
+    ): String = renderer.renderXReportHtml(shift, counters, kkm, ofdStatus, docNo, layoutType)
 
     override fun renderXReportHtml(
         report: ZxReportInput,

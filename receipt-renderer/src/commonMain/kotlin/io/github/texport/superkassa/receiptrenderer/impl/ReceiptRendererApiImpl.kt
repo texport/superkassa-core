@@ -69,9 +69,10 @@ internal class ReceiptRendererApiImpl(
         counters: Map<String, Long>,
         kkm: KkmInfo,
         ofdStatus: String?,
+        docNo: String?,
         layoutType: ReceiptLayoutType?
     ): String {
-        return xReportRenderer.render(shift, counters, overrideKkmLayout(kkm, layoutType), ofdStatus)
+        return xReportRenderer.render(shift, counters, overrideKkmLayout(kkm, layoutType), ofdStatus, docNo)
     }
 
     override fun renderXReportHtml(

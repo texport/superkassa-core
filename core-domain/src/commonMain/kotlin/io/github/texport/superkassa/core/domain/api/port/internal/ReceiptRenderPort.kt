@@ -37,6 +37,8 @@ interface ReceiptRenderPort {
      * @param counters фискальные счётчики за смену (суммы продаж, возвратов, типы оплат).
      * @param kkm информация о ККМ.
      * @param ofdStatus статус отправки данных в ОФД.
+     * @param docNo номер документа: у отчёта, снятого с открытой смены, его
+     *   ещё нет, а у сохранённого и перепечатанного — есть.
      * @param layoutType тип разметки шаблона.
      * @return HTML-строка с визуализацией X-отчёта.
      */
@@ -45,6 +47,7 @@ interface ReceiptRenderPort {
         counters: Map<String, Long>,
         kkm: KkmInfo,
         ofdStatus: String?,
+        docNo: String? = null,
         layoutType: ReceiptLayoutType? = null
     ): String
 
