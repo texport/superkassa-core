@@ -91,10 +91,9 @@ class ReceiptUseCasesTest {
         every { storage.findKkm(any()) } returns null
         every { storage.findKkmForUpdate(any()) } answers { storage.findKkm(firstArg()) }
         every { authorizeUserUseCase.requireKkm(any(), any()) } answers { authorizeUserUseCase.requireKkm(firstArg()) }
-        every { authorizeUserUseCase.requireRole(any(), any(), any(), any()) } answers { authorizeUserUseCase.requireRole(firstArg(), secondArg(), thirdArg()) }
         // Имя оформившего сохраняется вместе с чеком: авторизация отвечает
         // тем же кассиром на всех проверках.
-        every { authorizeUserUseCase.identify(any(), any(), any()) } returns KkmUser(
+        every { authorizeUserUseCase.identify(any(), any()) } returns KkmUser(
             id = "user-1",
             name = "Айгүл",
             role = UserRole.CASHIER,

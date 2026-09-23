@@ -124,7 +124,7 @@ class KkmInitOkedValidationTest {
     @Test
     fun `initKkm succeeds when oked is provided in serviceInfo`() {
         val kkm = useCase.initKkm(
-            pin = "0000",
+            adminPin = "7391",
             ofdId = "KAZAKHTELECOM",
             ofdEnvironment = "TEST",
             ofdSystemId = "203531",
@@ -150,7 +150,7 @@ class KkmInitOkedValidationTest {
     @Test
     fun `initKkm succeeds with oked override when serviceInfo oked is 00000`() {
         val kkm = useCase.initKkm(
-            pin = "0000",
+            adminPin = "7391",
             ofdId = "KAZAKHTELECOM",
             ofdEnvironment = "TEST",
             ofdSystemId = "203532",
@@ -178,7 +178,7 @@ class KkmInitOkedValidationTest {
         okedValFromOfd = "00000"
         val ex = assertFailsWith<ValidationException> {
             useCase.initKkm(
-                pin = "0000",
+                adminPin = "7391",
                 ofdId = "KAZAKHTELECOM",
                 ofdEnvironment = "TEST",
                 ofdSystemId = "203533",
@@ -206,7 +206,7 @@ class KkmInitOkedValidationTest {
     fun `initKkmSimple succeeds when OFD returns valid oked`() {
         okedValFromOfd = "47301"
         val kkm = useCase.initKkmSimple(
-            pin = "0000",
+            adminPin = "7391",
             ofdId = "KAZAKHTELECOM",
             ofdEnvironment = "TEST",
             ofdSystemId = "203534",
@@ -221,7 +221,7 @@ class KkmInitOkedValidationTest {
     fun `initKkmSimple succeeds when OFD returns 00000 but manual oked is supplied`() {
         okedValFromOfd = "00000"
         val kkm = useCase.initKkmSimple(
-            pin = "0000",
+            adminPin = "7391",
             ofdId = "KAZAKHTELECOM",
             ofdEnvironment = "TEST",
             ofdSystemId = "203535",
@@ -237,7 +237,7 @@ class KkmInitOkedValidationTest {
         okedValFromOfd = null // missing oked
         val ex = assertFailsWith<ValidationException> {
             useCase.initKkmSimple(
-                pin = "0000",
+                adminPin = "7391",
                 ofdId = "KAZAKHTELECOM",
                 ofdEnvironment = "TEST",
                 ofdSystemId = "203536",

@@ -12,7 +12,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
-import io.github.texport.superkassa.core.domain.api.model.auth.StandardPin
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 import io.github.texport.superkassa.core.domain.api.model.common.format
@@ -79,8 +78,8 @@ class InitializeKkmRegistrationUseCase(
         val factoryNumber: String?,
         val ofdTag: String,
         val okedOverride: String?,
-        /** Пин администратора новой кассы; `null` — прежний стандартный. */
-        val adminPin: String? = null,
+        /** Пин администратора новой кассы, заданный тем, кто её заводит. */
+        val adminPin: String,
         val updateKkm: (KkmInfo) -> Unit
     )
 
@@ -285,27 +284,23 @@ class InitializeKkmRegistrationUseCase(
     /**
      * Заводит администратора новой кассы, если пользователей ещё нет.
      *
-     * Кассиров создаёт уже он сам: заведённый здесь кассир мог бы получить
-     * только стандартный пин, а с ним узел не даёт ни одной команды —
-     * в списке стоял бы человек, которым нельзя работать.
+     * Пина по умолчанию нет: пин задаёт тот, кто заводит кассу, и проверяет
+     * его сценарий заведения. Кассиров создаёт уже сам администратор, каждому
+     * со своим пином.
      *
      * @param kkmId Касса, которой нужен администратор.
      * @param now Время создания.
-     * @param adminPin Пин администратора; пустой — код начальной настройки.
+     * @param adminPin Пин администратора, заданный при заведении кассы.
      */
-    fun ensureAdministrator(kkmId: String, now: Long, adminPin: String? = null) {
+    fun ensureAdministrator(kkmId: String, now: Long, adminPin: String) {
         val existing = storage.listUsers(kkmId)
         if (existing.isNotEmpty()) return
-        // Пин администратора задаёт тот, кто заводит кассу. Со стандартным
-        // касса рождалась мёртвой: войти с ним узел не даёт, а сменить его
-        // можно только войдя. Если пин не задан — прежнее поведение.
-        val admin = adminPin?.takeIf { it.isNotBlank() } ?: StandardPin.BOOTSTRAP
         storage.createUser(
             kkmId = kkmId,
             userId = idGenerator.nextId(),
             name = defaultAdminName,
             role = UserRole.ADMIN,
-            pinHash = pinHasher.hash(admin),
+            pinHash = pinHasher.hash(adminPin),
             createdAt = now
         )
     }

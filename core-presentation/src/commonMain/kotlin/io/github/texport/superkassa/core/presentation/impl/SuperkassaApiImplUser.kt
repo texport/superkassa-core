@@ -6,7 +6,7 @@ import io.github.texport.superkassa.core.presentation.impl.mapper.UserMapper
 
 fun SuperkassaApiImpl.listUsersImpl(kkmId: String, pin: String): List<UserResponse> {
     authorization.requireKkm(kkmId)
-    authorization.requireRole(kkmId, pin, setOf(DomainUserRole.ADMIN), allowDefaultPin = true)
+    authorization.requireRole(kkmId, pin, setOf(DomainUserRole.ADMIN))
     return storage.listUsers(kkmId).map { UserMapper.toResponse(it) }
 }
 

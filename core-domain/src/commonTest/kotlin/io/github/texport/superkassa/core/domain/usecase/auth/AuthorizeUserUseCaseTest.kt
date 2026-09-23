@@ -39,22 +39,15 @@ class AuthorizeUserUseCaseTest {
     }
 
     @Test
-    fun testExecuteDefaultPinBlocked() {
-        assertFailsWith<ValidationException> {
-            authorizeUser.execute("kkm-1", "0000", setOf(UserRole.ADMIN))
-        }
-        assertFailsWith<ValidationException> {
-            authorizeUser.execute("kkm-1", "1111", setOf(UserRole.ADMIN))
-        }
-    }
-
-    @Test
-    fun testExecuteDefaultPinAllowed() {
+    fun testFormerStandardPinSignsInLikeAnyOther() {
+        // Кассы, заведённые прежде со стандартным пином, не теряют вход:
+        // такой пин теперь обычный пин пользователя, без особого пути.
         val user = KkmUser("user-1", "Admin", UserRole.ADMIN, 100L)
-        every { pinHasher.hash("0000") } returns "hash-1"
-        every { storage.findUserByPin("kkm-1", "hash-1") } returns user
+        every { pinHasher.hash("0000") } returns "hash-0000"
+        every { storage.findUserByPin("kkm-1", "hash-0000") } returns user
 
-        authorizeUser.execute("kkm-1", "0000", setOf(UserRole.ADMIN), allowDefaultPin = true)
+        authorizeUser.execute("kkm-1", "0000", setOf(UserRole.ADMIN, UserRole.CASHIER))
+        assertEquals(user, authorizeUser.identify("kkm-1", "0000"))
     }
 
     @Test

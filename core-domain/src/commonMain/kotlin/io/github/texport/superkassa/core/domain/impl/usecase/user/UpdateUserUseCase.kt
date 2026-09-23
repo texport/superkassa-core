@@ -10,6 +10,7 @@ import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.port.internal.PinHasherPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.ChosenPin
 
 /**
  * Сценарий (Use Case) обновления данных существующего пользователя ККМ.
@@ -36,7 +37,7 @@ class UpdateUserUseCase(
      * @param role Новая роль пользователя (опционально, если не меняется).
      * @param userPin Новой персональный ПИН-код пользователя (опционально, если не меняется).
      * @return Обновленный объект пользователя [KkmUser].
-     * @throws ValidationException Если не передано ни одного параметра для изменения, либо новые значения имени/ПИН-кода пусты.
+     * @throws ValidationException Если не передано ни одного параметра для изменения, либо новое имя пусто, либо новый ПИН-код не проходит [ChosenPin].
      * @throws NotFoundException Если пользователь с указанным ID не найден на данной кассе.
      * @throws ConflictException Если новый ПИН-код конфликтует с ПИН-кодом другого пользователя кассы.
      */
@@ -50,8 +51,7 @@ class UpdateUserUseCase(
     ): KkmUser {
         authorizeUserUseCase.requireKkm(kkmId)
         // Через общий вход по пину: мимо него пин перебирался бы без блокировки.
-        // Стандартный пин допустим — сменить его можно, только войдя с ним.
-        val caller = authorizeUserUseCase.identify(kkmId, pin, allowDefaultPin = true)
+        val caller = authorizeUserUseCase.identify(kkmId, pin)
 
         if (caller.role != UserRole.ADMIN) {
             if (caller.id != userId) {
@@ -62,9 +62,6 @@ class UpdateUserUseCase(
             }
         }
 
-        if (userPin != null && (userPin == "0000" || userPin == "1111")) {
-            throw ValidationException(CoreStrings.defaultPinNotAllowed(), "DEFAULT_PIN_NOT_ALLOWED")
-        }
         if (name == null && role == null && userPin == null) {
             throw ValidationException(CoreStrings.userUpdateEmpty(), "USER_UPDATE_EMPTY")
         }
@@ -77,9 +74,7 @@ class UpdateUserUseCase(
         }
 
         val updatedRole = role ?: existing.role
-        if (userPin != null && userPin.isBlank()) {
-            throw ValidationException(CoreStrings.userPinRequired(), "USER_PIN_REQUIRED")
-        }
+        userPin?.let { ChosenPin.require(it) }
 
         // Пин не пересчитывается, когда его не меняют: узел хранит только хеш,
         // а прежний пин взять неоткуда. Хранилище понимает null как «не трогать».

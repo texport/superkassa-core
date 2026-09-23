@@ -2,9 +2,7 @@ package io.github.texport.superkassa.core.domain.impl.usecase.kkm
 
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.string.api.CoreStrings
-import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
-import io.github.texport.superkassa.core.domain.api.model.auth.StandardPin
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
@@ -22,6 +20,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.inTransacti
 import io.github.texport.superkassa.core.domain.api.port.internal.TokenCodecPort
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
 import io.github.texport.superkassa.core.domain.impl.helper.OfdResponseParser
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.ChosenPin
 import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 
 /**
@@ -43,7 +42,6 @@ class RegisterKkmUseCase(
     /**
      * Стандартная инициализация ККМ с явным указанием заводского номера, регистрационного номера КГД и ОФД-реквизитов.
      *
-     * @param pin ПИН-код администратора для авторизации операции (должен быть "0000").
      * @param ofdId Идентификатор провайдера ОФД.
      * @param ofdEnvironment Окружение ОФД (например, PRODUCTION или TEST).
      * @param ofdSystemId Уникальный идентификатор ККМ в ОФД.
@@ -53,14 +51,13 @@ class RegisterKkmUseCase(
      * @param manufactureYear Год выпуска устройства.
      * @param serviceInfo Дополнительные метаданные сервиса (если null, используются дефолтные).
      * @param oked Код ОКЭД организации.
-     * @param adminPin Пин администратора новой кассы; `null` — прежний стандартный.
+     * @param adminPin Пин администратора новой кассы; пина по умолчанию нет.
      * @return Зарегистрированная информация о ККМ [KkmInfo].
-     * @throws ValidationException Если не заполнен идентификатор системы ОФД или не валиден ОКЭД.
-     * @throws ForbiddenException Если передан неверный ПИН-код администратора.
+     * @throws ValidationException Если пин администратора не задан или не проходит [ChosenPin],
+     * не заполнен идентификатор системы ОФД или не валиден ОКЭД.
      * @throws ConflictException Если касса с таким регистрационным номером или системным ID уже существует.
      */
     fun initKkm(
-        pin: String,
         ofdId: String,
         ofdEnvironment: String,
         ofdSystemId: String,
@@ -70,12 +67,11 @@ class RegisterKkmUseCase(
         manufactureYear: Int,
         serviceInfo: OfdServiceInfo?,
         oked: String?,
-        adminPin: String? = null
+        adminPin: String
     ): KkmInfo {
         logger.info("initKkm: starting registration for systemId='$ofdSystemId', factoryNumber='$factoryNumber'")
         kkmCommonHelper.ensureSystemTimeValid()
-        requireBootstrapAdminPin(pin)
-        requireUsableAdminPin(adminPin)
+        requireAdminPin(adminPin)
         if (ofdSystemId.isBlank()) {
             throw ValidationException(CoreStrings.kkmSystemIdRequired(), "KKM_SYSTEM_ID_REQUIRED")
         }
@@ -137,34 +133,30 @@ class RegisterKkmUseCase(
     /**
      * Упрощенная инициализация ККМ с автоматическим получением регистрационных и технических данных из ОФД.
      *
-     * @param pin ПИН-код администратора для авторизации операции (должен быть "0000").
      * @param ofdId Идентификатор провайдера ОФД.
      * @param ofdEnvironment Окружение ОФД.
      * @param ofdSystemId Уникальный идентификатор ККМ в ОФД.
      * @param ofdToken Начальный токен доступа ОФД.
      * @param defaultVatGroup Группа НДС по умолчанию.
      * @param oked Опциональный код ОКЭД.
-     * @param adminPin Пин администратора новой кассы; `null` — прежний стандартный.
+     * @param adminPin Пин администратора новой кассы; пина по умолчанию нет.
      * @return Зарегистрированная информация о ККМ [KkmInfo].
-     * @throws ValidationException Если не заполнен идентификатор системы ОФД, не валиден ОКЭД
-     * или команды ОФД завершились ошибкой.
-     * @throws ForbiddenException Если передан неверный ПИН-код администратора.
+     * @throws ValidationException Если пин администратора не задан или не проходит [ChosenPin],
+     * не заполнен идентификатор системы ОФД, не валиден ОКЭД или команды ОФД завершились ошибкой.
      * @throws ConflictException Если касса с таким ОФД ID или регистрационным номером уже существует.
      */
     fun initKkmSimple(
-        pin: String,
         ofdId: String,
         ofdEnvironment: String,
         ofdSystemId: String,
         ofdToken: String,
         defaultVatGroup: VatGroup,
         oked: String?,
-        adminPin: String? = null
+        adminPin: String
     ): KkmInfo {
         logger.info("initKkmSimple: start initialization for systemId='$ofdSystemId', ofdId='$ofdId'")
         kkmCommonHelper.ensureSystemTimeValid()
-        requireBootstrapAdminPin(pin)
-        requireUsableAdminPin(adminPin)
+        requireAdminPin(adminPin)
         if (ofdSystemId.isBlank()) {
             logger.warn("initKkmSimple: ofdSystemId is blank")
             throw ValidationException(CoreStrings.kkmSystemIdRequired(), "KKM_SYSTEM_ID_REQUIRED")
@@ -305,27 +297,20 @@ class RegisterKkmUseCase(
     }
 
     /**
-     * Проверяет, соответствует ли переданный ПИН-код коду начальной настройки администратора.
+     * Требует пин администратора новой кассы до обращения к ОФД.
      *
-     * @param pin ПИН-код для проверки.
-     * @throws ForbiddenException Если ПИН-код не совпадает с кодом начальной настройки.
-     */
-    private fun requireBootstrapAdminPin(pin: String) {
-        if (pin != StandardPin.BOOTSTRAP) {
-            throw ForbiddenException(CoreStrings.userForbidden(), "USER_FORBIDDEN")
-        }
-    }
-
-    /**
-     * Проверяет, что пин администратора новой кассы позволит в неё войти.
+     * Пина по умолчанию у кассы нет: касса без заданного пина осталась бы
+     * без единого пользователя, и войти в неё было бы нечем.
      *
-     * @param adminPin Пин администратора, заданный при заведении кассы.
-     * @throws ValidationException Если пин стандартный: с ним касса останется недоступной.
+     * @param adminPin Пин администратора, заданный тем, кто заводит кассу.
+     * @throws ValidationException `KKM_ADMIN_PIN_REQUIRED`, если пин не задан;
+     * отказ [ChosenPin], если он не проходит правила пина.
      */
-    private fun requireUsableAdminPin(adminPin: String?) {
-        if (adminPin != null && StandardPin.isStandard(adminPin)) {
-            throw ValidationException(CoreStrings.defaultPinNotAllowed(), "DEFAULT_PIN_NOT_ALLOWED")
+    private fun requireAdminPin(adminPin: String) {
+        if (adminPin.isBlank()) {
+            throw ValidationException(CoreStrings.kkmAdminPinRequired(), "KKM_ADMIN_PIN_REQUIRED")
         }
+        ChosenPin.require(adminPin)
     }
 
     /**

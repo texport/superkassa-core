@@ -12,6 +12,8 @@ import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem as
 import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.serialization.json.Json
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
@@ -576,7 +578,7 @@ class SuperkassaApiImplTest {
         every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
         every { idGenerator.nextId() } returns "kkm-new"
         every { storage.createKkm(any()) } returns true
-        every { pinHasher.hash("1234") } returns "hash-1234"
+        every { pinHasher.hash("7391") } returns "hash-7391"
         every { storage.createUser(any(), any(), any(), any(), any(), any()) } returns true
 
         val request = KkmInitDirectRequest(
@@ -587,9 +589,10 @@ class SuperkassaApiImplTest {
             kkmKgdId = "123456789012",
             factoryNumber = "SWK-0001",
             manufactureYear = 2024,
-            oked = "47110"
+            oked = "47110",
+            adminPin = "7391"
         )
-        val kkm = api.initKkm("0000", request)
+        val kkm = api.initKkm(request)
         assertEquals("kkm-new", kkm.kkmId)
     }
 
@@ -598,7 +601,7 @@ class SuperkassaApiImplTest {
         every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
         every { idGenerator.nextId() } returns "kkm-simple"
         every { storage.createKkm(any()) } returns true
-        every { pinHasher.hash("1234") } returns "hash-1234"
+        every { pinHasher.hash("7391") } returns "hash-7391"
         every { storage.createUser(any(), any(), any(), any(), any(), any()) } returns true
 
         val request = KkmInitSimpleRequest(
@@ -606,9 +609,10 @@ class SuperkassaApiImplTest {
             ofdEnvironment = "test",
             ofdSystemId = "200367",
             ofdToken = "32876190",
-            oked = "47110"
+            oked = "47110",
+            adminPin = "7391"
         )
-        val kkm = api.initKkmSimple("0000", request)
+        val kkm = api.initKkmSimple(request)
         assertEquals("kkm-simple", kkm.kkmId)
     }
 
@@ -622,10 +626,11 @@ class SuperkassaApiImplTest {
             ofdId = "kazakhtelecom",
             ofdEnvironment = "test",
             ofdSystemId = "err-sys",
-            ofdToken = "32876190"
+            ofdToken = "32876190",
+            adminPin = "7391"
         )
         kotlin.test.assertFailsWith<RuntimeException> {
-            api.initKkmSimple("0000", request)
+            api.initKkmSimple(request)
         }
     }
 
@@ -641,11 +646,26 @@ class SuperkassaApiImplTest {
             ofdToken = "32876190",
             kkmKgdId = "123",
             factoryNumber = "F123",
-            manufactureYear = 2026
+            manufactureYear = 2026,
+            adminPin = "7391"
         )
         kotlin.test.assertFailsWith<RuntimeException> {
-            api.initKkm("0000", request)
+            api.initKkm(request)
         }
+    }
+
+    @Test
+    fun `initKkmSimple without admin pin is refused before BFD is asked`() {
+        // Прежний клиент не присылает пина администратора; пина по умолчанию нет.
+        every { timeValidator.validate(any()) } returns TimeValidationResult(true, null, null)
+        val request = Json.decodeFromString<KkmInitSimpleRequest>(
+            """{"ofdId":"kazakhtelecom","ofdEnvironment":"test","ofdSystemId":"200367","ofdToken":"32876190"}"""
+        )
+
+        val refusal = kotlin.test.assertFailsWith<ValidationException> { api.initKkmSimple(request) }
+
+        assertEquals("KKM_ADMIN_PIN_REQUIRED", refusal.code)
+        verify(exactly = 0) { storage.createKkm(any()) }
     }
 
     @Test

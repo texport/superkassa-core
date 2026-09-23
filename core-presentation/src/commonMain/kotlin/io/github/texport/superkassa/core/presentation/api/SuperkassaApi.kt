@@ -46,22 +46,26 @@ interface SuperkassaApi : PrintApi {
     /**
      * Прямая инициализация (фискализация) ККМ.
      *
-     * @param pin ПИН-код администратора.
+     * Пина по умолчанию у кассы нет: администратор новой кассы заводится
+     * с пином [KkmInitDirectRequest.adminPin], без него касса не заводится.
+     *
      * @param request Параметры инициализации ККМ.
      * @return Сведения об инициализированной ККМ.
      */
     @Throws(Exception::class)
-    fun initKkm(pin: String, request: KkmInitDirectRequest): KkmResponse
+    fun initKkm(request: KkmInitDirectRequest): KkmResponse
 
     /**
      * Упрощенная инициализация ККМ с автоматическим получением данных из ОФД.
      *
-     * @param pin ПИН-код администратора.
+     * Пина по умолчанию у кассы нет: администратор новой кассы заводится
+     * с пином [KkmInitSimpleRequest.adminPin], без него касса не заводится.
+     *
      * @param request Упрощенный запрос на инициализацию.
      * @return Сведения об инициализированной ККМ.
      */
     @Throws(Exception::class)
-    fun initKkmSimple(pin: String, request: KkmInitSimpleRequest): KkmResponse
+    fun initKkmSimple(request: KkmInitSimpleRequest): KkmResponse
 
     /**
      * Сгенерировать заводской номер и год выпуска для новой ККМ.

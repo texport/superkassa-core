@@ -43,7 +43,7 @@ class GetProtocolPrintHtmlUseCase(
      */
     fun execute(kkmId: String, pin: String, packet: String, layout: ReceiptLayoutType?): String {
         val kkm = authorization.requireKkm(kkmId)
-        authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER), allowDefaultPin = true)
+        authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
         val parsed = ProtocolPacket.of(packet)
             ?: throw ValidationException(CoreStrings.protocolPacketUnreadable(), PACKET_INVALID)
         val drawnBy = kkm.withProtocolRegistration(parsed.service)

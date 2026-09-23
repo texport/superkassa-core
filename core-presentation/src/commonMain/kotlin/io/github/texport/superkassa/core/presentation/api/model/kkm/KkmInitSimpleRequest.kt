@@ -39,9 +39,12 @@ data class KkmInitSimpleRequest(
     @JsonNames("okved")
     val oked: String? = null,
     @Schema(
-        description = "Пин администратора новой кассы. Без него касса заводится со стандартным " +
-            "пином, а войти с ним узел не даёт — открыть такую кассу будет нельзя.",
-        example = "4821"
+        description = "Пин администратора новой кассы, от 4 до 10 символов. Пина по умолчанию нет: " +
+            "без этого поля касса не заводится (KKM_ADMIN_PIN_REQUIRED).",
+        example = "7391",
+        required = true,
+        minLength = 4,
+        maxLength = 10
     )
     val adminPin: String? = null
 )

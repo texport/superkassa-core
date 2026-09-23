@@ -301,12 +301,12 @@ class SuperkassaApiImpl(
 
     // Registration & Initialization delegates
     @Throws(Exception::class)
-    override fun initKkm(pin: String, request: KkmInitDirectRequest): KkmResponse =
-        initKkmImpl(pin, request)
+    override fun initKkm(request: KkmInitDirectRequest): KkmResponse =
+        initKkmImpl(request)
 
     @Throws(Exception::class)
-    override fun initKkmSimple(pin: String, request: KkmInitSimpleRequest): KkmResponse =
-        initKkmSimpleImpl(pin, request)
+    override fun initKkmSimple(request: KkmInitSimpleRequest): KkmResponse =
+        initKkmSimpleImpl(request)
 
     @Throws(Exception::class)
     override fun generateFactoryInfo(): FactoryNumberResponse =
@@ -512,7 +512,7 @@ class SuperkassaApiImpl(
     @Throws(Exception::class)
     override fun authenticate(kkmId: String, pin: String): UserResponse {
         authorization.requireKkm(kkmId)
-        authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER), allowDefaultPin = true)
+        authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
         val pinHash = pinHasher.hash(pin)
         val user = storage.findUserByPin(kkmId, pinHash) ?: throw ForbiddenException(CoreStrings.userNotFound(), "USER_NOT_FOUND")
         return UserMapper.toResponse(user)
