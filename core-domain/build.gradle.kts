@@ -29,7 +29,9 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":core-string"))
+                // Слова отказа (`TrilingualMessage`) — часть открытого API: их несёт
+                // `SuperkassaException`, и приложению они нужны без своей зависимости.
+                api(project(":core-string"))
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.datetime)
