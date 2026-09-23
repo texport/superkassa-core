@@ -13,7 +13,28 @@ import kotlinx.coroutines.runBlocking
 /** Кассы и их кассиры. */
 internal class RoomKkms(private val kkmDao: KkmDao, private val userDao: KkmUserDao) {
 
-    fun save(info: KkmInfo): Boolean = runBlocking {
+    /**
+     * Заводит кассу; записанную под тем же идентификатором не затирает.
+     *
+     * Как у узла: вставка, а не замена. Замена молча переписывала кассу
+     * со сменами и чеками новой, пустой.
+     */
+    fun create(info: KkmInfo): Boolean = runBlocking {
+        if (kkmDao.getById(info.id) != null) return@runBlocking false
+        kkmDao.insert(KkmEntity.fromDomain(info))
+        true
+    }
+
+    /**
+     * Правит записанную кассу; кассы, которой нет, не заводит.
+     *
+     * Как у узла: правка, а не вставка. Ответ БФД на служебную команду при
+     * заведении кассы правит её состояние, пока самой кассы в базе ещё
+     * нет, — и отказ с блокирующим кодом заводил заблокированную кассу,
+     * которую владелец не регистрировал и повторно завести уже не мог.
+     */
+    fun update(info: KkmInfo): Boolean = runBlocking {
+        if (kkmDao.getById(info.id) == null) return@runBlocking false
         kkmDao.insert(KkmEntity.fromDomain(info))
         true
     }

@@ -88,8 +88,9 @@ class InitializeKkmRegistrationUseCase(
      * Запускает сценарий инициализации регистрации.
      *
      * @param params Параметры инициализации ККМ.
-     * @return Инициализированный объект [KkmInfo].
-     * @throws ValidationException Если отсутствует заводской номер кассы.
+     * @return Инициализированный и записанный объект [KkmInfo].
+     * @throws ValidationException Если отсутствует заводской номер кассы или БФД
+     * не ответил либо отказал (`OFD_COMMAND_FAILED`): тогда касса не записывается.
      */
     fun execute(params: KkmInitializationParams): KkmInfo {
         logger.info(
@@ -110,14 +111,6 @@ class InitializeKkmRegistrationUseCase(
             factoryNumber = factoryNum,
             ofdTag = params.ofdTag
         )
-        if (infoResult == null) {
-            logger.warn(
-                "InitializeKkmRegistrationUseCase.execute: performOfdSystemAndInfo returned null for systemId='{}'",
-                params.baseInfo.systemId
-            )
-            return params.baseInfo
-        }
-
         val now = clock.now()
         val rawResolvedServiceInfo = OfdResponseParser.extractServiceInfo(infoResult.responseJson, serviceInfo)
 
@@ -160,7 +153,11 @@ class InitializeKkmRegistrationUseCase(
     /**
      * Выполняет последовательный опрос ОФД: сначала команду SYSTEM, затем INFO.
      *
-     * @return Результат выполнения INFO команды ОФД или null в случае ошибки.
+     * Касса к этому моменту ещё не записана: без ответа БФД она и не
+     * записывается, а вызывающий получает отказ с причиной.
+     *
+     * @return Результат выполнения INFO команды ОФД.
+     * @throws ValidationException `OFD_COMMAND_FAILED`, если БФД не ответил или отказал.
      */
     fun performOfdSystemAndInfo(
         baseInfo: KkmInfo,
@@ -169,7 +166,7 @@ class InitializeKkmRegistrationUseCase(
         registrationNumber: String,
         factoryNumber: String,
         ofdTag: String
-    ): OfdCommandResult? {
+    ): OfdCommandResult {
         val systemResult = kkmCommonHelper.sendOfdCommand(
             kkm = baseInfo,
             commandType = OfdCommandType.SYSTEM,
@@ -180,7 +177,7 @@ class InitializeKkmRegistrationUseCase(
             factoryNumberOverride = factoryNumber,
             ofdProviderOverride = ofdTag
         )
-        if (systemResult.status != OfdCommandStatus.OK) return null
+        if (systemResult.status != OfdCommandStatus.OK) throw refused(baseInfo, OfdCommandType.SYSTEM, systemResult)
 
         val infoResult = kkmCommonHelper.sendOfdCommand(
             kkm = baseInfo,
@@ -192,13 +189,17 @@ class InitializeKkmRegistrationUseCase(
             factoryNumberOverride = factoryNumber,
             ofdProviderOverride = ofdTag
         )
-        if (infoResult.status != OfdCommandStatus.OK) {
-            infoResult.responseToken?.let {
-                storage.updateKkmToken(baseInfo.id, tokenCodec.encodeToken(it), clock.now())
-            }
-            return null
-        }
+        if (infoResult.status != OfdCommandStatus.OK) throw refused(baseInfo, OfdCommandType.INFO, infoResult)
         return infoResult
+    }
+
+    private fun refused(kkm: KkmInfo, command: OfdCommandType, result: OfdCommandResult): ValidationException {
+        logger.warn(
+            "Registration of systemId='{}' refused: BFD {} ${result.status}, code ${result.resultCode}",
+            kkm.systemId,
+            command
+        )
+        return registrationRefused(result)
     }
 
     /**

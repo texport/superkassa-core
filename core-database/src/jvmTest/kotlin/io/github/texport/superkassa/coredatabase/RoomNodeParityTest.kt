@@ -36,6 +36,21 @@ class RoomNodeParityTest {
     }
 
     @Test
+    fun `правка кассы, которой нет, её не заводит`() = room.session { storage ->
+        assertFalse(storage.updateKkm(KKM_INFO.copy(state = "BLOCKED")))
+
+        assertNull(storage.findKkm(KKM))
+    }
+
+    @Test
+    fun `повторное заведение кассы не затирает записанную`() = room.session { storage ->
+        storage.createKkm(KKM_INFO.copy(name = "Касса на Абая"))
+
+        assertFalse(storage.createKkm(KKM_INFO))
+        assertEquals("Касса на Абая", storage.findKkm(KKM)?.name)
+    }
+
+    @Test
     fun `повторная регистрация узнаётся по номеру кассы в ОФД`() = room.session { storage ->
         storage.createKkm(KKM_INFO)
 

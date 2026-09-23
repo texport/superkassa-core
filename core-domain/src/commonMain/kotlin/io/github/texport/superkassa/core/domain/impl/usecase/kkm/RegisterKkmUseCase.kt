@@ -220,10 +220,7 @@ class RegisterKkmUseCase(
                 "initKkmSimple: OFD SYSTEM command failed for systemId='$ofdSystemId': " +
                     describeFailure(systemResult)
             )
-            throw ValidationException(
-                CoreStrings.ofdRequestFailed(describeFailure(systemResult)),
-                "OFD_COMMAND_FAILED"
-            )
+            throw registrationRefused(systemResult)
         }
 
         // 2. Отправляем информационную (INFO) команду для получения актуальных регистрационных данных
@@ -247,10 +244,7 @@ class RegisterKkmUseCase(
                 "initKkmSimple: OFD INFO command failed for systemId='$ofdSystemId': " +
                     describeFailure(infoResult)
             )
-            throw ValidationException(
-                CoreStrings.ofdRequestFailed(describeFailure(infoResult)),
-                "OFD_COMMAND_FAILED"
-            )
+            throw registrationRefused(infoResult)
         }
 
         // Парсим ответ ОФД и извлекаем реквизиты сервиса
@@ -356,23 +350,5 @@ class RegisterKkmUseCase(
             throw ValidationException(CoreStrings.okvedRequired(), "OKVED_REQUIRED")
         }
         return resolved
-    }
-
-    /**
-     * Складывает описание отказа ОФД из того, что он действительно прислал.
-     *
-     * Сетевое поле errorMessage пусто, когда ОФД ответил и отказал по существу:
-     * причина тогда лежит в коде и тексте результата. Раньше в журнал и
-     * оператору уходило пустое место, и отличить отказ стенда от обрыва связи
-     * было нельзя.
-     */
-    private fun describeFailure(result: OfdCommandResult): String {
-        val parts = listOfNotNull(
-            result.status.name,
-            result.resultCode?.let { "code=$it" },
-            result.resultText?.takeIf { it.isNotBlank() },
-            result.errorMessage?.takeIf { it.isNotBlank() }
-        )
-        return parts.joinToString(", ")
     }
 }

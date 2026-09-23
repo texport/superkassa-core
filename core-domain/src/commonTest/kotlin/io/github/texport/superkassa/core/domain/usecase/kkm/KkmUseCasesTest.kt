@@ -646,7 +646,8 @@ class KkmUseCasesTest {
     }
 
     @Test
-    fun testInitializeKkmRegistrationInfoResultNull() {
+    fun testInitializeKkmRegistrationRefusedWithoutBfdAnswer() {
+        var stored = false
         val params = InitializeKkmRegistrationUseCase.KkmInitializationParams(
             baseInfo = kkm.copy(factoryNumber = "fact-1"),
             ofdToken = "token",
@@ -654,14 +655,15 @@ class KkmUseCasesTest {
             factoryNumber = "fact-1",
             ofdTag = "ofd-tag",
             okvedOverride = "12345",
-            updateKkm = {}
+            updateKkm = { stored = true }
         )
         every { tokenCodec.parseToken("token") } returns 555L
-        val systemResult = OfdCommandResult(status = OfdCommandStatus.FAILED, errorMessage = "System error")
+        val systemResult = OfdCommandResult(status = OfdCommandStatus.TIMEOUT, errorMessage = "System error")
         every { kkmCommonHelper.sendOfdCommand(any(), OfdCommandType.SYSTEM, any(), any(), any(), any(), any(), any()) } returns systemResult
 
-        val result = initializeKkmRegistration.execute(params)
-        assertEquals(params.baseInfo, result)
+        val refusal = assertFailsWith<ValidationException> { initializeKkmRegistration.execute(params) }
+        assertEquals("OFD_COMMAND_FAILED", refusal.code)
+        assertEquals(false, stored)
     }
 
     @Test
@@ -805,16 +807,17 @@ class KkmUseCasesTest {
         every { kkmCommonHelper.sendOfdCommand(any(), OfdCommandType.SYSTEM, any(), any(), any(), any(), any(), any()) } returns systemResult
         every { kkmCommonHelper.sendOfdCommand(any(), OfdCommandType.INFO, any(), any(), any(), any(), any(), any()) } returns infoResult
 
-        val result = initializeKkmRegistration.performOfdSystemAndInfo(
-            baseInfo = kkm,
-            initialToken = 555L,
-            serviceInfo = defaultInfo,
-            registrationNumber = "reg-1",
-            factoryNumber = "fact-1",
-            ofdTag = "ofd-tag"
-        )
-        assertNull(result)
-        verify { storage.updateKkmToken(kkm.id, "enc-777", 1000L) }
+        assertFailsWith<ValidationException> {
+            initializeKkmRegistration.performOfdSystemAndInfo(
+                baseInfo = kkm,
+                initialToken = 555L,
+                serviceInfo = defaultInfo,
+                registrationNumber = "reg-1",
+                factoryNumber = "fact-1",
+                ofdTag = "ofd-tag"
+            )
+        }
+        verify(exactly = 0) { storage.updateKkmToken(any(), any(), any()) }
     }
 
     @Test
@@ -839,15 +842,16 @@ class KkmUseCasesTest {
         every { kkmCommonHelper.sendOfdCommand(any(), OfdCommandType.SYSTEM, any(), any(), any(), any(), any(), any()) } returns systemResult
         every { kkmCommonHelper.sendOfdCommand(any(), OfdCommandType.INFO, any(), any(), any(), any(), any(), any()) } returns infoResult
 
-        val result = initializeKkmRegistration.performOfdSystemAndInfo(
-            baseInfo = kkm,
-            initialToken = 555L,
-            serviceInfo = defaultInfo,
-            registrationNumber = "reg-1",
-            factoryNumber = "fact-1",
-            ofdTag = "ofd-tag"
-        )
-        assertNull(result)
+        assertFailsWith<ValidationException> {
+            initializeKkmRegistration.performOfdSystemAndInfo(
+                baseInfo = kkm,
+                initialToken = 555L,
+                serviceInfo = defaultInfo,
+                registrationNumber = "reg-1",
+                factoryNumber = "fact-1",
+                ofdTag = "ofd-tag"
+            )
+        }
     }
 
     @Test

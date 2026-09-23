@@ -97,8 +97,8 @@ internal class DefaultRoomStorageAdapter(
     override fun updateIdempotencyResponse(kkmId: String, idempotencyKey: String, responseRef: String?) =
         writer.complete(kkmId, idempotencyKey, responseRef)
     // --- Кассы и кассиры ---
-    override fun createKkm(info: KkmInfo): Boolean = kkms.save(info)
-    override fun updateKkm(info: KkmInfo): Boolean = kkms.save(info)
+    override fun createKkm(info: KkmInfo): Boolean = kkms.create(info)
+    override fun updateKkm(info: KkmInfo): Boolean = kkms.update(info)
     override fun findKkm(id: String): KkmInfo? = kkms.find(id)
     override fun findKkmForUpdate(id: String): KkmInfo? = kkms.find(id)
     override fun findKkmByRegistrationNumber(registrationNumber: String): KkmInfo? =
