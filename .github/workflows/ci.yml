@@ -1,32 +1,48 @@
+# Проверка каждого изменения. Её же вызывает выпуск по метке (release.yml):
+# в выпуск и в Maven Central уходит только то, что прошло эту проверку.
+#
+# iOS здесь компилируется (klib одной цели): так ломка iosMain видна на
+# каждом изменении. XCFramework — три цели, связанные в бинарники, — нужен
+# только выпуску и собирается там.
 name: CI Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ '**' ]
   pull_request:
     branches: [ main ]
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   build:
-    runs-on: macos-latest # Required for iOS/XCFramework compilation
+    # iOS-цели компилируются только на macOS.
+    runs-on: macos-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
-          java-version: '17' # Must match javaTargetCore in libs.versions.toml
-          distribution: 'zulu'
+          java-version: '17' # jvm в libs.versions.toml
+          distribution: 'temurin'
 
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v4
 
+      - name: Соседние библиотеки из исходников
+        uses: ./.github/actions/siblings
+
+      # Автоправку detekt на CI выключает сама сборка (по переменной CI):
+      # нарушение роняет проверку, а не переписывается молча.
       - name: Run Static Analysis (Detekt)
         run: ./gradlew detekt
 
-      - name: Compile and Assemble Targets
-        run: ./gradlew assemble
+      - name: Compile JVM, Android and iOS
+        run: ./gradlew jvmJar assembleAndroidMain compileKotlinIosArm64
 
       - name: Run Unit Tests
         run: ./gradlew jvmTest

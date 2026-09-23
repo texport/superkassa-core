@@ -138,8 +138,13 @@ allprojects {
         configure<SigningExtension> {
             val signingKey = System.getenv("SIGNING_KEY")
             val signingPassword = System.getenv("SIGNING_PASSWORD")
+            val signingKeyId = System.getenv("SIGNING_KEY_ID")
             if (!signingKey.isNullOrEmpty() && !signingPassword.isNullOrEmpty()) {
-                useInMemoryPgpKeys(signingKey, signingPassword)
+                if (signingKeyId.isNullOrEmpty()) {
+                    useInMemoryPgpKeys(signingKey, signingPassword)
+                } else {
+                    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
+                }
             }
             isRequired = false
             sign(extensions.getByType<PublishingExtension>().publications)
@@ -246,7 +251,9 @@ tasks.named<Jar>("jvmJar") {
 tasks.register("generateSpmManifest") {
     group = "publishing"
     description = "Zips SuperkassaCore XCFramework, calculates SHA-256 and writes Package.swift"
-    dependsOn("assembleSuperkassaCoreReleaseXCFramework")
+    // Ресурсы форм докладываются в XCFramework задачей-финализатором сборки;
+    // финализатор не обязан успеть до упаковки, поэтому зависимость явная.
+    dependsOn("assembleSuperkassaCoreReleaseXCFramework", "copyResourcesToFrameworks")
 
     doLast {
         val versionStr = project.version.toString()
