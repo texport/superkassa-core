@@ -1443,6 +1443,31 @@ class SuperkassaApiImplTest {
             api.authenticate("kkm-1", "1234")
         }
     }
+
+    @Test
+    fun `currentUser answers who entered with this pin`() {
+        every { storage.findKkm("kkm-1") } returns testKkmInfo
+        every { pinHasher.hash("5739") } returns "hash-cashier"
+        every { storage.findUserByPin("kkm-1", "hash-cashier") } returns testUser
+
+        assertEquals("Cashier 1", api.currentUser("kkm-1", "5739").name)
+    }
+
+    @Test
+    fun `updateKkmName lets a cashier name the cash register`() {
+        every { storage.findKkm("kkm-1") } returns testKkmInfo
+        every { pinHasher.hash("5739") } returns "hash-cashier"
+        every { storage.findUserByPin("kkm-1", "hash-cashier") } returns testUser
+
+        assertEquals("Касса у входа", api.updateKkmName("kkm-1", "5739", "  Касса у входа  ").name)
+    }
+
+    @Test
+    fun `autoCloseShift leaves a cash register without auto close alone`() {
+        every { storage.findKkm("kkm-1") } returns testKkmInfo
+
+        assertNull(api.autoCloseShift("kkm-1"))
+    }
 }
 
 /** Момент, к которому 72 часа автономной работы заведомо прошли. */
