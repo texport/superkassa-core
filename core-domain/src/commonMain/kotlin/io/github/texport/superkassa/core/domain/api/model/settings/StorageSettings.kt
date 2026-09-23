@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.api.model.settings
 
+import kotlinx.serialization.Serializable
+
 /**
  * Настройки хранилища и параметров подключения к базе данных.
  *
@@ -8,6 +10,7 @@ package io.github.texport.superkassa.core.domain.api.model.settings
  * @property user Имя пользователя для авторизации в БД.
  * @property password Пароль для авторизации в БД.
  */
+@Serializable
 data class StorageSettings(
     val engine: String,
     val jdbcUrl: String,

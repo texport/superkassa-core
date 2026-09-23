@@ -148,6 +148,9 @@ class ProcessQueueCommandUseCase(
             isAutonomous = doc.isAutonomous,
             ofdErrorText = if (success) null else result.resultText?.takeIf { it.isNotBlank() }
         )
+        // Досланный из очереди чек получает ссылку только теперь: без неё
+        // перепечатанный чек выходил без QR-кода проверки.
+        result.receiptUrl?.let { storage.saveReceiptUrl(command.payloadRef, it) }
     }
 
     /**

@@ -1,8 +1,11 @@
 package io.github.texport.superkassa.core.domain.api.model.settings
 
+import kotlinx.serialization.Serializable
+
 /**
  * Настройки каналов и провайдеров доставки фискальных документов.
  */
+@Serializable
 data class DeliverySettings(
     val print: PrintDeliverySettings? = null,
     val channels: List<DeliveryChannelSettings> = emptyList(),

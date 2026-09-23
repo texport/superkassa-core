@@ -10,6 +10,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryPor
 import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
 import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 
 /**
  * Вспомогательный класс для доставки и повторной отправки фискальных чеков
@@ -28,6 +29,8 @@ class ReceiptDeliveryHelper(
     private val documentConvertPort: DocumentConvertPort,
     private val receiptRenderPort: ReceiptRenderPort
 ) {
+    private val logger = getLogger(ReceiptDeliveryHelper::class)
+
     /**
      * Выполняет первичную доставку чека по всем активным каналам связи.
      *
@@ -45,6 +48,29 @@ class ReceiptDeliveryHelper(
      * @param responseBin Сырой бинарный ответ от ОФД (используется для резервной печати).
      */
     fun deliverReceipt(
+        kkmId: String,
+        documentId: String,
+        receipt: ReceiptRequest,
+        docSnapshot: FiscalDocumentSnapshot,
+        receiptUrl: String?,
+        responseBin: ByteArray?
+    ) {
+        // Доставка идёт после того, как ОФД чек уже принял. Её отказ — будь
+        // то рисование, принтер или канал — не должен выдавать себя за отказ
+        // чека: кассир пробил бы его повторно, и у покупателя стало бы два
+        // фискальных документа на одну покупку. Повтор доставки — отдельно.
+        try {
+            deliverOrThrow(kkmId, documentId, receipt, docSnapshot, receiptUrl, responseBin)
+        } catch (e: Exception) {
+            logger.warn(
+                "Receipt delivery failed after fiscalization: documentId={}, reason={}",
+                documentId,
+                e::class.simpleName
+            )
+        }
+    }
+
+    private fun deliverOrThrow(
         kkmId: String,
         documentId: String,
         receipt: ReceiptRequest,

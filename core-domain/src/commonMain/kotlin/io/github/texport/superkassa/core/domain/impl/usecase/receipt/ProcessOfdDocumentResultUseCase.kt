@@ -157,6 +157,7 @@ class ProcessOfdDocumentResultUseCase(
             // кассой, и за нехваткой реквизита в позиции.
             ofdErrorText = if (success) null else ofdResult.resultText?.takeIf { it.isNotBlank() }
         )
+        ofdResult.receiptUrl?.let { storage.saveReceiptUrl(documentId, it) }
 
         if (success) {
             val extractedDocNo = OfdResponseParser.extractDocNumber(ofdResult.responseJson)

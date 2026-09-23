@@ -1,0 +1,112 @@
+package io.github.texport.superkassa.core.data.room
+
+import io.github.texport.superkassa.core.data.api.SuperkassaCoreEngine
+import io.github.texport.superkassa.core.data.impl.adapter.DefaultClockAdapter
+import io.github.texport.superkassa.core.data.impl.adapter.security.Base64TokenCodecAdapter
+import io.github.texport.superkassa.core.data.impl.adapter.security.Sha256PinHasherAdapter
+import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
+import io.github.texport.superkassa.core.domain.api.model.common.Decimal
+import io.github.texport.superkassa.core.domain.api.model.common.TimeValidationResult
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmMode
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
+import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
+import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
+import io.github.texport.superkassa.core.domain.api.port.integration.CoreSettingsRepositoryPort
+import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
+import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidatorPort
+import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
+import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptItemRequest
+import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptPaymentRequest
+import io.github.texport.superkassa.coredatabase.api.openInMemoryRoomStorage
+import io.github.texport.superkassa.delivery.impl.DefaultKtorDeliveryAdapter
+import io.github.texport.superkassa.receiptrenderer.impl.adapter.DefaultQrCodeGeneratorAdapter
+
+/**
+ * Касса на ядре с Room и тестовым БФД: сборка та же, что в приложении,
+ * база — Room в памяти, сеть — [FakeBfd]. Касса зарегистрирована,
+ * у неё администратор и кассир.
+ */
+internal class RoomKassa {
+    val bfd = FakeBfd()
+    val storage: StoragePort = openInMemoryRoomStorage().storagePort
+    val api: SuperkassaApi = SuperkassaCoreEngine(
+        storage = storage,
+        settings = MemorySettings(),
+        delivery = DefaultKtorDeliveryAdapter(),
+        clock = DefaultClockAdapter(),
+        timeValidator = TrustedClock,
+        qrCode = DefaultQrCodeGeneratorAdapter(),
+        pdfConverter = NoDocuments,
+        ofdTransport = bfd
+    ).buildApi()
+
+    init {
+        register()
+    }
+
+    /** Документы открытой смены, от первого к последнему. */
+    fun shiftDocuments(): List<FiscalDocumentSnapshot> {
+        val shift = checkNotNull(storage.findOpenShift(KKM)) { "no open shift" }
+        return storage.listFiscalDocumentsByShift(KKM, shift.id, limit = 100, offset = 0).sortedBy { it.createdAt }
+    }
+
+    fun document(id: String): FiscalDocumentSnapshot = checkNotNull(storage.findFiscalDocumentById(id)) { "no document $id" }
+
+    private fun register() {
+        val now = System.currentTimeMillis()
+        storage.createKkm(
+            KkmInfo(
+                id = KKM, createdAt = now, updatedAt = now,
+                mode = KkmMode.REGISTRATION.name, state = KkmState.ACTIVE.name,
+                ofdProvider = "KAZAKHTELECOM:TEST", registrationNumber = KGD_NUMBER, factoryNumber = "KZT0000001",
+                systemId = "100500", ofdServiceInfo = SERVICE_INFO,
+                tokenEncryptedBase64 = Base64TokenCodecAdapter().encodeToken(TOKEN), tokenUpdatedAt = now
+            )
+        )
+        val pins = Sha256PinHasherAdapter()
+        storage.createUser(KKM, "admin-1", "Айгерим", UserRole.ADMIN, pins.hash(ADMIN_PIN), now)
+        storage.createUser(KKM, "cashier-1", "Нурлан", UserRole.CASHIER, pins.hash(CASHIER_PIN), now)
+    }
+
+    private class MemorySettings : CoreSettingsRepositoryPort {
+        private var current: CoreSettings? = null
+        override fun load(): CoreSettings? = current
+        override fun save(settings: CoreSettings): Boolean {
+            current = settings
+            return true
+        }
+        override fun loadOrCreate(defaults: CoreSettings): CoreSettings = current ?: defaults.also { current = it }
+    }
+
+    private object TrustedClock : TimeValidatorPort {
+        override fun validate(clock: ClockPort) = TimeValidationResult(ok = true)
+    }
+
+    private object NoDocuments : DocumentConvertPort {
+        override fun htmlToPdf(html: String): ByteArray = error("not used")
+        override fun htmlToImage(html: String): ByteArray = error("not used")
+        override fun htmlToEscPos(html: String, paperWidthMm: Int): ByteArray = error("not used")
+    }
+
+    companion object {
+        const val KKM = "kkm-room-1"
+        const val KGD_NUMBER = "010101012345"
+        const val ADMIN_PIN = "8765"
+        const val CASHIER_PIN = "4321"
+        private const val TOKEN = 123_456_789L
+
+        private val SERVICE_INFO = OfdServiceInfo(
+            orgTitle = "ТОО Дала", orgAddress = "Алматы", orgAddressKz = "Алматы", orgInn = "123456789012",
+            orgOkved = "47111", geoLatitude = 43_250_000, geoLongitude = 76_900_000, geoSource = "MANUAL"
+        )
+
+        /** Одна позиция на всю сумму и оплата наличными. */
+        fun item(sum: String) = ReceiptItemRequest(name = "Нан", price = Decimal.parse(sum), quantity = Decimal.parse("1"))
+
+        fun cash(sum: String) = ReceiptPaymentRequest(type = "CASH", sum = Decimal.parse(sum))
+    }
+}

@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.ofd
 
+import io.github.texport.superkassa.core.domain.api.exception.ValidationException
+import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdNomenclatureLookupResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
@@ -26,6 +28,11 @@ class LookupNomenclatureUseCase(
      */
     fun execute(kkmId: String, barcode: String): OfdNomenclatureLookupResult {
         val kkm = authorizeUserUseCase.requireKkm(kkmId)
+        // Заблокированная касса в БФД не ходит ни с чем, в том числе со справочником:
+        // правило жило в узле, и касса приложения спрашивала справочник в обход блокировки.
+        if (kkm.state == KkmState.BLOCKED.name) {
+            throw ValidationException(CoreStrings.kkmBlocked(kkm.blockReasonCode), "KKM_BLOCKED")
+        }
         val result = kkmCommonHelper.sendOfdCommand(
             kkm = kkm,
             commandType = OfdCommandType.NOMENCLATURE,

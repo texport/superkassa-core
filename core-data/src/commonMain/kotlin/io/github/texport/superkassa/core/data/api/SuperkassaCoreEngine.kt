@@ -31,7 +31,11 @@ import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
 import io.github.texport.superkassa.core.domain.impl.helper.ofd.OfdCommandRequestFactory
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.GenerateRequestNumberUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.shift.RecalculateShiftCountersUseCase
+import kz.mybrain.network.OfdNetworkClient
 import kz.mybrain.network.OfdTcpNetworkClient
+import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderPort
+import io.github.texport.superkassa.core.presentation.api.DeliveryApi
+import io.github.texport.superkassa.core.presentation.impl.DeliveryApiImpl
 
 /**
  * Единый фабричный контейнер (сборщик) для инициализации ядра библиотеки Superkassa.
@@ -46,8 +50,38 @@ class SuperkassaCoreEngine(
     private val clock: ClockPort,
     private val timeValidator: TimeValidatorPort,
     private val qrCode: QrCodeGeneratorPort,
-    private val pdfConverter: DocumentConvertPort
+    private val pdfConverter: DocumentConvertPort,
+    /**
+     * Транспорт до ОФД. По умолчанию — TCP-клиент со сроком из настроек;
+     * другой подставляют там, где настоящего ОФД нет, — в проверках сборки.
+     */
+    private val ofdTransport: OfdNetworkClient? = null
 ) {
+    /**
+     * Рисовальщик печатных форм ядра.
+     *
+     * Один на сборку и открыт наружу: доставка и печать пакета протокола
+     * рисуют тем же рисовальщиком, что и фасад, без доступа к его полям.
+     */
+    val receiptRenderer: ReceiptRenderPort = ReceiptRenderAdapter(qrCode)
+
+    /**
+     * Повтор доставки чека покупателю.
+     *
+     * Собирается из тех же частей, что и фасад: хеш пина — тот же, которым
+     * фасад пускает кассира, а не своя копия у вызывающего.
+     *
+     * @throws IllegalStateException если настройки ядра ещё не заведены: сначала [buildApi].
+     */
+    fun buildDeliveryApi(): DeliveryApi = DeliveryApiImpl(
+        storage = storage,
+        pinHasher = Sha256PinHasherAdapter(),
+        delivery = delivery,
+        coreSettings = checkNotNull(settings.load()) { "Core settings are not created: build the API first" },
+        documentConvertPort = pdfConverter,
+        receiptRenderPort = receiptRenderer
+    )
+
     /**
      * Создает и конфигурирует экземпляр API ядра кассы.
      *
@@ -78,7 +112,7 @@ class SuperkassaCoreEngine(
         // Срок ожидания ответа у сетевого клиента и у менеджера — один
         // и тот же из настроек: соединение, отправка и чтение укладываются
         // в него целиком, поэтому отдельного срока на соединение нет.
-        val networkClient = OfdTcpNetworkClient(
+        val networkClient = ofdTransport ?: OfdTcpNetworkClient(
             timeoutMillis = (coreSettings.ofdTimeoutSeconds * SECONDS_TO_MILLIS).toInt()
         )
 
@@ -107,7 +141,7 @@ class SuperkassaCoreEngine(
         val tokenCodec = Base64TokenCodecAdapter()
         val idGenerator = UuidGeneratorAdapter
         val pinHasher = Sha256PinHasherAdapter()
-        val receiptRenderPort = ReceiptRenderAdapter(qrCode)
+        val receiptRenderPort = receiptRenderer
 
         // 5. Инициализируем оффлайн-очередь
         val leaseLockAdapter = StorageBackedLeaseLockAdapter(storage)
@@ -217,6 +251,9 @@ class SuperkassaCoreEngine(
          */
         fun createIos(dbName: String = "superkassa_ios.db"): SuperkassaApi = createProduction(dbName)
 
+        private fun noConverter(): Nothing =
+            throw UnsupportedOperationException("Document conversion is not configured in this assembly")
+
         private fun createWithStorage(
             roomStoragePair: io.github.texport.superkassa.coredatabase.api.RoomStoragePair,
             ofdProviderId: String
@@ -226,10 +263,14 @@ class SuperkassaCoreEngine(
             val delivery = io.github.texport.superkassa.delivery.impl.DefaultKtorDeliveryAdapter()
             val qrGen = io.github.texport.superkassa.receiptrenderer.impl.adapter.DefaultQrCodeGeneratorAdapter()
 
+            // Рисовать документы этой сборке нечем. Прежде здесь отдавались
+            // байты HTML под видом PDF и PNG: вызывающий сохранял «документ»,
+            // который ничем не открывается. Отказ честнее; настоящий
+            // конвертер даёт сборка core-embedded.
             val pdfConverter = object : DocumentConvertPort {
-                override fun htmlToPdf(html: String): ByteArray = html.encodeToByteArray()
-                override fun htmlToImage(html: String): ByteArray = html.encodeToByteArray()
-                override fun htmlToEscPos(html: String, paperWidthMm: Int): ByteArray = html.encodeToByteArray()
+                override fun htmlToPdf(html: String): ByteArray = noConverter()
+                override fun htmlToImage(html: String): ByteArray = noConverter()
+                override fun htmlToEscPos(html: String, paperWidthMm: Int): ByteArray = noConverter()
             }
 
             val coreSettings = object : CoreSettingsRepositoryPort {

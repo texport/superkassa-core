@@ -84,6 +84,7 @@ class ProcessReceiptUseCase(
     fun execute(command: CreateReceiptCommand): ReceiptResult {
         val kkm = authorizeUser.requireKkm(command.kkmId)
         requireOperational.execute(kkm)
+        requireReceiptWithinBounds(command)
 
         // 1. Валидация входных данных команды
         if ((command.operation == ReceiptOperationType.SELL_RETURN || command.operation == ReceiptOperationType.BUY_RETURN) && command.parentTicket == null) {

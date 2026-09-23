@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.api.model.settings
 
+import kotlinx.serialization.Serializable
+
 /**
  * Настройки подключения к чековому принтеру.
  *
@@ -7,6 +9,7 @@ package io.github.texport.superkassa.core.domain.api.model.settings
  * @property host Сетевой адрес принтера (IP-адрес или имя хоста).
  * @property port Сетевой порт принтера (по умолчанию 9100).
  */
+@Serializable
 data class PrintConnectionSettings(
     val type: String = "NETWORK",
     val host: String? = null,

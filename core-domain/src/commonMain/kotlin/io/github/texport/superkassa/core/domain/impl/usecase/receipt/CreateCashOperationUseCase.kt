@@ -54,6 +54,11 @@ class CreateCashOperationUseCase(
             throw ValidationException(CoreStrings.cashSumNegative(), "CASH_SUM_NEGATIVE")
         }
         val amountMoney = Money.fromTenge(request.amount)
+        // Ноль и доли тиына — не операция: узел отвергал их проверкой запроса,
+        // касса в приложении пробивала бы внесение на 0 ₸.
+        if (amountMoney.tiyn() <= 0L) {
+            throw ValidationException(CoreStrings.cashSumTooSmall(), "CASH_SUM_TOO_SMALL")
+        }
 
         // Оцениваем статус автономной очереди ДО сохранения нового документа
         val hasQueue = !queue.canSendDirectly(kkmId)

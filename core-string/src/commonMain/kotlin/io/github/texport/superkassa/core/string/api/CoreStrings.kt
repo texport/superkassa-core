@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.string.api
 
+import io.github.texport.superkassa.core.string.impl.AmountStrings
 import io.github.texport.superkassa.core.string.impl.CoreStringsImpl
 
 /**
@@ -142,4 +143,6 @@ object CoreStrings {
     fun printDocumentType(code: String): TrilingualMessage = CoreStringsImpl.printDocumentType(code)
     fun ofdCommandType(code: String): TrilingualMessage = CoreStringsImpl.ofdCommandType(code)
     fun cashOperationType(code: String): TrilingualMessage = CoreStringsImpl.cashOperationType(code)
+    fun valueOutOfRange(field: String, bounds: String): TrilingualMessage = AmountStrings.valueOutOfRange(field, bounds)
+    fun cashSumTooSmall(): TrilingualMessage = AmountStrings.cashSumTooSmall()
 }
