@@ -24,8 +24,16 @@ version = "1.5.0-SNAPSHOT"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
+    // В Central уходят общий jar ядра и модули, которые приложения берут
+    // отдельно; внутренние модули ядра живут внутри общего jar.
     add("nmcpAggregation", project(":"))
+    add("nmcpAggregation", project(":core-embedded"))
+    add("nmcpAggregation", project(":core-import-node"))
 }
+
+/** Имя артефакта модуля ядра: core-embedded-jvm → superkassa-core-embedded-jvm. */
+fun superkassaArtifactId(artifactId: String, projectName: String): String =
+    if (artifactId.startsWith("superkassa-")) artifactId else artifactId.replace(projectName, "superkassa-$projectName")
 
 allprojects {
     group = rootProject.group
@@ -66,11 +74,27 @@ allprojects {
         }
     }
 
+    // Модули ядра публикуются под именем superkassa-<модуль>. Имя публикаций
+    // целей (jvm, android, ios) KGP назначает сам и позже, чем срабатывает
+    // configureEach ниже, поэтому им префикс ставится через mavenPublication:
+    // иначе они уходили как core-embedded-jvm рядом с superkassa-core-embedded.
+    if (project != rootProject) {
+        plugins.withId("org.jetbrains.kotlin.multiplatform") {
+            configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
+                targets.all {
+                    mavenPublication {
+                        artifactId = superkassaArtifactId(artifactId, project.name)
+                    }
+                }
+            }
+        }
+    }
+
     plugins.withType<MavenPublishPlugin> {
         configure<PublishingExtension> {
             publications.withType<MavenPublication>().configureEach {
                 if (project != rootProject) {
-                    artifactId = artifactId.replace(project.name, "superkassa-${project.name}")
+                    artifactId = superkassaArtifactId(artifactId, project.name)
                 }
                 val javadocJarTask = tasks.register<Jar>("${name}JavadocJar") {
                     description = "Generates Javadoc jar for publication ${this@configureEach.name}"
@@ -129,6 +153,20 @@ allprojects {
                             }
                         }
                         toRemove.forEach { depsNode.remove(it) }
+                        // Внутренние модули ядра в Central не выгружаются: их классы
+                        // лежат в общем superkassa-core. Отдельно публикуемый модуль
+                        // (core-embedded, core-import-node) вместо них зависит от него,
+                        // той же платформы и той же версии.
+                        if (project != rootProject && toRemove.isNotEmpty()) {
+                            val core = depsNode.appendNode("dependency")
+                            core.appendNode("groupId", rootProject.group.toString())
+                            core.appendNode(
+                                "artifactId",
+                                this@configureEach.artifactId.replace("superkassa-${project.name}", rootProject.name)
+                            )
+                            core.appendNode("version", rootProject.version.toString())
+                            core.appendNode("scope", "compile")
+                        }
                     }
                 }
             }

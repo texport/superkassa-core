@@ -3,12 +3,9 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
-}
-
-repositories {
-    mavenLocal()
-    google()
-    mavenCentral()
+    // Отдаёт публикации модуля корневой агрегации для Maven Central;
+    // версия плагина задана в корне.
+    id("com.gradleup.nmcp")
 }
 
 kotlin {

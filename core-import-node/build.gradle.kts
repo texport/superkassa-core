@@ -5,6 +5,9 @@ plugins {
     `maven-publish`
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
+    // Отдаёт публикации модуля корневой агрегации для Maven Central;
+    // версия плагина задана в корне.
+    id("com.gradleup.nmcp")
 }
 
 kotlin {
