@@ -20,7 +20,7 @@ plugins {
 }
 
 group = "io.github.texport"
-version = "1.4.4"
+version = "1.5.0-SNAPSHOT"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
@@ -206,6 +206,8 @@ kotlin {
                 api(libs.ofd.proto.codec)
                 api(libs.ofd.network.client)
                 api(project(":delivery"))
+                // QR-код чека рисует receipt-renderer, чьи классы лежат в этом же jar.
+                implementation(libs.zxing.core)
             }
         }
         jvmTest {
@@ -220,7 +222,10 @@ kotlin {
 tasks.named<Jar>("jvmJar") {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     
-    subprojects.forEach { sub ->
+    // Встраиваемая сборка публикуется своим артефактом со своими зависимостями
+    // (движок PDF, шрифты) и в общий jar ядра не входит. Перенос с узла нужен
+    // только приложению при обновлении — узлу, который берёт этот jar, он чужой.
+    subprojects.filter { it.name !in setOf("core-embedded", "core-import-node") }.forEach { sub ->
         dependsOn(sub.tasks.named("compileKotlinJvm"))
         val compileKotlin = sub.tasks.named("compileKotlinJvm", org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class)
         from(compileKotlin.map { it.destinationDirectory })
