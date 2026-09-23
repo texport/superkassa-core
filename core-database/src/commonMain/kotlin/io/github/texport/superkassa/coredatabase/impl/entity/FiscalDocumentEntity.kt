@@ -32,7 +32,8 @@ data class FiscalDocumentEntity(
     val taxpayerAddress: String?,
     val factoryNumber: String?,
     val ofdProvider: String?,
-    val receiptPayloadJson: String? = null
+    val receiptPayloadJson: String? = null,
+    val receiptUrl: String? = null
 ) {
     fun toDomain(): FiscalDocumentSnapshot {
         return FiscalDocumentSnapshot(
@@ -52,6 +53,7 @@ data class FiscalDocumentEntity(
             ofdStatus = ofdStatus,
             ofdErrorCode = ofdErrorCode,
             ofdErrorText = ofdErrorText,
+            receiptUrl = receiptUrl,
             deliveredAt = deliveredAt,
             registrationNumber = registrationNumber,
             taxpayerName = taxpayerName,
@@ -81,6 +83,7 @@ data class FiscalDocumentEntity(
                 ofdStatus = domain.ofdStatus,
                 ofdErrorCode = domain.ofdErrorCode,
                 ofdErrorText = domain.ofdErrorText,
+                receiptUrl = domain.receiptUrl,
                 deliveredAt = domain.deliveredAt,
                 registrationNumber = domain.registrationNumber,
                 taxpayerName = domain.taxpayerName,

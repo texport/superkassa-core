@@ -23,15 +23,3 @@ actual fun getDatabaseBuilder(dbPath: String): RoomDatabase.Builder<SuperkassaAp
         name = dbFile.absolutePath
     )
 }
-
-actual fun deleteDatabaseFile(dbPath: String) {
-    try {
-        val activityThreadClass = Class.forName("android.app.ActivityThread")
-        val currentApplicationMethod = activityThreadClass.getMethod("currentApplication")
-        val appContext = currentApplicationMethod.invoke(null) as Context
-        appContext.deleteDatabase(dbPath)
-    } catch (_: Exception) {
-        val file = java.io.File(dbPath)
-        file.delete()
-    }
-}

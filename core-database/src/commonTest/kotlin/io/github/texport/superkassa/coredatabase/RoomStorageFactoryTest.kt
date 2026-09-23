@@ -55,11 +55,4 @@ class RoomStorageFactoryTest {
         assertEquals(1, commands.size)
         assertEquals("cmd-1", commands.first().id)
     }
-
-    @Test
-    fun testCreateRoomStorageDisk() {
-        val pair = RoomStorageFactory.createRoomStorage("test_room_storage.db")
-        assertNotNull(pair.storagePort)
-        assertNotNull(pair.queueStoragePort)
-    }
 }

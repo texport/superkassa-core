@@ -6,12 +6,14 @@ import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import io.github.texport.superkassa.coredatabase.impl.dao.CounterDao
 import io.github.texport.superkassa.coredatabase.impl.dao.FiscalDocumentDao
+import io.github.texport.superkassa.coredatabase.impl.dao.IdempotencyDao
 import io.github.texport.superkassa.coredatabase.impl.dao.KkmDao
 import io.github.texport.superkassa.coredatabase.impl.dao.KkmUserDao
 import io.github.texport.superkassa.coredatabase.impl.dao.QueueCommandDao
 import io.github.texport.superkassa.coredatabase.impl.dao.ShiftDao
 import io.github.texport.superkassa.coredatabase.impl.entity.CounterEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.FiscalDocumentEntity
+import io.github.texport.superkassa.coredatabase.impl.entity.IdempotencyEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.KkmEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.KkmUserEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.QueueCommandEntity
@@ -27,9 +29,10 @@ import io.github.texport.superkassa.coredatabase.impl.entity.ShiftEntity
         KkmUserEntity::class,
         ShiftEntity::class,
         FiscalDocumentEntity::class,
-        CounterEntity::class
+        CounterEntity::class,
+        IdempotencyEntity::class
     ],
-    version = 9,
+    version = 11,
     exportSchema = false
 )
 @ConstructedBy(SuperkassaAppDatabaseConstructor::class)
@@ -41,6 +44,7 @@ abstract class SuperkassaAppDatabase : RoomDatabase() {
     abstract fun shiftDao(): ShiftDao
     abstract fun fiscalDocumentDao(): FiscalDocumentDao
     abstract fun counterDao(): CounterDao
+    abstract fun idempotencyDao(): IdempotencyDao
 }
 
 /**

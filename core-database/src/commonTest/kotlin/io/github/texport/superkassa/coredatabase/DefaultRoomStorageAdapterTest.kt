@@ -14,6 +14,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
 class DefaultRoomStorageAdapterTest {
 
@@ -31,6 +32,7 @@ class DefaultRoomStorageAdapterTest {
             state = KkmState.ACTIVE.name,
             registrationNumber = "REG-999888",
             factoryNumber = "FN-777",
+            systemId = "4100",
             autoCloseShift = true,
             autoCashout = true
         )
@@ -38,12 +40,13 @@ class DefaultRoomStorageAdapterTest {
         // 1. Create KKM
         assertTrue(storage.createKkm(kkm))
 
-        // 2. Find by ID & System ID
+        // 2. Find by ID & System ID: касса ищется по номеру в ОФД, а не по своему идентификатору
         val foundById = storage.findKkm("kkm-test-1")
         assertNotNull(foundById)
         assertEquals("REG-999888", foundById.registrationNumber)
 
-        val foundBySystemId = storage.findKkmBySystemId("kkm-test-1")
+        assertNull(storage.findKkmBySystemId("kkm-test-1"))
+        val foundBySystemId = storage.findKkmBySystemId("4100")
         assertNotNull(foundBySystemId)
         assertEquals("FN-777", foundBySystemId.factoryNumber)
 
@@ -339,15 +342,39 @@ class DefaultRoomStorageAdapterTest {
             lastError = null
         )
 
+        // Задача, поставленная через порт кассы, видна через него же:
+        // прежде порт отвечал «записано» и не записывал ничего.
         assertTrue(storage.enqueueQueueTask(task))
-        assertTrue(storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 10, 0).isEmpty())
-        assertTrue(storage.getQueueTasksByStatus("kkm-1", "OFFLINE", setOf("PENDING")).isEmpty())
+        assertEquals(listOf(task), storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 10, 0))
+        assertEquals(listOf(task), storage.getQueueTasksByStatus("kkm-1", "OFFLINE", setOf("PENDING")))
         assertTrue(storage.updateQueueTaskStatus("task-1", "SENT", 1, null, null))
+        assertEquals("SENT", storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 10, 0).single().status)
         assertTrue(storage.markQueueTaskInProgress("task-1", 1000L))
         assertTrue(storage.deleteQueueTasksByCashbox("kkm-1"))
+        assertTrue(storage.listQueueTasksByCashbox("kkm-1", "OFFLINE", 10, 0).isEmpty())
 
+        // Ключ повтора заводится один раз и после завершения отдаёт документ.
         assertTrue(storage.insertIdempotency("kkm-1", "key-1", "BUY"))
+        assertFalse(storage.insertIdempotency("kkm-1", "key-1", "BUY"))
         assertNull(storage.findIdempotencyResponse("kkm-1", "key-1"))
         assertTrue(storage.updateIdempotencyResponse("kkm-1", "key-1", "resp-ref"))
+        assertEquals("resp-ref", storage.findIdempotencyResponse("kkm-1", "key-1"))
+    }
+
+    @Test
+    fun testRolledBackOperationForgetsItsIdempotencyKey() {
+        val storage = RoomStorageFactory.createDefaultStorage().storagePort
+
+        storage.startTransaction()
+        assertTrue(storage.insertIdempotency("kkm-1", "failed", "CREATE_RECEIPT"))
+        storage.rollbackTransaction()
+        storage.startTransaction()
+        assertTrue(storage.insertIdempotency("kkm-1", "done", "CREATE_RECEIPT"))
+        storage.updateIdempotencyResponse("kkm-1", "done", "doc-1")
+        storage.commitTransaction()
+
+        // Сорвавшаяся операция повторяется заново, как после отката транзакции узла.
+        assertTrue(storage.insertIdempotency("kkm-1", "failed", "CREATE_RECEIPT"))
+        assertEquals("doc-1", storage.findIdempotencyResponse("kkm-1", "done"))
     }
 }

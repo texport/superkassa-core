@@ -18,6 +18,13 @@ interface KkmDao {
     @Query("SELECT * FROM kkms WHERE id = :id LIMIT 1")
     suspend fun getById(id: String): KkmEntity?
 
+    @Query("SELECT * FROM kkms WHERE registrationNumber = :registrationNumber LIMIT 1")
+    suspend fun getByRegistrationNumber(registrationNumber: String): KkmEntity?
+
+    /** Касса по её номеру в ОФД: по нему узнаётся повторная регистрация той же кассы. */
+    @Query("SELECT * FROM kkms WHERE systemId = :systemId LIMIT 1")
+    suspend fun getBySystemId(systemId: String): KkmEntity?
+
     @Query("SELECT * FROM kkms ORDER BY createdAt DESC LIMIT :limit OFFSET :offset")
     suspend fun list(limit: Int, offset: Int): List<KkmEntity>
 

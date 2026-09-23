@@ -43,7 +43,9 @@ data class KkmEntity(
     val geoLongitude: Int? = null,
     val geoSource: String? = null,
     /** Название кассы, данное владельцем; у заведённых раньше его нет. */
-    val name: String? = null
+    val name: String? = null,
+    /** Оформление чека строкой узла; у заведённых раньше его нет — оформление по умолчанию. */
+    val brandingJson: String? = null
 ) {
     fun toDomain(): KkmInfo {
         val ofdInfo = if (orgTitle != null) {
@@ -89,6 +91,7 @@ data class KkmEntity(
                 try { VatGroup.valueOf(it) } catch (e: Exception) { VatGroup.NO_VAT }
             } ?: VatGroup.NO_VAT,
             blockReasonCode = blockReasonCode,
+            branding = brandingOf(brandingJson),
             name = name
         )
     }
@@ -127,7 +130,8 @@ data class KkmEntity(
                 geoLatitude = s?.geoLatitude,
                 geoLongitude = s?.geoLongitude,
                 geoSource = s?.geoSource,
-                name = domain.name
+                name = domain.name,
+                brandingJson = domain.branding.toStoredJson()
             )
         }
     }

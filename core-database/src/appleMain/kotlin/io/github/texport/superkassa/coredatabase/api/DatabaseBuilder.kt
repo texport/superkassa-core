@@ -29,23 +29,3 @@ actual fun getDatabaseBuilder(dbPath: String): RoomDatabase.Builder<SuperkassaAp
         name = fullPath
     )
 }
-
-@OptIn(ExperimentalForeignApi::class)
-actual fun deleteDatabaseFile(dbPath: String) {
-    val documentDirectory = NSFileManager.defaultManager.URLForDirectory(
-        directory = NSDocumentDirectory,
-        inDomain = NSUserDomainMask,
-        appropriateForURL = null,
-        create = true,
-        error = null
-    )
-    val fullPath = if (dbPath.startsWith("/")) {
-        dbPath
-    } else {
-        requireNotNull(documentDirectory?.path) + "/" + dbPath
-    }
-    println("[RoomStorageFactory] Deleting iOS SQLite DB at path: $fullPath")
-    NSFileManager.defaultManager.removeItemAtPath(fullPath, error = null)
-    NSFileManager.defaultManager.removeItemAtPath("$fullPath-wal", error = null)
-    NSFileManager.defaultManager.removeItemAtPath("$fullPath-shm", error = null)
-}
