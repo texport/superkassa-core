@@ -5,6 +5,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryStatus
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
@@ -91,6 +92,7 @@ class IdempotentOperationExecutorTest {
         every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
         every { authorizeUserUseCase.requireRole("kkm-1", "1234", any(), any()) } returns mockk()
         every { storage.findIdempotencyResponse("kkm-1", "key-1") } returns "doc-existing"
+        every { storage.findFiscalDocumentById("doc-existing") } returns existing("SENT")
 
         val buildResult = { docId: String, res: OfdCommandResult, status: DeliveryStatus ->
             "result-$docId-$status"
@@ -134,9 +136,27 @@ class IdempotentOperationExecutorTest {
         every { storage.findOpenShift("kkm-1") } returns shift
         every { storage.firstPaymentTimeInShift("shift-1") } returns NOW - DAY
         every { storage.findIdempotencyResponse("kkm-1", "key-1") } returns "doc-existing"
+        every { storage.findFiscalDocumentById("doc-existing") } returns existing("SENT")
 
         assertEquals("result-doc-existing-ONLINE_OK", punch())
     }
+
+    @Test
+    fun `повтор документа, ушедшего в очередь, отвечает «в очереди», а не «доставлен»`() {
+        val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = KkmState.ACTIVE.name)
+        every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any(), any()) } returns mockk()
+        every { storage.findIdempotencyResponse("kkm-1", "key-1") } returns "doc-existing"
+        every { storage.findFiscalDocumentById("doc-existing") } returns existing("PENDING")
+
+        assertEquals("result-doc-existing-OFFLINE_QUEUED", punch())
+    }
+
+    private fun existing(ofdStatus: String) = FiscalDocumentSnapshot(
+        id = "doc-existing", cashboxId = "kkm-1", shiftId = "shift-1", docType = "SALE", docNo = null, shiftNo = 1L,
+        createdAt = NOW, totalAmount = 100L, currency = "KZT", fiscalSign = null, autonomousSign = null,
+        isAutonomous = ofdStatus == "PENDING", ofdStatus = ofdStatus, deliveredAt = null
+    )
 
     private fun punch(): String = executor.executeIdempotentFiscalOperation(
         kkmId = "kkm-1",

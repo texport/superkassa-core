@@ -172,7 +172,8 @@ class SuperkassaCoreEngine(
             networkClient = networkClient,
             requestBuilders = requestBuilders,
             timeoutSeconds = coreSettings.ofdTimeoutSeconds,
-            reconnectIntervalSeconds = coreSettings.ofdReconnectIntervalSeconds
+            reconnectIntervalSeconds = coreSettings.ofdReconnectIntervalSeconds,
+            now = clock::now
         )
 
         // 4. Настраиваем кодеки безопасности и хелперы рендеринга

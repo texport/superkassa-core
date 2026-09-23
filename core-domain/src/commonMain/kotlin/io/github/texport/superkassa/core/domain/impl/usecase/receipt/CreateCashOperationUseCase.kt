@@ -12,7 +12,6 @@ import io.github.texport.superkassa.core.domain.api.model.kkm.becameFiscal
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
-import io.github.texport.superkassa.core.domain.api.model.queue.OfflineQueueCommandRequest
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.helper.common.IdempotentOperationExecutor
@@ -105,18 +104,12 @@ class CreateCashOperationUseCase(
                 )
             },
             sendOfdCommand = { kkmInfo, docId ->
-                val command = OfflineQueueCommandRequest(
-                    kkmId = kkmId,
-                    type = OfdCommandType.MONEY_PLACEMENT.value,
-                    payloadRef = docId
-                )
-                // Если ККМ работает в автономном/офлайн-режиме, помещаем команду в очередь
+                // При непустой очереди операция встаёт в её конец: ставит её
+                // обработка ответа, как любой документ без ответа БФД.
+                // Постановка ещё и здесь была второй за одну операцию.
                 if (hasQueue) {
-                    queue.enqueueOffline(command)
-                    // Поставлено в очередь, а не доставлено.
                     OfdCommandResult(status = OfdCommandStatus.TIMEOUT)
                 } else {
-                    // Иначе отправляем команду напрямую в ОФД через ККМ
                     kkmCommonHelper.sendOfdCommand(kkmInfo, OfdCommandType.MONEY_PLACEMENT, docId)
                 }
             },

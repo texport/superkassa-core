@@ -107,6 +107,8 @@ object CoreStrings {
     fun invalidDispatchStatus(status: String): TrilingualMessage = CoreStringsImpl.invalidDispatchStatus(status)
     fun ofdDeliveryFailure(errorMsg: String): TrilingualMessage = CoreStringsImpl.ofdDeliveryFailure(errorMsg)
     fun ofdTimeout(): TrilingualMessage = CoreStringsImpl.ofdTimeout()
+    fun ofdSyncError(): TrilingualMessage = CoreStringsImpl.ofdSyncError()
+    fun ofdUnansweredDocument(): String = CoreStringsImpl.ofdUnansweredDocument()
 
     // --- Сообщения доставки (Delivery Messages) ---
     fun noAdapterForChannel(channel: String): TrilingualMessage = CoreStringsImpl.noAdapterForChannel(channel)

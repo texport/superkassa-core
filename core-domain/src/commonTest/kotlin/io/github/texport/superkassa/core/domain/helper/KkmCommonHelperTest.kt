@@ -43,6 +43,14 @@ class KkmCommonHelperTest {
         ofd
     )
 
+    init {
+        // Кассы в хранилище нет: обмен идёт с той, что передана. Документа
+        // без ответа тоже нет.
+        every { storage.findKkmForUpdate(any()) } returns null
+        every { generateRequestNumberUseCase.unanswered(any()) } returns null
+        every { generateRequestNumberUseCase.markUnanswered(any(), any()) } returns Unit
+    }
+
     @Test
     fun testRequestNumberIsNotSpentWhenOfdDidNotAnswer() {
         // Спецификация CPCR, «Работа в нормальном режиме»: при обрыве или

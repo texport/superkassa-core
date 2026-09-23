@@ -217,8 +217,7 @@ class QueueUseCasesTest {
         )
         val ofdResult = OfdCommandResult(
             status = OfdCommandStatus.FAILED,
-            errorMessage = "Server error",
-            resultCode = 500
+            errorMessage = "Server error"
         )
         every { sendFiscalCommand.execute("kkm-1", any(), "payload-1") } returns ofdResult
         every { clock.now() } returns 2000L

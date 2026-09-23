@@ -105,7 +105,8 @@ object OfdRequestFactory {
         serviceBlock: JsonObject? = null,
         frShiftNumber: Int? = null,
         offlineTicketNumber: Int? = null,
-        printedDocumentNumber: Long? = null
+        printedDocumentNumber: Long? = null,
+        dateTimeMillis: Long? = null
     ): JsonObject = OfdTicketRequestBuilder.buildTicketRequest(
         ofdId,
         protocolVersion,
@@ -113,7 +114,7 @@ object OfdRequestFactory {
         token,
         reqNum,
         request,
-        serviceBlock, frShiftNumber, offlineTicketNumber, printedDocumentNumber
+        serviceBlock, frShiftNumber, offlineTicketNumber, printedDocumentNumber, dateTimeMillis
     )
 
     /**

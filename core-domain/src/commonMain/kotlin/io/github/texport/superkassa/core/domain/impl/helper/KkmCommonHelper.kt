@@ -3,10 +3,15 @@ package io.github.texport.superkassa.core.domain.impl.helper
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.GenerateRequestNumberUseCase
+import io.github.texport.superkassa.core.domain.impl.helper.ofd.BfdExchange
+import io.github.texport.superkassa.core.domain.impl.helper.ofd.INVALID_REQUEST_NUMBER
+import io.github.texport.superkassa.core.domain.impl.helper.ofd.INVALID_RETRY_REQUEST
 import io.github.texport.superkassa.core.domain.impl.helper.ofd.OfdCommandRequestFactory
+import io.github.texport.superkassa.core.domain.impl.helper.ofd.OfdRequestOverrides
 import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
+import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
@@ -17,22 +22,10 @@ import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
 import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidatorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.TokenCodecPort
-import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 
 /**
- * Вспомогательный класс, инкапсулирующий общую логику и утилиты для взаимодействия с ККМ (контрольно-кассовыми машинами)
- * и ОФД (операторами фискальных данных).
- *
- * Предоставляет методы для проверки системного времени, работы с конфигурацией ОФД, отправки команд и проверки
- * возможности выполнения синхронизации.
- *
- * @property storage Порт для доступа к хранилищу данных.
- * @property clock Порт для получения текущего системного времени.
- * @property timeValidator Порт для валидации системного времени.
- * @property tokenCodec Кодек для шифрования и дешифрования токенов ОФД.
- * @property generateRequestNumberUseCase Сценарий генерации уникального номера запроса.
- * @property ofdCommandRequestFactory Фабрика для построения объектов запросов к ОФД.
- * @property ofd Менеджер для отправки команд в ОФД.
+ * Общее для сценариев кассы: проверка системного времени, обмен с БФД
+ * и допуск к синхронизации.
  */
 class KkmCommonHelper(
     private val storage: StoragePort,
@@ -43,14 +36,17 @@ class KkmCommonHelper(
     private val ofdCommandRequestFactory: OfdCommandRequestFactory,
     private val ofd: OfdManagerPort
 ) {
-    private val logger = getLogger(KkmCommonHelper::class)
+    private val exchange = BfdExchange(
+        storage,
+        clock,
+        tokenCodec,
+        generateRequestNumberUseCase,
+        ofdCommandRequestFactory,
+        ofd,
+        ::defaultServiceInfo
+    )
 
-    /**
-     * Проверяет корректность текущего системного времени с помощью валидатора [timeValidator].
-     * Если время невалидно, выбрасывает [ValidationException] с соответствующим сообщением об ошибке.
-     *
-     * @throws ValidationException если системное время некорректно.
-     */
+    /** @throws ValidationException если системное время кассы негодно. */
     fun ensureSystemTimeValid() {
         val result = timeValidator.validate(clock)
         if (!result.ok) {
@@ -59,12 +55,7 @@ class KkmCommonHelper(
         }
     }
 
-    /**
-     * Возвращает информацию об услуге ОФД по умолчанию с незаполненными (шаблонными) значениями.
-     * Используется в качестве заглушки при отсутствии переопределений.
-     *
-     * @return Объект [OfdServiceInfo] со стандартными дефолтными значениями.
-     */
+    /** Сведения об услуге-заглушке, пока настоящих нет. */
     fun defaultServiceInfo(): OfdServiceInfo {
         return OfdServiceInfo(
             orgTitle = "UNKNOWN",
@@ -82,16 +73,13 @@ class KkmCommonHelper(
      * Формирует и отправляет команду ОФД.
      * При необходимости обновляет токен кассы в хранилище после получения успешного ответа.
      *
-     * @param kkm Данные ККМ, для которой выполняется команда.
-     * @param commandType Тип отправляемой команды ОФД.
-     * @param payloadRef Ссылка на полезную нагрузку команды.
-     * @param tokenOverride Необязательный токен ОФД для переопределения стандартного токена ККМ.
-     * @param serviceInfoOverride Необязательная информация об услуге для переопределения стандартной.
-     * @param registrationNumberOverride Необязательный регистрационный номер для переопределения.
-     * @param factoryNumberOverride Необязательный заводской номер для переопределения.
-     * @param ofdProviderOverride Необязательный провайдер ОФД для переопределения.
-     * @param updateToken Флаг, указывающий, нужно ли сохранять обновленный токен из ответа ОФД в базу данных.
-     * @return Результат выполнения команды [OfdCommandResult].
+     * Обмен с БФД у кассы один за раз: строка кассы блокируется от выбора
+     * номера запроса до записи его исхода. Без этого «Проверить связь»,
+     * нажатая, пока чек ждёт ответа, уходила с номером этого чека.
+     *
+     * Подмены (`*Override`) нужны регистрации: она шлёт то, чего в хранилище
+     * ещё нет. `updateToken = false` оставляет токен кассы прежним.
+     *
      * @throws ValidationException если токен ОФД отсутствует или не может быть расшифрован.
      */
     fun sendOfdCommand(
@@ -105,76 +93,17 @@ class KkmCommonHelper(
         ofdProviderOverride: String? = null,
         updateToken: Boolean = true
     ): OfdCommandResult {
-        val token = tokenOverride
-            ?: tokenCodec.decodeToken(kkm.tokenEncryptedBase64)
-            ?: throw ValidationException(CoreStrings.ofdTokenRequired(), "OFD_TOKEN_REQUIRED")
-        val reqNum = generateRequestNumberUseCase.execute(kkm.id, persist = false)
-        val now = clock.now()
-        val request = ofdCommandRequestFactory.build(
-            kkm = kkm,
-            commandType = commandType,
-            payloadRef = payloadRef,
-            token = token,
-            reqNum = reqNum,
-            now = now,
-            serviceInfoOverride = serviceInfoOverride,
-            registrationNumberOverride = registrationNumberOverride,
-            factoryNumberOverride = factoryNumberOverride,
-            ofdProviderOverride = ofdProviderOverride,
-            defaultServiceInfo = ::defaultServiceInfo
+        val overrides = OfdRequestOverrides(
+            tokenOverride,
+            serviceInfoOverride,
+            registrationNumberOverride,
+            factoryNumberOverride,
+            ofdProviderOverride
         )
-        logger.debug("Отправка команды $commandType в ОФД для ККМ ${kkm.id}. PayloadRef: $payloadRef, ReqNum: $reqNum")
-        val result = ofd.send(request)
-        logger.debug("Получен ответ от ОФД для ККМ ${kkm.id}. Результат: ${result.resultCode}")
-
-        if (result.resultCode != null) {
-            // Номер израсходован только теперь: ОФД запрос увидел. Без ответа
-            // повтор обязан уйти с тем же номером — так сервер отличает
-            // повтор от нового обращения (CPCR, «Работа в нормальном режиме»).
-            generateRequestNumberUseCase.commit(kkm.id, reqNum)
-        }
-
-        val code = result.resultCode
-        if (code != null) {
-            if (code == 8 || code == 9) {
-                // Выбрасывается исключение, заставляющее ядро (или очередь) сгенерировать новый reqNum и повторить запрос
-                throw ValidationException(
-                    io.github.texport.superkassa.core.string.api.TrilingualMessage(
-                        "Техническая ошибка синхронизации",
-                        "Синхрондау қатесі",
-                        "Sync error"
-                    ),
-                    "OFD_RETRY_REQUEST"
-                )
-            }
-            // 18 и 19 добавлены протоколом 2.0.4: касса снята с учёта
-            // и касса отключена от ОФД. Обе означают остановку работы.
-            val blockingCodes = setOf(1, 2, 3, 4, 5, 6, 7, 11, 12, 15, 18, 19)
-            if (code in blockingCodes && (kkm.state != io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.BLOCKED.name || kkm.blockReasonCode != (code + 1000))) {
-                val clearedToken = if (code == 2) null else kkm.tokenEncryptedBase64
-                storage.updateKkm(
-                    kkm.copy(
-                        updatedAt = now,
-                        state = io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.BLOCKED.name,
-                        blockReasonCode = code + 1000,
-                        tokenEncryptedBase64 = clearedToken
-                    )
-                )
-            } else if (code == 0 && kkm.state == io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.BLOCKED.name) {
-                storage.updateKkm(
-                    kkm.copy(
-                        updatedAt = now,
-                        state = io.github.texport.superkassa.core.domain.api.model.kkm.KkmState.ACTIVE.name,
-                        blockReasonCode = null
-                    )
-                )
-            }
-        }
-
-        if (updateToken) {
-            result.responseToken?.let { nextToken ->
-                storage.updateKkmToken(kkm.id, tokenCodec.encodeToken(nextToken), now)
-            }
+        val result = storage.inTransaction { exchange.send(kkm, commandType, payloadRef, overrides, updateToken) }
+        if (result.resultCode == INVALID_REQUEST_NUMBER || result.resultCode == INVALID_RETRY_REQUEST) {
+            // Номер уже израсходован, и повтор уйдёт со следующим.
+            throw ValidationException(CoreStrings.ofdSyncError(), "OFD_RETRY_REQUEST")
         }
         return result
     }
@@ -203,7 +132,7 @@ class KkmCommonHelper(
         authorization.requireRole(
             kkmId,
             pin,
-            setOf(io.github.texport.superkassa.core.domain.api.model.auth.UserRole.ADMIN)
+            setOf(UserRole.ADMIN)
         )
         return storage.inTransaction {
             val kkm = authorization.requireKkm(kkmId)

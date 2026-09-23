@@ -4,6 +4,8 @@ import io.github.texport.superkassa.core.data.impl.ofd.OfdConfig
 import io.github.texport.superkassa.core.data.impl.ofd.OfdRequestFactory
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandRequest
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
+import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -50,4 +52,15 @@ fun OfdRequestBuilderStrategy.buildServiceBlock(command: OfdCommandRequest): Jso
         offlineEndMillis = end,
         knownTicketAds = command.knownTicketAds
     )
+}
+
+/**
+ * Номер смены, в которой оформлен документ.
+ *
+ * Своей смены нет у документов прежних версий кассы: для них остаётся
+ * открытая смена.
+ */
+internal fun shiftNumberOf(storage: StoragePort?, document: FiscalDocumentSnapshot, kkmId: String): Int? {
+    val own = document.shiftId.takeIf { it.isNotBlank() && it != "0" }?.let { storage?.findShiftById(it) }
+    return (own ?: storage?.findOpenShift(kkmId))?.shiftNo?.toInt()
 }

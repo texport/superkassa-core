@@ -7,6 +7,7 @@ import io.github.texport.superkassa.core.domain.api.model.queue.QueueDispatchRes
 import io.github.texport.superkassa.core.domain.api.model.queue.QueueDispatchStatus
 import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
 import io.github.texport.superkassa.core.string.api.CoreStrings
+import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
@@ -41,72 +42,52 @@ class ProcessQueueCommandUseCase(
 
         updateKkmBlockedStateFromOfd(command.cashboxId, result.resultCode, clock.now())
 
-        return when (result.status) {
-            OfdCommandStatus.OK -> {
-                val code = result.resultCode
-                if (code == 254 || code == 255) {
-                    val trilingual = CoreStrings.ofdTimeout()
-                    QueueDispatchResult(
-                        status = QueueDispatchStatus.FAILED,
-                        errorMessage = "Service temporarily unavailable ($code)",
-                        retryAt = clock.now() + 30_000,
-                        errorRu = trilingual.ru,
-                        errorKk = trilingual.kk,
-                        errorEn = trilingual.en
-                    )
-                } else if (code != null && code != 0 && code != 13 && code != 14 && code != 17) {
-                    // Ответ получен, и он отказной. Документ фискальным не стал,
-                    // и оставлять ему «ожидает отправки» нельзя: в журнале
-                    // он висел бы так, пока задача бесконечно повторяется.
-                    markDocumentRejected(command, code, result.resultText)
-                    val errorMsg = "BFD returned code $code"
-                    val trilingual = CoreStrings.ofdDeliveryFailure(errorMsg)
-                    // Повтора не будет: по спецификации любой код, кроме 0,
-                    // 254 и 255, означает негодный документ, а не временную
-                    // помеху. Повторять его — занимать очередь навсегда.
-                    QueueDispatchResult(
-                        status = QueueDispatchStatus.REJECTED,
-                        errorMessage = errorMsg,
-                        errorRu = trilingual.ru,
-                        errorKk = trilingual.kk,
-                        errorEn = trilingual.en
-                    )
-                } else {
-                    updateDocumentOnSuccess(command, result)
-                    QueueDispatchResult(QueueDispatchStatus.SENT)
-                }
+        val code = result.resultCode
+        return when {
+            // Нет ответа, 254 или 255: по спецификации (п. 5.2) документ досылается
+            // снова через интервал восстановления связи, сколько бы это ни длилось.
+            result.status == OfdCommandStatus.TIMEOUT || code == SERVICE_TEMPORARILY_UNAVAILABLE || code == UNKNOWN_ERROR ->
+                retry(CoreStrings.ofdTimeout(), "BFD timeout", after = true)
+            code == RESULT_OK -> {
+                updateDocumentOnSuccess(command, result)
+                QueueDispatchResult(QueueDispatchStatus.SENT)
             }
-            OfdCommandStatus.FAILED -> {
-                val errorMsg = result.errorMessage ?: "BFD command failed"
-                val trilingual = CoreStrings.ofdDeliveryFailure(errorMsg)
-                // Обмена не было: запрос не удалось ни собрать, ни отправить.
-                // Это состояние кассы, а не негодный документ: X-отчёт,
-                // снятый без связи, не собирался после закрытия смены
-                // и уходил в отбраковку навсегда — фискальный документ
-                // терялся молча. Поэтому здесь повтор, а не отбраковка;
-                // бесконечным он не станет — число попыток ограничено,
-                // и исчерпавшая их задача остаётся видимой в очереди.
-                QueueDispatchResult(
-                    status = QueueDispatchStatus.FAILED,
-                    errorMessage = errorMsg,
-                    errorRu = trilingual.ru,
-                    errorKk = trilingual.kk,
-                    errorEn = trilingual.en
-                )
-            }
-            OfdCommandStatus.TIMEOUT -> {
-                val trilingual = CoreStrings.ofdTimeout()
-                QueueDispatchResult(
-                    status = QueueDispatchStatus.FAILED,
-                    errorMessage = "BFD timeout",
-                    retryAt = clock.now() + 30_000,
-                    errorRu = trilingual.ru,
-                    errorKk = trilingual.kk,
-                    errorEn = trilingual.en
-                )
-            }
+            code != null -> rejected(command, code, result.resultText)
+            // Обмена не было: запрос не удалось ни собрать, ни отправить.
+            // Это состояние кассы, а не негодный документ, поэтому повтор.
+            else -> (result.errorMessage ?: "BFD command failed").let { retry(CoreStrings.ofdDeliveryFailure(it), it) }
         }
     }
+
+    /**
+     * Ответ получен, и он отказной.
+     *
+     * Повтора не будет: по спецификации (п. 5.2) любой код, кроме 0, 254
+     * и 255, означает негодный документ, а не временную помеху. Раньше
+     * такой ответ приходил сюда как сбой отправки и повторялся без конца —
+     * документ вставал в голове очереди, и за ним стояли все следующие.
+     */
+    private fun rejected(command: QueueTask, code: Int, reason: String?): QueueDispatchResult {
+        markDocumentRejected(command, code, reason)
+        val error = CoreStrings.ofdDeliveryFailure("BFD returned code $code")
+        return QueueDispatchResult(
+            status = QueueDispatchStatus.REJECTED,
+            errorMessage = "BFD returned code $code",
+            errorRu = error.ru,
+            errorKk = error.kk,
+            errorEn = error.en
+        )
+    }
+
+    /** Повтор: без ответа — через паузу, при сбое самой кассы — по расписанию очереди. */
+    private fun retry(error: TrilingualMessage, message: String, after: Boolean = false) = QueueDispatchResult(
+        status = QueueDispatchStatus.FAILED,
+        errorMessage = message,
+        retryAt = if (after) clock.now() + RETRY_DELAY_MILLIS else null,
+        errorRu = error.ru,
+        errorKk = error.kk,
+        errorEn = error.en
+    )
 
     /**
      * Преобразует строковый тип команды очереди в тип фискальной команды ОФД [OfdCommandType].
@@ -122,31 +103,19 @@ class ProcessQueueCommandUseCase(
 
     private fun updateDocumentOnSuccess(command: QueueTask, result: OfdCommandResult) {
         // Документ есть у чека, денег, отчёта и закрытия смены; у служебных
-        // команд его нет — по ссылке ничего не найдётся. Раньше здесь стоял
-        // список из двух типов, и Z-отчёт, досланный из очереди, навсегда
-        // оставался «в очереди», хотя ОФД его принял.
+        // команд его нет — по ссылке ничего не найдётся.
         val doc = storage.findFiscalDocumentById(command.payloadRef) ?: return
-
-        // Сюда приходят только ответы, снимающие задачу с очереди: приём (0)
-        // и окончательные отказы. Оставлять документ в PENDING после
-        // полученного ответа нельзя — он больше никем не будет подхвачен.
-        val code = result.resultCode
-        val success = code == 0
-        val status = if (success) "SENT" else "FAILED"
-
-        val now = clock.now()
         storage.updateReceiptStatus(
             documentId = command.payloadRef,
             fiscalSign = result.fiscalSign,
             autonomousSign = doc.autonomousSign ?: result.autonomousSign,
-            ofdStatus = status,
-            ofdErrorCode = if (success) null else code,
-            deliveredAt = if (success) now else null,
+            ofdStatus = "SENT",
+            ofdErrorCode = null,
+            deliveredAt = clock.now(),
             // Признак автономности снимать нельзя: он говорит не о том, доставлен
             // ли документ, а о том, что он был фискализирован в разрыве связи.
-            // Доставка снимает PENDING, но истории оформления не отменяет.
             isAutonomous = doc.isAutonomous,
-            ofdErrorText = if (success) null else result.resultText?.takeIf { it.isNotBlank() }
+            ofdErrorText = null
         )
         // Досланный из очереди чек получает ссылку только теперь: без неё
         // перепечатанный чек выходил без QR-кода проверки.
@@ -214,5 +183,8 @@ class ProcessQueueCommandUseCase(
 
         /** Неизвестная ошибка: отправку следует повторить. */
         const val UNKNOWN_ERROR = 255
+
+        /** Пауза перед повтором досылки. */
+        const val RETRY_DELAY_MILLIS = 30_000L
     }
 }

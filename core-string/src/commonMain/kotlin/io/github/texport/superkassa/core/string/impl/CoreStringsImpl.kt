@@ -534,6 +534,18 @@ internal object CoreStringsImpl {
         en = "BFD connection timeout"
     )
 
+    internal fun ofdSyncError(): TrilingualMessage = TrilingualMessage(
+        ru = "Техническая ошибка синхронизации",
+        kk = "Синхрондау қатесі",
+        en = "Sync error"
+    )
+
+    internal fun ofdUnansweredDocument(): String = TrilingualMessage(
+        ru = "БФД ещё не ответил на отправленный документ: связь проверится его досылкой",
+        kk = "БФД жіберілген құжатқа әлі жауап бермеді: байланыс оны қайта жіберу арқылы тексеріледі",
+        en = "The BFD has not answered a sent document yet: the connection is checked by resending it"
+    ).compact()
+
     internal fun noAdapterForChannel(channel: String): TrilingualMessage = TrilingualMessage(
         ru = "Нет адаптера для канала $channel",
         kk = "$channel арнасы үшін адаптер жоқ",

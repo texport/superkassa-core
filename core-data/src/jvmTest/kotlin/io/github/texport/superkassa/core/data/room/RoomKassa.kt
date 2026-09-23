@@ -18,21 +18,19 @@ import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.CoreSettingsRepositoryPort
 import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
-import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidatorPort
 import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptItemRequest
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptPaymentRequest
 import io.github.texport.superkassa.coredatabase.api.RoomStorage
 import io.github.texport.superkassa.coredatabase.api.openInMemoryRoomStorage
-import io.github.texport.superkassa.delivery.impl.DefaultKtorDeliveryAdapter
 import io.github.texport.superkassa.receiptrenderer.impl.adapter.DefaultQrCodeGeneratorAdapter
 
 /**
  * Касса на ядре с Room и тестовым БФД: сборка та же, что в приложении,
- * база — Room в памяти, сеть — [FakeBfd]. Касса зарегистрирована,
- * у неё администратор и кассир. Налоговый режим и ставка кассы — те,
- * что переданы; по умолчанию касса не плательщик НДС.
+ * база — Room в памяти, сеть — [FakeBfd], доставка покупателю — [DeliveryLog].
+ * Касса зарегистрирована, у неё администратор и кассир. Налоговый режим
+ * и ставка кассы — те, что переданы; по умолчанию касса не плательщик НДС.
  *
  * База и часы подменяются: файловая база переживает «перезапуск» —
  * вторую кассу на том же файле, — а часы переводятся без ожидания.
@@ -43,12 +41,13 @@ internal class RoomKassa(
     private val room: RoomStorage = openInMemoryRoomStorage(),
     clock: ClockPort = DefaultClockAdapter()
 ) {
-    val bfd = FakeBfd()
-    val storage: StoragePort = room.storagePort
+    val bfd = FakeBfd(TOKEN)
+    val deliveries = DeliveryLog()
+    val storage = CountingStorage(room.storagePort)
     val api: SuperkassaApi = SuperkassaCoreEngine(
         storage = storage,
         settings = MemorySettings(),
-        delivery = DefaultKtorDeliveryAdapter(),
+        delivery = deliveries,
         clock = clock,
         timeValidator = TrustedClock,
         qrCode = DefaultQrCodeGeneratorAdapter(),
@@ -77,6 +76,16 @@ internal class RoomKassa(
 
     /** Закрывает базу, как при остановке приложения. */
     fun close() = room.close()
+
+    /** Касса, как она записана сейчас. */
+    fun kkm(): KkmInfo = checkNotNull(storage.findKkm(KKM))
+
+    /** Токен, с которым касса пойдёт в БФД. */
+    fun token(): Long? = Base64TokenCodecAdapter().decodeToken(kkm().tokenEncryptedBase64)
+
+    /** Задачи очереди досылки по документу. */
+    fun queueTasks(documentId: String) =
+        storage.listQueueTasksByCashbox(KKM, "OFFLINE", limit = 100, offset = 0).filter { it.payloadRef == documentId }
 
     private fun register() {
         val now = System.currentTimeMillis()
@@ -120,7 +129,9 @@ internal class RoomKassa(
         const val KGD_NUMBER = "010101012345"
         const val ADMIN_PIN = "8765"
         const val CASHIER_PIN = "4321"
-        private const val TOKEN = 123_456_789L
+        const val TOKEN = 123_456_789L
+
+        /** Больше интервала восстановления связи (не менее 60 с по протоколу). */
 
         private val SERVICE_INFO = OfdServiceInfo(
             orgTitle = "ТОО Дала", orgAddress = "Алматы", orgAddressKz = "Алматы", orgInn = "123456789012",

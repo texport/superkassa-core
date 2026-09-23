@@ -44,7 +44,9 @@ internal class OfdManagerAdapter(
     /** Сколько касса ждёт ответа БФД, прежде чем счесть связь пропавшей. */
     internal val timeoutSeconds: Long = DEFAULT_RESPONSE_TIMEOUT_SECONDS,
     /** Интервал задержки между попытками восстановления связи (протокол п. 5), не менее 60 с. */
-    private val reconnectIntervalSeconds: Long = 60L
+    private val reconnectIntervalSeconds: Long = 60L,
+    /** Часы кассы: по ним отсчитывается интервал восстановления связи. */
+    private val now: () -> Long = { kotlin.time.Clock.System.now().toEpochMilliseconds() }
 ) : OfdManagerPort {
     private val logger = getLogger(OfdManagerAdapter::class)
     private val prettyJson = kotlinx.serialization.json.Json { prettyPrint = true }
@@ -115,7 +117,7 @@ internal class OfdManagerAdapter(
     }
 
     override fun send(command: OfdCommandRequest): OfdCommandResult {
-        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val now = now()
         val throttleKey = "${command.kkmId}:${command.ofdProviderId}:${command.ofdEnvironmentId}"
         val lastFail = lastNoConnectionMillis[throttleKey]
         if (lastFail != null && (now - lastFail) < reconnectIntervalMs) {

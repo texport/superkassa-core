@@ -257,7 +257,6 @@ class SuperkassaApiImpl(
             requireOperationalUseCase = requireOperationalUseCase
         ),
         kkmCommonHelper = kkmCommonHelper,
-        receiptDeliveryHelper = receiptDeliveryHelper,
         authorizeUser = authorization,
         requireOperational = requireOperationalUseCase,
         recalculateShiftCounters = RecalculateShiftCountersUseCase(storage),

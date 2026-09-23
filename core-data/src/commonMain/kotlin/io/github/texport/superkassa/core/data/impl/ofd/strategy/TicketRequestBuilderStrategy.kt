@@ -49,7 +49,9 @@ class TicketRequestBuilderStrategy(
 
         val ofdId = command.ofdProviderId.lowercase()
         val serviceBlock = buildServiceBlock(command) ?: return null
-        val frShiftNumber = storage?.findOpenShift(command.kkmId)?.shiftNo?.toInt()
+        // Смена и время — те, в которые чек оформлен, а не те, в которые он
+        // досылается: иначе вчерашний чек ложится в сегодняшнюю смену.
+        val frShiftNumber = shiftNumberOf(storage, document, command.kkmId)
 
         return OfdRequestFactory.buildTicketRequest(
             ofdId = ofdId,
@@ -61,7 +63,8 @@ class TicketRequestBuilderStrategy(
             serviceBlock = serviceBlock,
             frShiftNumber = frShiftNumber,
             offlineTicketNumber = offlineTicketNumber,
-            printedDocumentNumber = document.printedDocumentNumber
+            printedDocumentNumber = document.printedDocumentNumber,
+            dateTimeMillis = document.createdAt
         )
     } }
 

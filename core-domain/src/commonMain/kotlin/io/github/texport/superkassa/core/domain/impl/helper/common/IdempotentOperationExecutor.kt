@@ -7,6 +7,7 @@ import io.github.texport.superkassa.core.domain.impl.usecase.kkm.RequireOperatio
 import io.github.texport.superkassa.core.domain.impl.usecase.shift.ShiftDayLimit
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryStatus
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
@@ -101,20 +102,10 @@ class IdempotentOperationExecutor(
                     idempotencyKey,
                     operationType
                 )
-                // Для идемпотентности возвращаем результат с существующим documentId
-                val emptyResult = OfdCommandResult(
-                    status = OfdCommandStatus.OK,
-                    responseBin = null,
-                    responseJson = null,
-                    responseToken = null,
-                    responseReqNum = null,
-                    resultCode = 0,
-                    resultText = null,
-                    errorMessage = null,
-                    fiscalSign = null,
-                    autonomousSign = null
-                )
-                return@inTransaction buildResult(existing, emptyResult, DeliveryStatus.ONLINE_OK)
+                // Повтор отвечает тем, что стало с документом, а не «доставлен» всегда.
+                val document = storage.findFiscalDocumentById(existing)
+                val repeated = OfdCommandResult(status = OfdCommandStatus.OK, errorMessage = document?.ofdErrorText)
+                return@inTransaction buildResult(existing, repeated, deliveryStatusOf(document))
             }
 
             storage.insertIdempotency(kkmId, idempotencyKey, operationType)
@@ -172,4 +163,11 @@ class IdempotentOperationExecutor(
             buildResult(documentId, ofdResult, deliveryStatus)
         }
     }
+}
+
+/** Статус доставки сохранённого документа для ответа на повтор; непринятый БФД — «в очереди». */
+internal fun deliveryStatusOf(document: FiscalDocumentSnapshot?): DeliveryStatus = when (document?.ofdStatus) {
+    "SENT" -> DeliveryStatus.ONLINE_OK
+    "FAILED" -> DeliveryStatus.ONLINE_ERROR
+    else -> DeliveryStatus.OFFLINE_QUEUED
 }

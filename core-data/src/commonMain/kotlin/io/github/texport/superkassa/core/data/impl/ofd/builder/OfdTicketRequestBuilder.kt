@@ -26,6 +26,7 @@ object OfdTicketRequestBuilder {
      * @param reqNum порядковый номер отправляемого запроса.
      * @param request запрос на регистрацию чека [ReceiptRequest] с деталями транзакции.
      * @param serviceBlock сформированный ранее служебный JSON-блок (опционально).
+     * @param dateTimeMillis время оформления чека; без него — время сборки запроса.
      * @return JSON-объект [JsonObject] сформированного фискального чека.
      */
     fun buildTicketRequest(
@@ -38,9 +39,14 @@ object OfdTicketRequestBuilder {
         serviceBlock: JsonObject? = null,
         frShiftNumber: Int? = null,
         offlineTicketNumber: Int? = null,
-        printedDocumentNumber: Long? = null
+        printedDocumentNumber: Long? = null,
+        dateTimeMillis: Long? = null
     ): JsonObject {
-        val now = OfdCommonRequestHelper.toDateTime(kotlin.time.Clock.System.now().toEpochMilliseconds())
+        // Время чека — время его оформления: досланный наутро вчерашний чек
+        // уходил с утренним временем.
+        val now = OfdCommonRequestHelper.toDateTime(
+            dateTimeMillis ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
+        )
         val operationCode = when (request.operation) {
             ReceiptOperationType.SELL -> "OPERATION_SELL"
             ReceiptOperationType.SELL_RETURN -> "OPERATION_SELL_RETURN"

@@ -61,9 +61,36 @@ class GenerateRequestNumberUseCase(
      */
     fun commit(kkmId: String, reqNum: Int) {
         storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, reqNumCounterKey, reqNum.toLong())
+        storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, UNANSWERED_KEY, NONE)
+    }
+
+    /**
+     * Номер документа, отправленного без ответа, либо `null`.
+     *
+     * Такой номер принадлежит своему документу до ответа на него: повтор
+     * уходит с теми же TOKEN и REQNUM (CPCR, п. 5.1), и по ним БФД узнаёт
+     * повтор, а не новый документ. Раньше этот номер доставался первому
+     * следующему запросу — «Проверить связь» уходила с ним же, номер
+     * считался израсходованным, и досылка чека шла под следующим номером
+     * как новый документ.
+     */
+    fun unanswered(kkmId: String): Int? =
+        storage.loadCounters(kkmId, CounterScopes.GLOBAL, null)[UNANSWERED_KEY]
+            ?.takeIf { it != NONE }
+            ?.toInt()
+
+    /** Отмечает, что документ под номером [reqNum] ушёл, а ответа на него нет. */
+    fun markUnanswered(kkmId: String, reqNum: Int) {
+        storage.upsertCounter(kkmId, CounterScopes.GLOBAL, null, UNANSWERED_KEY, reqNum.toLong())
     }
 
     companion object {
         var startReqNumOverride: Long? = null
+
+        /** Номер документа, ушедшего без ответа. */
+        private const val UNANSWERED_KEY = "ofd.req_num.unanswered"
+
+        /** Документа без ответа нет. */
+        private const val NONE = -1L
     }
 }

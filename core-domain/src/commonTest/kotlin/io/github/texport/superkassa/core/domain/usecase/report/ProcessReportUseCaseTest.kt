@@ -10,6 +10,7 @@ import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
+import io.github.texport.superkassa.core.domain.api.model.queue.OfflineQueueCommandRequest
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
@@ -80,6 +81,9 @@ class ProcessReportUseCaseTest {
         assertEquals("doc-123", result.documentId)
         assertEquals(DeliveryStatus.OFFLINE_QUEUED, result.deliveryStatus)
         assertEquals("Timeout error", result.deliveryError)
+        // «В очереди» — значит в очереди: без ответа БФД отчёт досылается.
+        verify { queue.enqueueOffline(OfflineQueueCommandRequest("kkm-1", OfdCommandType.REPORT.value, "doc-123")) }
+        verify { storage.updateReceiptStatus("doc-123", null, null, "PENDING", null, null, true, null) }
     }
 
     @Test

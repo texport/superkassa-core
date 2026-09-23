@@ -73,20 +73,22 @@ class ReceiptUseCasesTest {
         queue = queue,
         fiscalOperationExecutor = executor,
         kkmCommonHelper = kkmCommonHelper,
-        receiptDeliveryHelper = receiptDeliveryHelper,
         authorizeUser = authorizeUserUseCase,
         requireOperational = requireOperationalUseCase,
         recalculateShiftCounters = shiftCounters,
         processOfdDocumentResult = { a, b, c, d, e, f, g ->
             processOfdDocumentResult.execute(a, b, c, d, e, f, g)
         },
-        ofdResultQueuedOffline = { OfdCommandResult(status = OfdCommandStatus.OK) }
+        // Как в сборке: поставленное в очередь — не доставленное.
+        ofdResultQueuedOffline = { OfdCommandResult(status = OfdCommandStatus.TIMEOUT) }
     )
     private val retryReceiptDelivery = RetryReceiptDeliveryUseCase(storage, authorizeUserUseCase, receiptDeliveryHelper)
 
     private val kkm = KkmInfo(id = "kkm-1", createdAt = 0, updatedAt = 0, mode = "ACTIVE", state = KkmState.ACTIVE.name)
 
     init {
+        // Кассы в хранилище нет: сценарии работают с той, что им передана.
+        every { storage.findKkm(any()) } returns null
         every { storage.findKkmForUpdate(any()) } answers { storage.findKkm(firstArg()) }
         every { authorizeUserUseCase.requireKkm(any(), any()) } answers { authorizeUserUseCase.requireKkm(firstArg()) }
         every { authorizeUserUseCase.requireRole(any(), any(), any(), any()) } answers { authorizeUserUseCase.requireRole(firstArg(), secondArg(), thirdArg()) }

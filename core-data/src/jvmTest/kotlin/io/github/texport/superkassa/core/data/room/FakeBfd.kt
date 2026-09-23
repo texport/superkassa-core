@@ -1,53 +1,79 @@
 package io.github.texport.superkassa.core.data.room
 
+import kotlinx.coroutines.delay
 import kz.kazakhtelecom.proto.v203.CloseShiftRequest
 import kz.kazakhtelecom.proto.v203.CommandTypeEnum
-import kz.kazakhtelecom.proto.v203.MoneyPlacementEnum
 import kz.kazakhtelecom.proto.v203.MoneyPlacementRequest
-import kz.kazakhtelecom.proto.v203.OperationTypeEnum
-import kz.kazakhtelecom.proto.v203.PaymentTypeEnum
-import kz.kazakhtelecom.proto.v203.ReportResponse
-import kz.kazakhtelecom.proto.v203.ReportTypeEnum
 import kz.kazakhtelecom.proto.v203.Request
 import kz.kazakhtelecom.proto.v203.Response
 import kz.kazakhtelecom.proto.v203.TicketRequest
-import kz.kazakhtelecom.proto.v203.TicketResponse
 import kz.kazakhtelecom.proto.v203.ZXReport
 import kz.mybrain.network.OfdEndpoint
 import kz.mybrain.network.OfdNetworkClient
-import kz.kazakhtelecom.proto.v203.Money as BfdMoney
-import kz.kazakhtelecom.proto.v203.Result as BfdResult
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * БФД для проверок: разбирает каждый запрос кассы и принимает документ.
+ * БФД для проверок: разбирает каждый запрос кассы и ведёт её учёт по правилам
+ * прод-референса ([BfdLedger]).
  *
  * Чеку отвечает своим номером — так касса получает номер документа от БФД,
  * как на стенде. Запросы хранятся разобранными: проверка читает то, что
  * касса отправила бы в БФД, а не то, что она записала у себя.
  *
- * Наличные в ящике и смену БФД ведёт так же, как референс: принятое
- * изъятие ложится в текущую смену БФД, закрытие смены с `withdraw_money`
- * изымает весь остаток в закрываемую смену и начинает следующую.
- * Сдачи в проверках нет, и здесь она не учитывается.
+ * Умеет сбои связи: запрос не дошёл; дошёл и учтён, но ответ потерян;
+ * ответ задержан, пока касса шлёт что-то ещё; отказ с кодом — одному
+ * следующему запросу или командам одного типа, пока не снят.
+ * Наличные в ящике и смену БФД ведёт [BfdDrawer].
  */
-internal class FakeBfd : OfdNetworkClient {
-    private val received = mutableListOf<Request>()
-    private val rejections = mutableMapOf<CommandTypeEnum, Int>()
-    private val withdrawn = mutableMapOf<Int, Long>()
-    private var lastTicketNumber = FIRST_TICKET_NUMBER - 1
-    private var shift = 1
-    private var cashTiyn = 0L
+internal class FakeBfd(initialToken: Long) : OfdNetworkClient {
+    private val ledger = BfdLedger(initialToken)
+    private val received = CopyOnWriteArrayList<Exchange>()
+    private val faults = ConcurrentLinkedQueue<Fault>()
+    private val rejections = ConcurrentHashMap<CommandTypeEnum, Int>()
 
-    val requests: List<Request> get() = received.toList()
+    /** Запрос кассы, как его видит БФД: токен и номер из заголовка, тело разобрано. */
+    data class Exchange(val token: Long, val reqNum: Int, val request: Request)
 
-    fun moneyPlacements(): List<MoneyPlacementRequest> = received.mapNotNull { it.money_placement }
+    val exchanges: List<Exchange> get() = received.toList()
 
-    fun xReports(): List<ZXReport> = received.mapNotNull { it.report?.zx_report }
+    val requests: List<Request> get() = received.map { it.request }
 
-    fun closeShifts(): List<CloseShiftRequest> = received.mapNotNull { it.close_shift }
+    /** Токен, с которым касса обязана прийти в следующий раз. */
+    val issuedToken: Long get() = ledger.issuedToken
+
+    fun moneyPlacements(): List<MoneyPlacementRequest> = requests.mapNotNull { it.money_placement }
+
+    fun xReports(): List<ZXReport> = requests.mapNotNull { it.report?.zx_report }
+
+    /** Чеки, учтённые БФД: повтор с тем же номером запроса второй раз не учитывается. */
+    fun countedTickets(): List<TicketRequest> = ledger.accepted.mapNotNull { it.ticket }
+
+    /** Следующий запрос до БФД не дойдёт. */
+    fun unreachableOnce() {
+        faults += Fault.Unreachable
+    }
+
+    /** Следующий запрос БФД учтёт, а ответ до кассы не дойдёт. */
+    fun loseNextAnswer() {
+        faults += Fault.Lost(waitForAnotherMillis = 0)
+    }
+
+    /** Как [loseNextAnswer], но ответ держится, пока касса не пришлёт другой запрос (не дольше срока). */
+    fun holdNextAnswerThenLose(maxMillis: Long) {
+        faults += Fault.Lost(waitForAnotherMillis = maxMillis)
+    }
+
+    /** Следующему запросу БФД откажет кодом [code], ничего не учитывая. */
+    fun refuseNext(code: Int) {
+        faults += Fault.Refused(code)
+    }
+
+    fun closeShifts(): List<CloseShiftRequest> = requests.mapNotNull { it.close_shift }
 
     /** Изъятия по сменам БФД, в тиынах: номер смены БФД — сумма. */
-    fun withdrawnByShift(): Map<Int, Long> = withdrawn.toMap()
+    fun withdrawnByShift(): Map<Int, Long> = ledger.drawer.withdrawnByShift()
 
     /** Отказывать команде [command] кодом [code], пока не вызван [acceptAll]. */
     fun reject(command: CommandTypeEnum, code: Int) {
@@ -57,77 +83,73 @@ internal class FakeBfd : OfdNetworkClient {
     fun acceptAll() = rejections.clear()
 
     override suspend fun sendAndReceive(endpoint: OfdEndpoint, request: ByteArray): kotlin.Result<ByteArray> {
+        val token = readUnsigned(request, TOKEN_OFFSET, TOKEN_BYTES)
+        val reqNum = readUnsigned(request, REQNUM_OFFSET, REQNUM_BYTES).toInt()
         val decoded = Request.ADAPTER.decode(request.copyOfRange(HEADER_SIZE, request.size))
-        received += decoded
-        val payload = Response.ADAPTER.encode(answer(decoded))
-        return kotlin.Result.success(header(request, payload.size) + payload)
-    }
-
-    private fun answer(request: Request): Response {
-        val code = rejections[request.command] ?: 0
-        if (code == 0) apply(request)
-        val ticket = request.command == CommandTypeEnum.COMMAND_TICKET && code == 0
-        return Response(
-            command = request.command,
-            result = BfdResult(result_code = code, result_text = if (code == 0) "OK" else "Rejected"),
-            ticket = if (ticket) TicketResponse(ticket_number = nextTicket()) else null,
-            report = if (code == 0) reportOf(request) else null
-        )
-    }
-
-    /** Отчёт в ответе: на X-отчёт — он же, на закрытие смены — Z-отчёт, как у референса. */
-    private fun reportOf(request: Request): ReportResponse? =
-        request.report?.let { ReportResponse(report = it.report, zx_report = it.zx_report) }
-            ?: request.close_shift?.let { ReportResponse(report = ReportTypeEnum.REPORT_Z, zx_report = it.z_report) }
-
-    private fun apply(request: Request) {
-        request.ticket?.let { cashTiyn += cashOf(it) }
-        request.money_placement?.let { place(it.operation, tiyn(it.sum)) }
-        request.close_shift?.let {
-            if (it.withdraw_money == true && cashTiyn != 0L) place(MoneyPlacementEnum.MONEY_PLACEMENT_WITHDRAWAL, cashTiyn)
-            shift += 1
+        received += Exchange(token, reqNum, decoded)
+        val arrived = received.size
+        return when (val fault = faults.poll()) {
+            Fault.Unreachable -> noAnswer()
+            is Fault.Refused -> kotlin.Result.success(reply(request, token, BfdLedger.refusal(decoded, fault.code)))
+            is Fault.Lost -> {
+                ledger.answer(token, reqNum, decoded)
+                awaitAnother(arrived, fault.waitForAnotherMillis)
+                noAnswer()
+            }
+            null -> rejections[decoded.command]
+                ?.let { kotlin.Result.success(reply(request, token, BfdLedger.refusal(decoded, it))) }
+                ?: ledger.answer(token, reqNum, decoded).let { (issued, answer) ->
+                    kotlin.Result.success(reply(request, issued, answer))
+                }
         }
     }
 
-    private fun place(operation: MoneyPlacementEnum, sum: Long) {
-        if (operation == MoneyPlacementEnum.MONEY_PLACEMENT_WITHDRAWAL) {
-            cashTiyn -= sum
-            withdrawn[shift] = (withdrawn[shift] ?: 0L) + sum
-        } else {
-            cashTiyn += sum
+    private suspend fun awaitAnother(arrived: Int, maxMillis: Long) {
+        var waited = 0L
+        while (received.size == arrived && waited < maxMillis) {
+            delay(POLL_MILLIS)
+            waited += POLL_MILLIS
         }
     }
 
-    private fun cashOf(ticket: TicketRequest): Long {
-        val cash = ticket.payments.filter { it.type == PaymentTypeEnum.PAYMENT_CASH }.sumOf { tiyn(it.sum) }
-        val inflow = ticket.operation == OperationTypeEnum.OPERATION_SELL ||
-            ticket.operation == OperationTypeEnum.OPERATION_BUY_RETURN
-        return if (inflow) cash else -cash
-    }
+    private fun noAnswer(): kotlin.Result<ByteArray> = kotlin.Result.failure(Exception("BFD response timeout"))
 
-    private fun tiyn(money: BfdMoney): Long = money.bills * TIYN_IN_TENGE + money.coins
-
-    private fun nextTicket(): String {
-        lastTicketNumber += 1
-        return lastTicketNumber.toString()
-    }
-
-    /** Заголовок ответа — заголовок запроса с общей длиной ответа (u32, little-endian, смещение 4). */
-    private fun header(request: ByteArray, payloadSize: Int): ByteArray {
+    /** Заголовок ответа — заголовок запроса с токеном БФД и общей длиной ответа. */
+    private fun reply(request: ByteArray, token: Long, answer: Response): ByteArray {
+        val payload = Response.ADAPTER.encode(answer)
         val header = request.copyOf(HEADER_SIZE)
-        val size = HEADER_SIZE + payloadSize
-        for (i in 0 until SIZE_BYTES) header[SIZE_OFFSET + i] = (size shr (BYTE_BITS * i)).toByte()
-        return header
+        writeUnsigned(header, SIZE_OFFSET, SIZE_BYTES, (HEADER_SIZE + payload.size).toLong())
+        writeUnsigned(header, TOKEN_OFFSET, TOKEN_BYTES, token)
+        return header + payload
+    }
+
+    private sealed interface Fault {
+        data object Unreachable : Fault
+        data class Lost(val waitForAnotherMillis: Long) : Fault
+        data class Refused(val code: Int) : Fault
     }
 
     companion object {
         /** Первый номер чека, который выдаёт БФД. */
         const val FIRST_TICKET_NUMBER = 9001L
 
+        /** Заголовок CPCR: APPCODE 2, VERSION 2, SIZE 4, ID 4, TOKEN 4, REQNUM 2 — little-endian. */
         private const val HEADER_SIZE = 18
         private const val SIZE_OFFSET = 4
         private const val SIZE_BYTES = 4
+        private const val TOKEN_OFFSET = 12
+        private const val TOKEN_BYTES = 4
+        private const val REQNUM_OFFSET = 16
+        private const val REQNUM_BYTES = 2
         private const val BYTE_BITS = 8
-        private const val TIYN_IN_TENGE = 100L
+        private const val BYTE_MASK = 0xFFL
+        private const val POLL_MILLIS = 10L
+
+        private fun readUnsigned(bytes: ByteArray, offset: Int, length: Int): Long =
+            (0 until length).fold(0L) { acc, i -> acc or ((bytes[offset + i].toLong() and BYTE_MASK) shl (BYTE_BITS * i)) }
+
+        private fun writeUnsigned(bytes: ByteArray, offset: Int, length: Int, value: Long) {
+            for (i in 0 until length) bytes[offset + i] = (value shr (BYTE_BITS * i)).toByte()
+        }
     }
 }

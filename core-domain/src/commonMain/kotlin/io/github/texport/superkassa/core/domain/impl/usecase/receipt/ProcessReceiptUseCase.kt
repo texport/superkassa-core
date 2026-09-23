@@ -2,7 +2,6 @@ package io.github.texport.superkassa.core.domain.impl.usecase.receipt
 
 import io.github.texport.superkassa.core.domain.impl.helper.tax.TaxCalculator
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
-import io.github.texport.superkassa.core.domain.impl.helper.ReceiptDeliveryHelper
 
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.model.common.Money
@@ -14,7 +13,6 @@ import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
-import io.github.texport.superkassa.core.domain.api.model.queue.OfflineQueueCommandRequest
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
 import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
@@ -39,7 +37,6 @@ import io.github.texport.superkassa.core.domain.impl.usecase.shift.RecalculateSh
  * @property queue Порт для работы с офлайн-очередью команд ККМ.
  * @property fiscalOperationExecutor Компонент обеспечения идемпотентности фискальных операций.
  * @property kkmCommonHelper Вспомогательный класс для выполнения общих операций ККМ.
- * @property receiptDeliveryHelper Помощник для форматирования и отправки фискальных чеков.
  * @property authorizeUser Сценарий авторизации и загрузки ККМ.
  * @property requireOperational Сценарий проверки работоспособности ККМ.
  * @property processOfdDocumentResult Лямбда-функция для обработки результатов фискализации документов в ОФД.
@@ -50,7 +47,6 @@ class ProcessReceiptUseCase(
     private val queue: OfflineQueuePort,
     private val fiscalOperationExecutor: IdempotentOperationExecutor,
     private val kkmCommonHelper: KkmCommonHelper,
-    private val receiptDeliveryHelper: ReceiptDeliveryHelper,
     private val authorizeUser: AuthorizeUserUseCase,
     private val requireOperational: RequireOperationalUseCase,
     private val recalculateShiftCounters: RecalculateShiftCountersUseCase,
@@ -198,14 +194,11 @@ class ProcessReceiptUseCase(
                 storage.saveReceipt(requestWithTaxes, documentId, shiftId, now)
             },
             sendOfdCommand = { currentKkm, documentId ->
-                val command = OfflineQueueCommandRequest(
-                    kkmId = requestWithTaxes.kkmId,
-                    type = OfdCommandType.TICKET.value,
-                    payloadRef = documentId
-                )
-                // Если ККМ работает офлайн, ставим чек в очередь, иначе шлем в ОФД сразу
+                // При непустой очереди чек встаёт в её конец: в очередь его ставит
+                // обработка ответа, как любой документ без ответа БФД. Ставить
+                // его ещё и здесь — дважды: на Postgres вторая постановка
+                // отвергается ключом, и продажа падала.
                 if (hasQueue) {
-                    queue.enqueueOffline(command)
                     ofdResultQueuedOffline()
                 } else {
                     kkmCommonHelper.sendOfdCommand(
@@ -215,33 +208,10 @@ class ProcessReceiptUseCase(
                     )
                 }
             },
-            processResult = { currentKkm, documentId, currentKkmId, ofdResult, commandType, now, receiptContext ->
-                // Обрабатываем ответ ОФД (обновление счетчиков, перевод ККМ в автономный режим при таймаутах)
-                processOfdDocumentResult(
-                    currentKkm,
-                    documentId,
-                    currentKkmId,
-                    ofdResult,
-                    commandType,
-                    now,
-                    receiptContext
-                )
-                // Если чек успешно фискализован в ОФД, инициируем его отправку покупателю
-                if (commandType == OfdCommandType.TICKET && receiptContext != null && ofdResult.resultCode == 0) {
-                    val (receipt, _) = receiptContext
-                    val doc = storage.findFiscalDocumentById(documentId)
-                    if (doc != null) {
-                        receiptDeliveryHelper.deliverReceipt(
-                            kkmId = requestWithTaxes.kkmId,
-                            documentId = documentId,
-                            receipt = receipt,
-                            docSnapshot = doc,
-                            receiptUrl = ofdResult.receiptUrl,
-                            responseBin = ofdResult.responseBin
-                        )
-                    }
-                }
-            },
+            // Обработка ответа ставит в очередь, двигает счётчики и доставляет
+            // чек покупателю. Доставка стояла и здесь, и покупатель получал
+            // каждый принятый онлайн чек дважды.
+            processResult = processOfdDocumentResult,
             buildResult = { documentId, ofdResult, deliveryStatus ->
                 // Сборка ответа для вызывающего слоя презентации
                 val doc = storage.findFiscalDocumentById(documentId)

@@ -221,8 +221,9 @@ class ProcessOfdDocumentResultUseCase(
     /**
      * Обновляет состояние блокировки ККМ на основе ответа ОФД.
      */
-    private fun updateKkmBlockedStateFromOfd(kkm: KkmInfo, ofdResult: OfdCommandResult, now: Long) {
+    private fun updateKkmBlockedStateFromOfd(stale: KkmInfo, ofdResult: OfdCommandResult, now: Long) {
         val code = ofdResult.resultCode ?: return
+        val kkm = current(stale)
         // 18 и 19 добавлены протоколом 2.0.4: касса снята с учёта и касса
         // отключена от ОФД. Обе означают, что фискализировать больше нечего,
         // и без них снятая с учёта касса продолжала бы выпускать чеки.
@@ -248,9 +249,16 @@ class ProcessOfdDocumentResultUseCase(
     }
 
     /**
+     * Касса, как она записана сейчас: снимок до отправки несёт старый токен,
+     * и его запись делала следующий чек «неверным токеном».
+     */
+    private fun current(stale: KkmInfo): KkmInfo = storage.findKkmForUpdate(stale.id) ?: stale
+
+    /**
      * Помечает ККМ как работающую в автономном режиме.
      */
-    private fun markAutonomousStarted(kkm: KkmInfo, now: Long) {
+    private fun markAutonomousStarted(stale: KkmInfo, now: Long) {
+        val kkm = current(stale)
         if (kkm.autonomousSince != null) return
         storage.updateKkm(kkm.copy(updatedAt = now, autonomousSince = now))
     }
@@ -258,7 +266,8 @@ class ProcessOfdDocumentResultUseCase(
     /**
      * Сбрасывает автономный режим ККМ, если все документы отправлены и связь стабильна.
      */
-    private fun clearAutonomousIfReady(kkm: KkmInfo, now: Long) {
+    private fun clearAutonomousIfReady(stale: KkmInfo, now: Long) {
+        val kkm = current(stale)
         if (kkm.autonomousSince == null && kkm.state != KkmState.BLOCKED.name) return
         if (!queue.canSendDirectly(kkm.id)) return
         val nextState = if (kkm.state == KkmState.BLOCKED.name) KkmState.ACTIVE.name else kkm.state

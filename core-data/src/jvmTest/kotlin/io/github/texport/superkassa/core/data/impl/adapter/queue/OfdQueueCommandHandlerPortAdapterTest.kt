@@ -74,8 +74,7 @@ class OfdQueueCommandHandlerPortAdapterTest {
             sendFiscalCommand.execute("c1", OfdCommandType.TICKET, "ref1")
         } returns OfdCommandResult(
             status = OfdCommandStatus.FAILED,
-            errorMessage = "Server error",
-            resultCode = 500
+            errorMessage = "Server error"
         )
 
         val adapter = OfdQueueCommandHandlerPortAdapter(sendFiscalCommand, storage, clock)

@@ -46,85 +46,71 @@ class ProcessReportUseCase(
             requireOperational.execute(kkm)
             authorizeUser.execute(kkm.id, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
 
-            val documentId = idGenerator.nextId()
-
-            val shift = storage.findOpenShift(kkmId)
             val hasQueue = !queue.canSendDirectly(kkmId)
-
             val now = clock.now()
-            storage.saveShiftDocument(
-                kkmId = kkmId,
-                type = ReceiptDocumentTypes.X_REPORT,
-                documentId = documentId,
-                shiftId = shift?.id ?: "0",
-                createdAt = now
-            )
-            assignPrintedDocumentNumber(storage, kkmId, documentId)
+            val documentId = saveReport(kkmId, now)
+            if (hasQueue) return@inTransaction queued(kkmId, documentId, error = null)
 
-            if (hasQueue) {
-                val command = OfflineQueueCommandRequest(
-                    kkmId = kkmId,
-                    type = OfdCommandType.REPORT.value,
-                    payloadRef = documentId
-                )
-                queue.enqueueOffline(command)
-
-                storage.updateReceiptStatus(
-                    documentId = documentId,
-                    fiscalSign = null,
-                    autonomousSign = null,
-                    ofdStatus = "PENDING",
-                    deliveredAt = null,
-                    isAutonomous = true
-                )
-
-                ReportResult(
-                    documentId = documentId,
-                    deliveryStatus = DeliveryStatus.OFFLINE_QUEUED
-                )
-            } else {
-                val result = sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.REPORT, documentId)
-                val (status, error) = when (result.status) {
-                    OfdCommandStatus.OK -> {
-                        storage.updateReceiptStatus(
-                            documentId = documentId,
-                            fiscalSign = null,
-                            autonomousSign = null,
-                            ofdStatus = "SENT",
-                            deliveredAt = now,
-                            isAutonomous = false
-                        )
-                        DeliveryStatus.ONLINE_OK to null
-                    }
-                    OfdCommandStatus.TIMEOUT -> {
-                        storage.updateReceiptStatus(
-                            documentId = documentId,
-                            fiscalSign = null,
-                            autonomousSign = null,
-                            ofdStatus = "PENDING",
-                            deliveredAt = null,
-                            isAutonomous = false
-                        )
-                        DeliveryStatus.OFFLINE_QUEUED to result.errorMessage
-                    }
-                    OfdCommandStatus.FAILED -> {
-                        storage.updateReceiptStatus(
-                            documentId = documentId,
-                            fiscalSign = null,
-                            autonomousSign = null,
-                            ofdStatus = "FAILED",
-                            deliveredAt = null,
-                            isAutonomous = false
-                        )
-                        DeliveryStatus.ONLINE_ERROR to result.errorMessage
-                    }
-                }
-                ReportResult(
-                    documentId = documentId,
-                    deliveryStatus = status,
-                    deliveryError = error
-                )
+            val result = sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.REPORT, documentId)
+            when (result.status) {
+                OfdCommandStatus.OK -> answered(documentId, "SENT", deliveredAt = now, DeliveryStatus.ONLINE_OK, null)
+                // Без ответа отчёт досылается, как любой документ: раньше он
+                // оставался «ожидает отправки» вне очереди, а ответ кассиру
+                // говорил «в очереди».
+                OfdCommandStatus.TIMEOUT -> queued(kkmId, documentId, result.errorMessage)
+                OfdCommandStatus.FAILED ->
+                    answered(documentId, "FAILED", deliveredAt = null, DeliveryStatus.ONLINE_ERROR, result.errorMessage)
             }
         }
+    }
+
+    private fun saveReport(kkmId: String, now: Long): String {
+        val documentId = idGenerator.nextId()
+        val shift = storage.findOpenShift(kkmId)
+        storage.saveShiftDocument(
+            kkmId = kkmId,
+            type = ReceiptDocumentTypes.X_REPORT,
+            documentId = documentId,
+            shiftId = shift?.id ?: "0",
+            createdAt = now
+        )
+        assignPrintedDocumentNumber(storage, kkmId, documentId)
+        return documentId
+    }
+
+    /** Отчёт встаёт в очередь досылки и помечается снятым без связи. */
+    private fun queued(kkmId: String, documentId: String, error: String?): ReportResult {
+        queue.enqueueOffline(OfflineQueueCommandRequest(kkmId, OfdCommandType.REPORT.value, documentId))
+        storage.updateReceiptStatus(
+            documentId = documentId,
+            fiscalSign = null,
+            autonomousSign = null,
+            ofdStatus = "PENDING",
+            deliveredAt = null,
+            isAutonomous = true
+        )
+        return ReportResult(
+            documentId = documentId,
+            deliveryStatus = DeliveryStatus.OFFLINE_QUEUED,
+            deliveryError = error
+        )
+    }
+
+    private fun answered(
+        documentId: String,
+        ofdStatus: String,
+        deliveredAt: Long?,
+        status: DeliveryStatus,
+        error: String?
+    ): ReportResult {
+        storage.updateReceiptStatus(
+            documentId = documentId,
+            fiscalSign = null,
+            autonomousSign = null,
+            ofdStatus = ofdStatus,
+            deliveredAt = deliveredAt,
+            isAutonomous = false
+        )
+        return ReportResult(documentId = documentId, deliveryStatus = status, deliveryError = error)
     }
 }
