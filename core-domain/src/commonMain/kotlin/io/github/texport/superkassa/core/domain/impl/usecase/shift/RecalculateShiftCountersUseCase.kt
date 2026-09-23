@@ -3,7 +3,6 @@ package io.github.texport.superkassa.core.domain.impl.usecase.shift
 import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 import io.github.texport.superkassa.core.domain.api.model.common.format
 import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
-import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationType
 import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
 import io.github.texport.superkassa.core.domain.api.model.kkm.becameFiscal
@@ -12,7 +11,7 @@ import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDocumen
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
-import io.github.texport.superkassa.core.domain.impl.helper.tax.TaxCalculator
+import io.github.texport.superkassa.core.domain.impl.helper.tax.taxCounterDeltas
 
 /**
  * Сценарий (Use Case) пересчета/пересобирания счетчиков смены на основе фактических фискальных документов.
@@ -26,11 +25,6 @@ import io.github.texport.superkassa.core.domain.impl.helper.tax.TaxCalculator
 class RecalculateShiftCountersUseCase(
     private val storage: StoragePort
 ) {
-    /**
-     * Калькулятор для расчета налоговых показателей чеков.
-     */
-    private val taxService = TaxCalculator()
-
     /**
      * Запускает процедуру пересчета счетчиков смены и сохраняет их в хранилище.
      *
@@ -262,31 +256,8 @@ class RecalculateShiftCountersUseCase(
             counters[CounterKeyFormats.REVENUE_SUM] = current + revenueDelta
         }
 
-        // Вычисляем и распределяем налоги чека по группам НДС
-        val taxResult = taxService.calculateTicketTaxes(
-            items = request.items,
-            taxRegime = request.taxRegime,
-            defaultVatGroup = request.defaultVatGroup ?: VatGroup.NO_VAT
-        )
-        taxResult.ticketTaxes.forEach { line ->
-            val taxKey = line.vatGroup.name
-            increment(
-                counters,
-                CounterKeyFormats.TAX_TURNOVER.format(taxKey, operationKey),
-                line.taxBase.tiyn()
-            )
-            increment(
-                counters,
-                CounterKeyFormats.TAX_SUM.format(taxKey, operationKey),
-                line.taxSum.tiyn()
-            )
-            val turnoverWithoutTax = line.taxBase.tiyn()
-            increment(
-                counters,
-                CounterKeyFormats.TAX_TURNOVER_NO_TAX.format(taxKey, operationKey),
-                turnoverWithoutTax
-            )
-        }
+        // Налоги чека по ставкам — тем же расчётом, что и при самом чеке
+        taxCounterDeltas(request, operationKey).forEach { (key, delta) -> increment(counters, key, delta) }
     }
 
     /**

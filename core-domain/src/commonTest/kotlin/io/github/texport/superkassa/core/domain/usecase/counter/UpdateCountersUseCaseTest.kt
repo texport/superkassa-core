@@ -231,11 +231,17 @@ class UpdateCountersUseCaseTest {
         assertEquals(316_000L, shift["cash.sum"])
         assertEquals(316_000L, global["cash.sum"])
 
-        // Tax counters
-        // VAT_16 turnovers: base = 1000, tax = 160, base without tax = 1000
-        assertEquals(100_000L, shift["tax.VAT_16.OPERATION_SELL.turnover"])
-        assertEquals(16_000L, shift["tax.VAT_16.OPERATION_SELL.sum"])
-        assertEquals(100_000L, shift["tax.VAT_16.OPERATION_SELL.turnover_without_tax"])
+        // Налоговые счётчики: оборот — с НДС, как у БФД в Z. Скидка 100
+        // и наценка 50 на чек сдвигают оборот ставки на −50 из 4660
+        // (половина — к чётному) и налог — на налог этой доли:
+        // 1160 → 1147,55; налог 160,00 − 1,72 = 158,28.
+        assertEquals(114_755L, shift["tax.VAT_16.OPERATION_SELL.turnover"])
+        assertEquals(15_828L, shift["tax.VAT_16.OPERATION_SELL.sum"])
+        assertEquals(98_927L, shift["tax.VAT_16.OPERATION_SELL.turnover_without_tax"])
+        // НДС 0 % — свой оборот с нулевым налогом; «без НДС» в налоги не идёт.
+        assertEquals(197_854L, shift["tax.VAT_0.OPERATION_SELL.turnover"])
+        assertEquals(0L, shift["tax.VAT_0.OPERATION_SELL.sum"])
+        assertEquals(null, shift["tax.NO_VAT.OPERATION_SELL.turnover"])
     }
 
     private fun runAndVerifyScenario(
@@ -327,7 +333,7 @@ class UpdateCountersUseCaseTest {
             val vatSum = Decimal.roundedDiv(totalTiyn * rate, 100_000L + rate)
             val taxBase = totalTiyn - vatSum
             val taxKey = vatGroup.name
-            expectedShift["tax.$taxKey.$opKey.turnover"] = taxBase
+            expectedShift["tax.$taxKey.$opKey.turnover"] = totalTiyn
             expectedShift["tax.$taxKey.$opKey.sum"] = vatSum
             expectedShift["tax.$taxKey.$opKey.turnover_without_tax"] = taxBase
         }

@@ -5,12 +5,8 @@ import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.impl.helper.ReceiptDeliveryHelper
 
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
-import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.domain.api.model.common.Money
-import io.github.texport.superkassa.core.domain.api.model.common.UnitOfMeasurement
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
-import io.github.texport.superkassa.core.domain.api.model.receipt.ParentTicket
-import io.github.texport.superkassa.core.domain.api.model.kkm.becameFiscal
 import io.github.texport.superkassa.core.domain.api.model.receipt.PaymentType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
@@ -73,6 +69,9 @@ class ProcessReceiptUseCase(
      */
     private val taxCalculator = TaxCalculator()
 
+    /** Чек-основание возврата и прежние возвраты по нему. */
+    private val refundBasis = RefundBasis(storage)
+
     /**
      * Выполняет обработку и регистрацию фискального чека.
      *
@@ -94,51 +93,8 @@ class ProcessReceiptUseCase(
             )
         }
 
-        // 2. Расчет сумм и маппинг позиций
-        val receiptItems = command.items.map { dto ->
-            val quantityThousandths = dto.quantity.scaled(QUANTITY_SCALE)
-            val baseSumTiyn = Decimal.roundedDiv(
-                dto.price.scaled(TIYN_SCALE) * quantityThousandths,
-                THOUSANDTHS_IN_ONE
-            )
-            val itemDiscountTiyn = partOf(baseSumTiyn, dto.discountPercent, dto.discountSum)
-            val itemMarkupTiyn = partOf(baseSumTiyn, dto.markupPercent, dto.markupSum)
-            val itemSumTiyn = (baseSumTiyn - itemDiscountTiyn + itemMarkupTiyn).coerceAtLeast(0L)
-            val itemDiscount = if (itemDiscountTiyn > 0) Money.fromTiyn(itemDiscountTiyn) else null
-            val itemMarkup = if (itemMarkupTiyn > 0) Money.fromTiyn(itemMarkupTiyn) else null
-            val measureUnitCode = dto.measureUnitCode?.takeIf { it.isNotBlank() }?.let { raw ->
-                try {
-                    UnitOfMeasurement.fromCode(raw).code
-                } catch (_: IllegalArgumentException) {
-                    throw ValidationException(CoreStrings.measureUnitCodeInvalid(raw), "MEASURE_UNIT_CODE_INVALID")
-                }
-            }
-            ReceiptItem(
-                name = dto.name,
-                nameKk = dto.nameKk?.takeIf { it.isNotBlank() },
-                sectionCode = "001",
-                quantity = quantityThousandths,
-                price = Money.fromTenge(dto.price),
-                sum = Money.fromTiyn(itemSumTiyn),
-                barcode = dto.barcode?.takeIf { it.isNotBlank() },
-                vatGroup = dto.vatGroup?.let { value ->
-                    try {
-                        VatGroup.valueOf(value)
-                    } catch (_: IllegalArgumentException) {
-                        throw IllegalArgumentException(
-                            "Invalid vatGroup: $value. Valid: " +
-                                VatGroup.entries.joinToString { it.name }
-                        )
-                    }
-                },
-                discount = itemDiscount,
-                markup = itemMarkup,
-                measureUnitCode = measureUnitCode,
-                listExciseStamp = dto.listExciseStamp?.takeIf { it.isNotEmpty() },
-                ntin = dto.ntin?.takeIf { it.isNotBlank() },
-                isStorno = dto.isStorno
-            )
-        }
+        // 2. Позиции: сумма строки — цена × количество к ближайшему тиыну
+        val receiptItems = command.items.map(::receiptItemOf)
 
         // 3. Проверка конфликтов скидок на уровне позиций и чека
         // Скидка и наценка живут либо на позициях, либо на чеке — вместе
@@ -181,21 +137,15 @@ class ProcessReceiptUseCase(
 
         val receiptDiscount = if (receiptDiscountTiyn > 0) Money.fromTiyn(receiptDiscountTiyn) else null
         val receiptMarkup = if (receiptMarkupTiyn > 0) Money.fromTiyn(receiptMarkupTiyn) else null
-        val defaultVatGroup = command.defaultVatGroup?.takeIf { it.isNotBlank() }?.let { value ->
-            try {
-                VatGroup.valueOf(value)
-            } catch (_: IllegalArgumentException) {
-                throw IllegalArgumentException(
-                    "Invalid defaultVatGroup: $value. Valid: " + VatGroup.entries.joinToString { it.name }
-                )
-            }
-        }
+        val defaultVatGroup = command.defaultVatGroup?.takeIf { it.isNotBlank() }
+            ?.let { vatGroupOf(it, "defaultVatGroup") }
 
         // Ставка, которую режим кассы не допускает, отвергается, а не
         // отбрасывается молча. Раньше «Без НДС» + VAT_12 на позиции
         // доходило до ОФД чеком без налога: кассир видел и печатал
         // «НДС 12%», а в кабинете у чека налог был пуст.
         requireVatAllowedByRegime(kkm, receiptItems, defaultVatGroup)
+        val items = withRefundBasisVat(command, kkm, receiptItems)
 
         // 5a. Возврат не может превысить остаток по чеку-основанию.
         requireRefundFitsBasis(command, totalMoney)
@@ -205,7 +155,7 @@ class ProcessReceiptUseCase(
             kkmId = command.kkmId,
             pin = command.pin,
             operation = command.operation,
-            items = receiptItems,
+            items = items,
             payments = receiptPayments,
             total = totalMoney,
             taken = takenMoney,
@@ -224,15 +174,8 @@ class ProcessReceiptUseCase(
             operatorName = authorizeUser.identify(command.kkmId, command.pin).name
         )
 
-        // Расчет сумм налогов (НДС) по каждой позиции чека
-        val taxResult = taxCalculator.calculateTicketTaxes(
-            items = request.items,
-            taxRegime = request.taxRegime,
-            defaultVatGroup = request.defaultVatGroup ?: VatGroup.NO_VAT
-        )
-        val requestWithTaxes = request.copy(
-            ticketTaxes = taxResult.ticketTaxes
-        )
+        // Налог чека — тем же расчётом, что уйдёт в БФД и в счётчики смены
+        val requestWithTaxes = request.copy(ticketTaxes = taxCalculator.calculate(request).ticketTaxes)
 
         // Оцениваем статус автономной очереди ДО сохранения нового документа
         val hasQueue = !queue.canSendDirectly(requestWithTaxes.kkmId)
@@ -334,7 +277,7 @@ class ProcessReceiptUseCase(
     private fun requireRefundFitsBasis(command: CreateReceiptCommand, refund: Money) {
         val basis = command.parentTicket ?: return
         val basisTiyn = basis.parentTicketTotal.tiyn()
-        val already = refundedAgainst(command.kkmId, basis)
+        val already = refundBasis.refundedAgainst(command.kkmId, basis)
         val left = basisTiyn - already
         if (refund.tiyn() > left) {
             val words = if (left <= 0L) {
@@ -346,26 +289,21 @@ class ProcessReceiptUseCase(
         }
     }
 
-    /** Сколько по этому чеку-основанию уже возвращено, в тиынах. */
-    private fun refundedAgainst(kkmId: String, basis: ParentTicket): Long {
-        var offset = 0
-        var sum = 0L
-        while (true) {
-            val page = storage.listFiscalDocumentsByPeriod(
-                kkmId = kkmId,
-                fromInclusive = basis.parentTicketDateTimeMillis,
-                toExclusive = Long.MAX_VALUE,
-                limit = PAGE,
-                offset = offset
-            )
-            if (page.isEmpty()) return sum
-            page.filter { it.becameFiscal() }.forEach { doc ->
-                val stored = storage.findFiscalDocumentWithReceiptPayload(doc.id)?.second
-                val sameBasis = stored?.parentTicket?.parentTicketNumber == basis.parentTicketNumber
-                if (sameBasis) sum += stored.total.tiyn()
-            }
-            offset += PAGE
-        }
+    /**
+     * Позиции возврата суммой со ставкой чека-основания.
+     *
+     * Основание ищется только у возврата и только когда касса выделяет НДС:
+     * неплательщику ставка строки ни на что не влияет.
+     */
+    private fun withRefundBasisVat(
+        command: CreateReceiptCommand,
+        kkm: KkmInfo,
+        items: List<ReceiptItem>
+    ): List<ReceiptItem> {
+        if (kkm.taxRegime == TaxRegime.NO_VAT || items.all { it.vatGroup != null }) return items
+        val parent = command.parentTicket?.takeIf { command.operation.isReturn() } ?: return items
+        val basis = refundBasis.find(command.kkmId, kkm.registrationNumber, parent) ?: return items
+        return withBasisVat(items, basis)
     }
 
     /**
@@ -395,44 +333,6 @@ class ProcessReceiptUseCase(
 }
 
 /**
- * Скидка или наценка в тиынах: процентом от базы либо готовой суммой.
- *
- * Процент считается от целых тиынов и округляется один раз к ближайшему.
- * Правило одно и для позиции, и для чека, поэтому и место одно.
- *
- * @param baseTiyn база, от которой берётся процент.
- * @param percent доля в процентах либо `null`.
- * @param sum готовая сумма в тенге либо `null`.
- * @return сумма скидки или наценки в тиынах; ноль, если не задана ни одна.
- */
-private fun partOf(baseTiyn: Long, percent: Decimal?, sum: Decimal?): Long = when {
-    percent != null -> Decimal.roundedDiv(
-        baseTiyn * percent.unscaled,
-        HUNDRED_PERCENT * pow10(percent.scale)
-    )
-    sum != null -> sum.scaled(TIYN_SCALE)
-    else -> 0L
-}
-
-private fun pow10(power: Int): Long {
-    var result = 1L
-    repeat(power) { result *= 10 }
-    return result
-}
-
-/** Знаков после запятой у тенге. */
-private const val TIYN_SCALE: Int = 2
-
-/** Количество хранится в тысячных долях единицы. */
-private const val QUANTITY_SCALE: Int = 3
-
-/** Тысячных в единице. */
-private const val THOUSANDTHS_IN_ONE: Long = 1_000
-
-/** Сто процентов. */
-private const val HUNDRED_PERCENT: Long = 100
-
-/**
  * Проверяет, что ставки чека допускает налоговый режим кассы.
  *
  * Неплательщик НДС налог не выделяет: при режиме NO_VAT расчёт налога
@@ -458,5 +358,5 @@ private fun requireVatAllowedByRegime(
     throw ValidationException(CoreStrings.receiptVatNotAllowed(offending.name), "RECEIPT_VAT_NOT_ALLOWED")
 }
 
-/** Сколько документов читается за один заход при поиске прежних возвратов. */
-private const val PAGE = 200
+private fun ReceiptOperationType.isReturn(): Boolean =
+    this == ReceiptOperationType.SELL_RETURN || this == ReceiptOperationType.BUY_RETURN

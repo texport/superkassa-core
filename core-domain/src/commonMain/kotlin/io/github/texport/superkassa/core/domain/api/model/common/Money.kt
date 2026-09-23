@@ -60,7 +60,28 @@ data class Money(
          */
         fun fromTenge(amount: Decimal): Money = fromTiyn(amount.scaled(TIYN_SCALE))
 
+        /**
+         * Сумма строки чека: цена × количество, к ближайшему тиыну.
+         *
+         * Половина тиына идёт вверх: 333,33 × 1,5 = 499,995 — это 500,00.
+         * Правило одно для всех, кто считает строку: экран, чек и запрос
+         * в БФД. Касса, усекавшая долю, получала 499,99 там, где ядро
+         * считало 500,00, и чек отвергался несходящейся оплатой.
+         *
+         * @param price цена за единицу в тенге.
+         * @param quantity количество; учитываются тысячные доли.
+         */
+        fun lineSum(price: Decimal, quantity: Decimal): Money = fromTiyn(
+            Decimal.roundedDiv(price.scaled(TIYN_SCALE) * quantity.scaled(QUANTITY_SCALE), THOUSANDTHS_IN_ONE)
+        )
+
         /** Знаков после запятой у тенге. */
         private const val TIYN_SCALE: Int = 2
+
+        /** Количество хранится в тысячных долях единицы. */
+        private const val QUANTITY_SCALE: Int = 3
+
+        /** Тысячных в единице. */
+        private const val THOUSANDTHS_IN_ONE: Long = 1_000
     }
 }

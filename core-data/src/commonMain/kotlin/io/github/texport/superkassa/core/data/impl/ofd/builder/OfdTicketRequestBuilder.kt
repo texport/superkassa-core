@@ -47,6 +47,9 @@ object OfdTicketRequestBuilder {
             ReceiptOperationType.BUY -> "OPERATION_BUY"
             ReceiptOperationType.BUY_RETURN -> "OPERATION_BUY_RETURN"
         }
+        // Налог позиций и скидки или наценки на чек — тем же расчётом,
+        // что печатается на чеке и копится в счётчиках смены.
+        val taxes = TaxCalculator().calculate(request)
         return buildJsonObject {
             put("ofdId", JsonPrimitive(ofdId))
             put("protocolVersion", JsonPrimitive(protocolVersion))
@@ -158,9 +161,7 @@ object OfdTicketRequestBuilder {
                             put(
                                 "items",
                                 buildJsonArray {
-                                    val taxService = TaxCalculator()
-
-                                    request.items.forEach { item ->
+                                    request.items.forEachIndexed { index, item ->
                                         val (itemType, itemField) = if (item.isStorno) {
                                             "ITEM_TYPE_STORNO_COMMODITY" to "stornoCommodity"
                                         } else {
@@ -217,62 +218,10 @@ object OfdTicketRequestBuilder {
                                                             }
                                                         }
 
-                                                        // Налог на уровне позиции (commodity.taxes[])
-                                                        val itemVatGroup =
-                                                            when (request.taxRegime) {
-                                                                TaxRegime.NO_VAT ->
-                                                                    VatGroup.NO_VAT
-
-                                                                TaxRegime.VAT_PAYER,
-                                                                TaxRegime.MIXED ->
-                                                                    item.vatGroup ?: (request.defaultVatGroup ?: VatGroup.NO_VAT)
-                                                            }
-
-                                                        val taxResultForItem =
-                                                            taxService.calculateTicketTaxes(
-                                                                items = listOf(item),
-                                                                taxRegime = request.taxRegime,
-                                                                defaultVatGroup = request.defaultVatGroup ?: VatGroup.NO_VAT,
-                                                                overrideVatGroup = itemVatGroup
-                                                            )
-
-                                                        if (taxResultForItem.ticketTaxes.isNotEmpty()) {
-                                                            put(
-                                                                "taxes",
-                                                                buildJsonArray {
-                                                                    taxResultForItem.ticketTaxes.forEach { line ->
-                                                                        add(
-                                                                            buildJsonObject {
-                                                                                put(
-                                                                                    "taxType",
-                                                                                    JsonPrimitive(
-                                                                                        OfdCommonRequestHelper.taxTypeForGroup(
-                                                                                            line.vatGroup
-                                                                                        )
-                                                                                    )
-                                                                                )
-                                                                                put(
-                                                                                    "percent",
-                                                                                    JsonPrimitive(
-                                                                                        line.vatGroup.percentThousandths
-                                                                                    )
-                                                                                )
-                                                                                put(
-                                                                                    "sum",
-                                                                                    OfdCommonRequestHelper.moneyObject(
-                                                                                        line.taxSum.bills,
-                                                                                        line.taxSum.coins
-                                                                                    )
-                                                                                )
-                                                                                put(
-                                                                                    "isInTotalSum",
-                                                                                    JsonPrimitive(true)
-                                                                                )
-                                                                            }
-                                                                        )
-                                                                    }
-                                                                }
-                                                            )
+                                                        // Налог позиции; у сторно — свой, иначе БФД
+                                                        // не вычтет его из налога чека.
+                                                        taxes.itemTaxes[index]?.let { line ->
+                                                            put("taxes", OfdTaxJson.taxes(listOf(line)))
                                                         }
                                                     }
                                                 )
@@ -346,6 +295,7 @@ object OfdTicketRequestBuilder {
                                             buildJsonObject {
                                                 put("name", JsonPrimitive("Скидка"))
                                                 put("sum", OfdCommonRequestHelper.moneyObject(m.bills, m.coins))
+                                                OfdTaxJson.modifierTaxes(taxes)?.let { put("taxes", it) }
                                             }
                                         )
                                     }
@@ -355,6 +305,7 @@ object OfdTicketRequestBuilder {
                                             buildJsonObject {
                                                 put("name", JsonPrimitive("Наценка"))
                                                 put("sum", OfdCommonRequestHelper.moneyObject(m.bills, m.coins))
+                                                OfdTaxJson.modifierTaxes(taxes)?.let { put("taxes", it) }
                                             }
                                         )
                                     }

@@ -55,7 +55,11 @@ internal object SaleItemsComponent {
             }
             val itemVat = item.vatGroup ?: defaultVatGroup
             val vatLabel = t(itemVat.translationKey)
-            val vatHtml = if (taxRegime == TaxRegime.MIXED) {
+            // Ставку позиции видно, когда она может отличаться от ставки
+            // кассы: в смешанном режиме всегда, у плательщика НДС — когда
+            // позиция облагается иначе, например продаётся без НДС.
+            val ownRate = taxRegime == TaxRegime.VAT_PAYER && itemVat != defaultVatGroup
+            val vatHtml = if (taxRegime == TaxRegime.MIXED || ownRate) {
                 "<div class=\"item-vat\">$vatLabel</div>"
             } else {
                 ""

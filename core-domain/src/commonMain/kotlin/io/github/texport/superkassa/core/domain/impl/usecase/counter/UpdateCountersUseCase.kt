@@ -3,12 +3,11 @@ package io.github.texport.superkassa.core.domain.impl.usecase.counter
 import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 import io.github.texport.superkassa.core.domain.api.model.common.format
 import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
-import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.api.model.receipt.PaymentType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
-import io.github.texport.superkassa.core.domain.impl.helper.tax.TaxCalculator
+import io.github.texport.superkassa.core.domain.impl.helper.tax.taxCounterDeltas
 
 /**
  * Сценарий (Use Case) обновления счетчиков ККМ после проведения фискальных чеков.
@@ -26,11 +25,6 @@ import io.github.texport.superkassa.core.domain.impl.helper.tax.TaxCalculator
 class UpdateCountersUseCase(
     private val storage: StoragePort
 ) {
-    /**
-     * Калькулятор налогов для вычисления налоговых групп и сумм по позициям чека.
-     */
-    private val taxCalculator = TaxCalculator()
-
     /**
      * Выполняет обновление всех финансовых счетчиков на основе данных зарегистрированного чека.
      *
@@ -188,35 +182,8 @@ class UpdateCountersUseCase(
         }
 
         // Налоговые счетчики.
-        val taxResult = taxCalculator.calculateTicketTaxes(
-            items = request.items,
-            taxRegime = request.taxRegime,
-            defaultVatGroup = request.defaultVatGroup ?: VatGroup.NO_VAT
-        )
-        taxResult.ticketTaxes.forEach { line ->
-            val taxKey = line.vatGroup.name
-            increment(
-                kkmId,
-                CounterScopes.SHIFT,
-                shiftId,
-                CounterKeyFormats.TAX_TURNOVER.format(taxKey, operationKey),
-                line.taxBase.tiyn()
-            )
-            increment(
-                kkmId,
-                CounterScopes.SHIFT,
-                shiftId,
-                CounterKeyFormats.TAX_SUM.format(taxKey, operationKey),
-                line.taxSum.tiyn()
-            )
-            val turnoverWithoutTax = line.taxBase.tiyn()
-            increment(
-                kkmId,
-                CounterScopes.SHIFT,
-                shiftId,
-                CounterKeyFormats.TAX_TURNOVER_NO_TAX.format(taxKey, operationKey),
-                turnoverWithoutTax
-            )
+        taxCounterDeltas(request, operationKey).forEach { (key, delta) ->
+            increment(kkmId, CounterScopes.SHIFT, shiftId, key, delta)
         }
 
         // Глобальные счетчики.

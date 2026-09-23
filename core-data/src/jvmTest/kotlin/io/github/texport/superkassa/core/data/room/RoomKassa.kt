@@ -6,6 +6,8 @@ import io.github.texport.superkassa.core.data.impl.adapter.security.Base64TokenC
 import io.github.texport.superkassa.core.data.impl.adapter.security.Sha256PinHasherAdapter
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.common.Decimal
+import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
+import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.api.model.common.TimeValidationResult
 import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
@@ -28,9 +30,13 @@ import io.github.texport.superkassa.receiptrenderer.impl.adapter.DefaultQrCodeGe
 /**
  * Касса на ядре с Room и тестовым БФД: сборка та же, что в приложении,
  * база — Room в памяти, сеть — [FakeBfd]. Касса зарегистрирована,
- * у неё администратор и кассир.
+ * у неё администратор и кассир. Налоговый режим и ставка кассы — те,
+ * что переданы; по умолчанию касса не плательщик НДС.
  */
-internal class RoomKassa {
+internal class RoomKassa(
+    private val taxRegime: TaxRegime = TaxRegime.NO_VAT,
+    private val kassaVat: VatGroup = VatGroup.NO_VAT
+) {
     val bfd = FakeBfd()
     val storage: StoragePort = openInMemoryRoomStorage().storagePort
     val api: SuperkassaApi = SuperkassaCoreEngine(
@@ -64,7 +70,8 @@ internal class RoomKassa {
                 mode = KkmMode.REGISTRATION.name, state = KkmState.ACTIVE.name,
                 ofdProvider = "KAZAKHTELECOM:TEST", registrationNumber = KGD_NUMBER, factoryNumber = "KZT0000001",
                 systemId = "100500", ofdServiceInfo = SERVICE_INFO,
-                tokenEncryptedBase64 = Base64TokenCodecAdapter().encodeToken(TOKEN), tokenUpdatedAt = now
+                tokenEncryptedBase64 = Base64TokenCodecAdapter().encodeToken(TOKEN), tokenUpdatedAt = now,
+                taxRegime = taxRegime, defaultVatGroup = kassaVat
             )
         )
         val pins = Sha256PinHasherAdapter()
