@@ -100,22 +100,21 @@ class ReadyKassa internal constructor(
     }
 
     /**
-     * Связь с БФД восстановлена, пауза восстановления прошла, и очередь кассы
-     * досылается одним заходом, как это сделал бы фон.
+     * Связь с БФД восстановлена, пауза восстановления прошла, и очередь
+     * досылается одним заходом, как это сделал бы фон, — под замком
+     * писателя кассы, тем же путём, что у досылки самой кассы.
      *
      * @return сколько документов обработано заходом.
      */
     fun resendQueue(): Int {
         bfd.connect()
         clock.move(RECONNECT_PAUSE)
-        return api.queue.processOfflineBatch(kkmId, RESEND_BATCH)
+        return bench.superkassa.sendQueueNow()
     }
 
     private companion object {
         /** RESULT_TYPE_INCORRECT_REQUEST_DATA: БФД не принял данные документа. */
         const val INCORRECT_REQUEST_DATA = 13
-
-        const val RESEND_BATCH = 100
     }
 }
 
