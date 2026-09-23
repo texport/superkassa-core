@@ -9,6 +9,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidat
 import io.github.texport.superkassa.core.presentation.api.DeliveryApi
 import io.github.texport.superkassa.core.presentation.api.OfflineQueueApi
 import io.github.texport.superkassa.core.presentation.api.PrintApi
+import io.github.texport.superkassa.core.presentation.api.SettingsApi
 import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
 import io.github.texport.superkassa.coredatabase.api.RoomStorage
 import io.github.texport.superkassa.coredatabase.api.openRoomStorage
@@ -40,6 +41,7 @@ internal class EmbeddedSuperkassa private constructor(
     private val shiftCloser: ShiftAutoCloser,
     override val api: SuperkassaApi,
     override val delivery: DeliveryApi,
+    override val settings: SettingsApi,
     override val printer: DocumentPrinter
 ) : Superkassa {
     override val print: PrintApi get() = api
@@ -117,6 +119,7 @@ internal class EmbeddedSuperkassa private constructor(
                     shiftCloser,
                     api,
                     engine.buildDeliveryApi(),
+                    engine.buildSettingsApi(config.ofdProviderId, config.ofdProtocolVersion),
                     platform.printer()
                 )
             // Досылка и автозакрытие запускаются последними: до этого сборка ещё может сорваться.

@@ -10,16 +10,22 @@ import java.io.ByteArrayOutputStream
 /**
  * PDF из печатной формы движком openhtmltopdf, без браузера.
  *
- * Шрифты — DejaVu из самой сборки, а не из системы: в них есть все буквы
- * казахского алфавита и знак тенге, и чек выглядит одинаково на любой
- * машине. Семейства, названные в стилях формы, отображаются на них же.
+ * Шрифт лежит в ресурсах модуля, а не берётся из системы: чек выглядит
+ * одинаково на любой машине. Source Code Pro — под SIL OFL 1.1, лицензия
+ * рядом с файлами; в нём есть все буквы казахского алфавита, знак тенге
+ * и «№», и у него настоящее полужирное начертание для итогов. Все семейства,
+ * названные в стилях формы, отображаются на него: движок PDF встраивает
+ * только шрифты с контурами TrueType, а пропорционального шрифта с таким
+ * покрытием и полужирным начертанием под свободной лицензией в сборке нет.
  */
 internal object PdfPages {
-    private const val FONTS = "/net/sf/jasperreports/fonts/dejavu/"
-    private const val BOLD = 700
+    private const val FONTS = "/io/github/texport/superkassa/embedded/fonts/"
     private const val REGULAR = 400
-    private val SANS_FAMILIES = listOf("Inter", "Roboto", "DejaVu Sans", "sans-serif", "Arial")
-    private val MONO_FAMILIES = listOf("DejaVu Sans Mono", "Courier New", "monospace")
+    private const val BOLD = 700
+    private val FAMILIES = listOf(
+        "Inter", "Roboto", "DejaVu Sans", "sans-serif", "Arial",
+        "DejaVu Sans Mono", "Courier New", "monospace"
+    )
 
     init {
         XRLog.setLoggingEnabled(false)
@@ -33,13 +39,9 @@ internal object PdfPages {
         PdfRendererBuilder().apply {
             useFastMode()
             withW3cDocument(document, null)
-            SANS_FAMILIES.forEach { family ->
-                font("DejaVuSans.ttf", family, REGULAR)
-                font("DejaVuSans-Bold.ttf", family, BOLD)
-            }
-            MONO_FAMILIES.forEach { family ->
-                font("DejaVuSansMono.ttf", family, REGULAR)
-                font("DejaVuSansMono-Bold.ttf", family, BOLD)
+            FAMILIES.forEach { family ->
+                font("SourceCodePro-Regular.ttf", family, REGULAR)
+                font("SourceCodePro-Bold.ttf", family, BOLD)
             }
             toStream(out)
         }.run()

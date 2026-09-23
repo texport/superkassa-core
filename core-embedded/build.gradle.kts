@@ -51,7 +51,6 @@ kotlin {
             implementation(libs.openhtmltopdf.pdfbox)
             implementation(libs.pdfbox)
             implementation(libs.jsoup)
-            implementation(libs.dejavu.fonts)
         }
         androidMain.dependencies {
             api(libs.jakarta.validation)

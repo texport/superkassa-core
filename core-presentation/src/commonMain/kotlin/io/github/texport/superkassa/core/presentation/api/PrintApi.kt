@@ -83,4 +83,45 @@ interface PrintApi {
         pin: String,
         layout: ReceiptLayoutType? = null
     ): ByteArray
+
+    /**
+     * Печатная форма документа журнала по одному его идентификатору.
+     *
+     * Вид формы определяется по журналу: идентификатор смены или её документа
+     * открытия и закрытия даёт форму смены, чек, внесение, изъятие и отчёт —
+     * форму документа.
+     *
+     * @param kkmId ID ККМ.
+     * @param documentId ID документа, смены или документа смены.
+     * @param pin ПИН-код кассира или администратора.
+     * @param layout ширина ленты; не задана — та, что настроена у кассы.
+     * @return HTML строка.
+     */
+    fun getDocumentPrintHtml(kkmId: String, documentId: String, pin: String, layout: ReceiptLayoutType? = null): String
+
+    /** Та же форма, что [getDocumentPrintHtml], в PDF. */
+    fun getDocumentPrintPdf(kkmId: String, documentId: String, pin: String, layout: ReceiptLayoutType? = null): ByteArray
+
+    /** Та же форма, что [getDocumentPrintHtml], в PNG. */
+    fun getDocumentPrintPng(kkmId: String, documentId: String, pin: String, layout: ReceiptLayoutType? = null): ByteArray
+
+    /**
+     * Печатная форма документа по пакету протокола, например присланному кабинетом.
+     *
+     * Документ мог быть пробит на другой кассе: реквизиты (регистрационный номер КГД,
+     * БИН, адрес) берутся из пакета, оформление — у кассы [kkmId].
+     *
+     * @param kkmId ID ККМ, которой рисуется документ: её оформление и её права.
+     * @param pin ПИН-код кассира или администратора этой кассы.
+     * @param packet тело пакета: JSON-объект с полями `request` и `response` по схеме CPCR.
+     * @param layout ширина ленты; не задана — та, что настроена у кассы.
+     * @return HTML строка.
+     */
+    fun getProtocolPrintHtml(kkmId: String, pin: String, packet: String, layout: ReceiptLayoutType? = null): String
+
+    /** Та же форма, что [getProtocolPrintHtml], в PDF. */
+    fun getProtocolPrintPdf(kkmId: String, pin: String, packet: String, layout: ReceiptLayoutType? = null): ByteArray
+
+    /** Та же форма, что [getProtocolPrintHtml], в PNG. */
+    fun getProtocolPrintPng(kkmId: String, pin: String, packet: String, layout: ReceiptLayoutType? = null): ByteArray
 }

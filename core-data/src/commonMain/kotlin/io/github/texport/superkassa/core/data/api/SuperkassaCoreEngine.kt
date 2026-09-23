@@ -37,6 +37,13 @@ import kz.mybrain.network.OfdTcpNetworkClient
 import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderPort
 import io.github.texport.superkassa.core.presentation.api.DeliveryApi
 import io.github.texport.superkassa.core.presentation.impl.DeliveryApiImpl
+import io.github.texport.superkassa.core.presentation.api.SettingsApi
+import io.github.texport.superkassa.core.presentation.impl.SettingsApiImpl
+import io.github.texport.superkassa.core.domain.api.model.settings.withDeploymentOwned
+import io.github.texport.superkassa.core.domain.impl.usecase.print.GetDocumentPrintHtmlUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.print.protocol.GetProtocolPrintHtmlUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.settings.GetSettingsUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.settings.UpdateSettingsUseCase
 
 /**
  * Единый фабричный контейнер (сборщик) для инициализации ядра библиотеки Superkassa.
@@ -92,6 +99,34 @@ class SuperkassaCoreEngine(
     )
 
     /**
+     * Настройки ядра: чтение и правка по правилам ядра.
+     *
+     * ОФД и версия протокола здесь те же, что переданы в [buildApi]: ими
+     * владеет запуск, и сохранённая запись их не перекрывает.
+     */
+    fun buildSettingsApi(
+        ofdProviderId: String = DEFAULT_OFD_PROVIDER_ID,
+        ofdProtocolVersion: String = DEFAULT_OFD_PROTOCOL_VERSION
+    ): SettingsApi {
+        val current = GetSettingsUseCase(settings, deploymentSettings(ofdProviderId, ofdProtocolVersion))
+        return SettingsApiImpl(current, UpdateSettingsUseCase(current, settings))
+    }
+
+    /**
+     * Настройки первого запуска с полями, которыми владеет запуск.
+     *
+     * Правка настроек разрешена, как и у узла на рабочем месте: запретить
+     * её владелец может сам, сохранив запрет в настройках.
+     */
+    private fun deploymentSettings(ofdProviderId: String, ofdProtocolVersion: String) = CoreSettings(
+        mode = CoreMode.DESKTOP,
+        storage = StorageSettings(engine = "SQLITE", jdbcUrl = "jdbc:sqlite:superkassa.db"),
+        allowChanges = true,
+        ofdProviderId = ofdProviderId,
+        ofdProtocolVersion = ofdProtocolVersion
+    )
+
+    /**
      * Создает и конфигурирует экземпляр API ядра кассы.
      *
      * @param ownerId Уникальный идентификатор инстанса (используется для распределенных блокировок).
@@ -102,17 +137,11 @@ class SuperkassaCoreEngine(
         ofdProviderId: String = DEFAULT_OFD_PROVIDER_ID,
         ofdProtocolVersion: String = DEFAULT_OFD_PROTOCOL_VERSION
     ): SuperkassaApi {
-        val defaultSettings = CoreSettings(
-            mode = CoreMode.DESKTOP,
-            storage = StorageSettings(engine = "SQLITE", jdbcUrl = "jdbc:sqlite:superkassa.db"),
-            ofdProviderId = ofdProviderId,
-            ofdProtocolVersion = ofdProtocolVersion
-        )
+        val defaultSettings = deploymentSettings(ofdProviderId, ofdProtocolVersion)
         // Какой ОФД и по какой версии обслуживает узел, решает вызывающий,
         // а не запись, сохранённая при первом запуске: иначе сменить их
         // перезапуском нельзя.
-        val coreSettings = settings.loadOrCreate(defaultSettings)
-            .copy(ofdProviderId = ofdProviderId, ofdProtocolVersion = ofdProtocolVersion)
+        val coreSettings = settings.loadOrCreate(defaultSettings).withDeploymentOwned(defaultSettings)
 
         // 1. Создаем внутренние кодеки и сетевые клиенты
         val ofdConfig = OfdConfigAdapter()
@@ -193,7 +222,14 @@ class SuperkassaCoreEngine(
             getReceiptHtmlUseCase
         )
         val getPrintPdfUseCase = GetPrintPdfUseCase(getPrintHtmlUseCase, pdfConverter)
-        val printApi = PrintApiImpl(getReceiptHtmlUseCase, getPrintHtmlUseCase, getPrintPdfUseCase, pdfConverter)
+        val printApi = PrintApiImpl(
+            getReceiptHtmlUseCase,
+            getPrintHtmlUseCase,
+            getPrintPdfUseCase,
+            pdfConverter,
+            GetDocumentPrintHtmlUseCase(storage, getPrintHtmlUseCase),
+            GetProtocolPrintHtmlUseCase(authorization, receiptRenderPort)
+        )
 
         // 7. Сборка фасада SuperkassaApi
         return SuperkassaApiImpl(

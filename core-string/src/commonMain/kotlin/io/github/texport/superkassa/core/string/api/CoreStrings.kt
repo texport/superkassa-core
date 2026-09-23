@@ -3,6 +3,7 @@ package io.github.texport.superkassa.core.string.api
 import io.github.texport.superkassa.core.string.impl.AccessStrings
 import io.github.texport.superkassa.core.string.impl.AmountStrings
 import io.github.texport.superkassa.core.string.impl.CoreStringsImpl
+import io.github.texport.superkassa.core.string.impl.PrintAndSettingsStrings
 
 /**
  * Единый реестр мультиязычных шаблонов и сообщений об ошибках во всех слоях и модулях Superkassa.
@@ -150,4 +151,12 @@ object CoreStrings {
     fun pageLimitOutOfRange(largest: Int): TrilingualMessage = AccessStrings.pageLimitOutOfRange(largest)
     fun pageOffsetNegative(): TrilingualMessage = AccessStrings.pageOffsetNegative()
     fun periodInvalid(): TrilingualMessage = AccessStrings.periodInvalid()
+
+    // --- Печать по пакету протокола и изменение настроек ---
+    fun protocolPacketUnreadable(): TrilingualMessage = PrintAndSettingsStrings.protocolPacketUnreadable()
+    fun protocolPacketNotADocument(): TrilingualMessage = PrintAndSettingsStrings.protocolPacketNotADocument()
+    fun settingsFrozenServerMode(): TrilingualMessage = PrintAndSettingsStrings.settingsFrozenServerMode()
+    fun settingsFrozen(): TrilingualMessage = PrintAndSettingsStrings.settingsFrozen()
+    fun ofdProtocolVersionFixedAtStartup(current: String): TrilingualMessage =
+        PrintAndSettingsStrings.ofdProtocolVersionFixedAtStartup(current)
 }

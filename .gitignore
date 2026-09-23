@@ -17,6 +17,8 @@ local.properties
 
 # Text files
 *.txt
+# Лицензия шрифта едет в сборку рядом с самим шрифтом.
+!core-embedded/src/jvmMain/resources/**/fonts/*.txt
 
 # Kotlin
 .kotlin/

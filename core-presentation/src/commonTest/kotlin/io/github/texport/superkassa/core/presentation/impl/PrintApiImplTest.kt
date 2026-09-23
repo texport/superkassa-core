@@ -6,9 +6,11 @@ import io.mockk.verify
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLayoutType
 import io.github.texport.superkassa.core.domain.api.model.report.PrintDocumentType
 import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
+import io.github.texport.superkassa.core.domain.impl.usecase.print.GetDocumentPrintHtmlUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.print.GetPrintHtmlUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.print.GetPrintPdfUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.print.GetReceiptHtmlUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.print.protocol.GetProtocolPrintHtmlUseCase
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptLayoutType as PresentationReceiptLayoutType
 import io.github.texport.superkassa.core.presentation.api.model.receipt.PrintDocumentType as PresentationPrintDocumentType
 import kotlin.test.Test
@@ -21,12 +23,16 @@ class PrintApiImplTest {
     private val getPrintHtmlUseCase = mockk<GetPrintHtmlUseCase>()
     private val getPrintPdfUseCase = mockk<GetPrintPdfUseCase>()
     private val documentConvertPort = mockk<DocumentConvertPort>()
+    private val getDocumentPrintHtmlUseCase = mockk<GetDocumentPrintHtmlUseCase>()
+    private val getProtocolPrintHtmlUseCase = mockk<GetProtocolPrintHtmlUseCase>()
 
     private val printApi = PrintApiImpl(
         getReceiptHtmlUseCase = getReceiptHtmlUseCase,
         getPrintHtmlUseCase = getPrintHtmlUseCase,
         getPrintPdfUseCase = getPrintPdfUseCase,
-        documentConvertPort = documentConvertPort
+        documentConvertPort = documentConvertPort,
+        getDocumentPrintHtmlUseCase = getDocumentPrintHtmlUseCase,
+        getProtocolPrintHtmlUseCase = getProtocolPrintHtmlUseCase
     )
 
     @Test
@@ -88,5 +94,28 @@ class PrintApiImplTest {
         every { documentConvertPort.htmlToImage("<html>Print</html>") } returns pngBytes
         val printPng = printApi.getPrintPng("kkm-1", PresentationPrintDocumentType.DOCUMENT, null, null, "1234")
         assertTrue(pngBytes.contentEquals(printPng))
+    }
+
+    @Test
+    fun `печать по идентификатору документа отдаёт одну разметку в HTML, PDF и PNG`() {
+        every { getDocumentPrintHtmlUseCase.execute("kkm-1", "doc-1", "1234", ReceiptLayoutType.TAPE_58MM) } returns "<html>Doc</html>"
+        every { documentConvertPort.htmlToPdf("<html>Doc</html>") } returns byteArrayOf(1)
+        every { documentConvertPort.htmlToImage("<html>Doc</html>") } returns byteArrayOf(2)
+        val layout = PresentationReceiptLayoutType.TAPE_58MM
+
+        assertEquals("<html>Doc</html>", printApi.getDocumentPrintHtml("kkm-1", "doc-1", "1234", layout))
+        assertTrue(byteArrayOf(1).contentEquals(printApi.getDocumentPrintPdf("kkm-1", "doc-1", "1234", layout)))
+        assertTrue(byteArrayOf(2).contentEquals(printApi.getDocumentPrintPng("kkm-1", "doc-1", "1234", layout)))
+    }
+
+    @Test
+    fun `печать по пакету протокола отдаёт одну разметку в HTML, PDF и PNG`() {
+        every { getProtocolPrintHtmlUseCase.execute("kkm-1", "1234", "{}", null) } returns "<html>Packet</html>"
+        every { documentConvertPort.htmlToPdf("<html>Packet</html>") } returns byteArrayOf(3)
+        every { documentConvertPort.htmlToImage("<html>Packet</html>") } returns byteArrayOf(4)
+
+        assertEquals("<html>Packet</html>", printApi.getProtocolPrintHtml("kkm-1", "1234", "{}"))
+        assertTrue(byteArrayOf(3).contentEquals(printApi.getProtocolPrintPdf("kkm-1", "1234", "{}")))
+        assertTrue(byteArrayOf(4).contentEquals(printApi.getProtocolPrintPng("kkm-1", "1234", "{}")))
     }
 }

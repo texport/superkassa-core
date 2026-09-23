@@ -3,6 +3,7 @@ package io.github.texport.superkassa.embedded.api
 import io.github.texport.superkassa.core.presentation.api.DeliveryApi
 import io.github.texport.superkassa.core.presentation.api.OfflineQueueApi
 import io.github.texport.superkassa.core.presentation.api.PrintApi
+import io.github.texport.superkassa.core.presentation.api.SettingsApi
 import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
 
 /**
@@ -19,8 +20,14 @@ interface Superkassa : AutoCloseable {
     /** Кассовые и фискальные операции. */
     val api: SuperkassaApi
 
-    /** Печатные формы: HTML, PDF, PNG. Тот же объект, что [api]. */
+    /**
+     * Печатные формы: HTML, PDF, PNG — по виду и идентификатору, по одному
+     * идентификатору документа и по пакету протокола. Тот же объект, что [api].
+     */
     val print: PrintApi
+
+    /** Настройки ядра: чтение и правка по правилам ядра. */
+    val settings: SettingsApi
 
     /** Автономная очередь документов. */
     val queue: OfflineQueueApi

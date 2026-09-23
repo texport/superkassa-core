@@ -29,7 +29,8 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":core-domain"))
+                // Фасад настроек отдаёт настройки ядра их доменным типом.
+                api(project(":core-domain"))
                 implementation(project(":core-string"))
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines.core)

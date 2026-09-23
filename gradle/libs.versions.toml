@@ -22,7 +22,6 @@ room = "2.7.0"
 sqlite = "2.5.0"
 ksp = "2.3.10"
 openhtmltopdf = "1.1.40"
-dejavuFonts = "7.0.8"
 pdfbox = "3.0.3"
 jsoup = "1.18.3"
 zxing = "3.5.4"
@@ -41,7 +40,6 @@ openhtmltopdf-pdfbox = { group = "io.github.openhtmltopdf", name = "openhtmltopd
 pdfbox = { group = "org.apache.pdfbox", name = "pdfbox", version.ref = "pdfbox" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
-dejavu-fonts = { group = "net.sf.jasperreports", name = "jasperreports-fonts", version.ref = "dejavuFonts" }
 
 # Kotlin
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
