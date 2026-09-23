@@ -23,7 +23,7 @@ class DeliveryApiImpl(
     documentConvertPort: DocumentConvertPort,
     receiptRenderPort: ReceiptRenderPort,
     /** Счёт неверных пинов; сборка ядра даёт тот же, что у фасада. */
-    pinGuard: PinGuard = PinGuard.of(storage)
+    pinGuard: PinGuard
 ) : DeliveryApi {
 
     private val authorization = AuthorizeUserUseCase(storage, pinHasher, pinGuard)

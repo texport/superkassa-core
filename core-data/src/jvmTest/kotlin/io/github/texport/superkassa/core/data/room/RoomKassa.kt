@@ -46,6 +46,7 @@ internal class RoomKassa(
     val storage = CountingStorage(room.storagePort)
     val api: SuperkassaApi = SuperkassaCoreEngine(
         storage = storage,
+        pinAttempts = room.pinAttempts,
         settings = MemorySettings(),
         delivery = deliveries,
         clock = clock,

@@ -10,7 +10,6 @@ import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
-import io.github.texport.superkassa.core.domain.api.port.integration.PinAttemptsPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.coredatabase.impl.dao.CounterDao
 import io.github.texport.superkassa.coredatabase.impl.dao.FiscalDocumentDao
@@ -30,8 +29,8 @@ import kotlinx.coroutines.runBlocking
  *
  * Здесь только сборка: каждый вызов порта уходит в часть, которая ведёт
  * свой сценарий, — кассы и кассиры, смены и счётчики, запись и чтение
- * документов, очередь досылки, транзакции и ключи повтора, счёт неверных
- * пинов. Что хранится
+ * документов, очередь досылки, транзакции и ключи повтора. Счёт неверных
+ * пинов ведёт отдельный порт той же базы. Что хранится
  * и что уходит в ОФД, совпадает с узлом: единицы сумм, типы, номера,
  * статусы и то, что ставится в очередь.
  */
@@ -43,8 +42,9 @@ internal class DefaultRoomStorageAdapter(
     fiscalDocumentDao: FiscalDocumentDao,
     counterDao: CounterDao,
     private val idempotencyDao: IdempotencyDao,
+    /** Счёт неверных пинов: ядру он передаётся отдельно, здесь — только чтобы уйти вместе с кассой. */
     private val pinAttempts: RoomPinAttempts
-) : QueueStoragePort, StoragePort, PinAttemptsPort by pinAttempts {
+) : QueueStoragePort, StoragePort {
 
     private val writer = RoomWriter(idempotencyDao)
     private val kkms = RoomKkms(kkmDao, userDao)

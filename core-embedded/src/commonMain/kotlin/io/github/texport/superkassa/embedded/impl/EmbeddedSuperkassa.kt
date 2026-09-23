@@ -132,6 +132,7 @@ internal class EmbeddedSuperkassa private constructor(
             FileCoreSettings("${platform.dataDir}/${DataFiles.SETTINGS}").let { settings ->
                 SuperkassaCoreEngine(
                     storage = parts.database.storagePort,
+                    pinAttempts = parts.database.pinAttempts,
                     settings = settings,
                     delivery = EmbeddedDelivery(config.channels, settings::load),
                     clock = clock,

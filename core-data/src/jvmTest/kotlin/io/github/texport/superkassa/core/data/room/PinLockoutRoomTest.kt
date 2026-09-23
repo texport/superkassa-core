@@ -91,6 +91,7 @@ class PinLockoutRoomTest {
         assertEquals("Айгерим", kassa.api.currentUser(KKM, ADMIN_PIN).name)
     }
 
+    /** Хранилище кассы здесь — обёртка над Room; счёт пинов ядро получает из базы явно. */
     @Test
     fun `блокировка переживает перезапуск кассы на файловой базе`() {
         val path = File(dir, "kassa.db").path

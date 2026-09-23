@@ -30,7 +30,7 @@ import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 class AuthorizeUserUseCase(
     private val storage: StoragePort,
     private val pinHasher: PinHasherPort,
-    private val pinGuard: PinGuard = PinGuard.of(storage)
+    private val pinGuard: PinGuard
 ) {
     private val logger = getLogger(AuthorizeUserUseCase::class)
 

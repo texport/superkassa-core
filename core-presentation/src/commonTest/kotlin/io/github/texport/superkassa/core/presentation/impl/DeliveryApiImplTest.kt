@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.presentation.impl
 
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.MemoryPinAttempts
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.PinGuard
 import io.mockk.every
 import io.mockk.mockk
 import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
@@ -33,7 +35,8 @@ class DeliveryApiImplTest {
         delivery = delivery,
         coreSettings = coreSettings,
         documentConvertPort = documentConvertPort,
-        receiptRenderPort = receiptRenderPort
+        receiptRenderPort = receiptRenderPort,
+        pinGuard = PinGuard(MemoryPinAttempts())
     )
 
     @Test

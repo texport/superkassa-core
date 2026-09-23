@@ -53,6 +53,14 @@ import io.github.texport.superkassa.core.domain.impl.usecase.settings.UpdateSett
  */
 class SuperkassaCoreEngine(
     private val storage: StoragePort,
+    /**
+     * Счёт неверных пинов. Сборка на Room передаёт счёт своей базы
+     * ([io.github.texport.superkassa.coredatabase.api.RoomStorage.pinAttempts]),
+     * узел — [io.github.texport.superkassa.core.domain.impl.usecase.auth.MemoryPinAttempts].
+     * Из хранилища он не выводится: обёртка хранилища молча уводила счёт
+     * в память, и блокировка пина не переживала перезапуск.
+     */
+    pinAttempts: PinAttemptsPort,
     private val settings: CoreSettingsRepositoryPort,
     private val delivery: DeliveryPort,
     private val clock: ClockPort,
@@ -76,9 +84,8 @@ class SuperkassaCoreEngine(
     /**
      * Счёт неверных пинов — один на сборку: фасад, печать и доставка
      * пускают по пину через него, и перебор не делится между входами.
-     * Хранилище на Room держит счёт в базе, иное — в памяти процесса.
      */
-    private val pinGuard = PinGuard.of(storage, clock::now)
+    private val pinGuard = PinGuard(pinAttempts, clock::now)
 
     /**
      * Повтор доставки чека покупателю.
@@ -334,6 +341,7 @@ class SuperkassaCoreEngine(
 
             val engine = SuperkassaCoreEngine(
                 storage = roomStoragePair.storagePort,
+                pinAttempts = roomStoragePair.pinAttempts,
                 settings = coreSettings,
                 delivery = delivery,
                 clock = clock,

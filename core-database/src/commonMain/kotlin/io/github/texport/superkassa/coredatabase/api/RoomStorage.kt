@@ -2,6 +2,7 @@ package io.github.texport.superkassa.coredatabase.api
 
 import androidx.room.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import io.github.texport.superkassa.core.domain.api.port.integration.PinAttemptsPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.coredatabase.impl.adapter.DefaultRoomStorageAdapter
 import io.github.texport.superkassa.coredatabase.impl.adapter.RoomPinAttempts
@@ -19,7 +20,12 @@ import kotlinx.coroutines.runBlocking
  */
 class RoomStorage internal constructor(
     private val database: SuperkassaAppDatabase,
-    adapter: DefaultRoomStorageAdapter
+    adapter: DefaultRoomStorageAdapter,
+    /**
+     * Счёт неверных пинов в той же базе: блокировка переживает перезапуск.
+     * Передаётся ядру явно — хранилище его не несёт.
+     */
+    val pinAttempts: PinAttemptsPort
 ) {
     /** Хранилище ядра. */
     val storagePort: StoragePort = adapter
@@ -52,6 +58,7 @@ fun openRoomStorage(builder: RoomDatabase.Builder<SuperkassaAppDatabase>): RoomS
         database.close()
         throw e
     }
+    val pinAttempts = RoomPinAttempts(database.pinAttemptDao())
     val adapter = DefaultRoomStorageAdapter(
         queueDao = database.queueCommandDao(),
         kkmDao = database.kkmDao(),
@@ -60,9 +67,9 @@ fun openRoomStorage(builder: RoomDatabase.Builder<SuperkassaAppDatabase>): RoomS
         fiscalDocumentDao = database.fiscalDocumentDao(),
         counterDao = database.counterDao(),
         idempotencyDao = database.idempotencyDao(),
-        pinAttempts = RoomPinAttempts(database.pinAttemptDao())
+        pinAttempts = pinAttempts
     )
-    return RoomStorage(database, adapter)
+    return RoomStorage(database, adapter, pinAttempts)
 }
 
 /** База без сноса и без подмены: общий порядок сборки строгого открытия и переноса. */

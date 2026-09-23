@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.auth
 
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.MemoryPinAttempts
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.PinGuard
 import io.mockk.every
 import io.mockk.mockk
 import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
@@ -18,7 +20,7 @@ class AuthorizeUserUseCaseTest {
 
     private val storage = mockk<StoragePort>()
     private val pinHasher = mockk<PinHasherPort>()
-    private val authorizeUser = AuthorizeUserUseCase(storage, pinHasher)
+    private val authorizeUser = AuthorizeUserUseCase(storage, pinHasher, PinGuard(MemoryPinAttempts()))
 
     @Test
     fun testExecuteSuccess() {

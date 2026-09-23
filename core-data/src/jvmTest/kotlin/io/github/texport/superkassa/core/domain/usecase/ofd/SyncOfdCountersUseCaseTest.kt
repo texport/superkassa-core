@@ -1,5 +1,8 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.ofd
 
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.MemoryPinAttempts
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.PinGuard
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -146,7 +149,7 @@ class SyncOfdCountersUseCaseTest {
                 createdAt = clock.now()
             )
 
-            val authorizeUserUseCase = io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase(storage, pinHasher)
+            val authorizeUserUseCase = AuthorizeUserUseCase(storage, pinHasher, PinGuard(MemoryPinAttempts()))
             val generateRequestNumberUseCase = io.github.texport.superkassa.core.domain.impl.usecase.ofd.GenerateRequestNumberUseCase(storage)
             val ofdCommandRequestFactory = io.github.texport.superkassa.core.domain.impl.helper.ofd.OfdCommandRequestFactory(OfdConfigAdapter())
             val testTimeValidator = object : TimeValidatorPort {

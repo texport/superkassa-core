@@ -3,7 +3,6 @@ package io.github.texport.superkassa.core.data.room
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryRequest
 import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
 import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryPort
-import io.github.texport.superkassa.core.domain.api.port.integration.PinAttemptsPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -19,10 +18,13 @@ internal class DeliveryLog : DeliveryPort {
     }
 }
 
-/** Хранилище, которое считает постановки документов в очередь досылки. */
-internal class CountingStorage(private val room: StoragePort) :
-    StoragePort by room,
-    PinAttemptsPort by (room as PinAttemptsPort) {
+/**
+ * Хранилище, которое считает постановки документов в очередь досылки.
+ *
+ * Обёртка, как у приложения: счёта неверных пинов она не несёт, и ядро
+ * получает его отдельно, из базы Room.
+ */
+internal class CountingStorage(private val room: StoragePort) : StoragePort by room {
     private val enqueued = CopyOnWriteArrayList<String>()
 
     /** Сколько раз документ [documentId] ставили в очередь, считая отвергнутые хранилищем попытки. */

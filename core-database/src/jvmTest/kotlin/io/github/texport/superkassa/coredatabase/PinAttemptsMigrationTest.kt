@@ -4,7 +4,6 @@ import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import io.github.texport.superkassa.core.domain.api.model.auth.PinAttempts
-import io.github.texport.superkassa.core.domain.api.port.integration.PinAttemptsPort
 import io.github.texport.superkassa.coredatabase.api.openRoomStorage
 import io.github.texport.superkassa.coredatabase.impl.db.SuperkassaAppDatabase
 import java.io.File
@@ -33,12 +32,12 @@ class PinAttemptsMigrationTest {
 
         val first = openRoomStorage(Room.databaseBuilder<SuperkassaAppDatabase>(name = path))
         assertEquals("kept", first.storagePort.findKkm("kkm-old")?.name)
-        (first.storagePort as PinAttemptsPort).getAndUpdate("kkm-old") { PinAttempts(5, 1_000L) }
+        first.pinAttempts.getAndUpdate("kkm-old") { PinAttempts(5, 1_000L) }
         first.close()
 
         val second = openRoomStorage(Room.databaseBuilder<SuperkassaAppDatabase>(name = path))
         try {
-            val stored = (second.storagePort as PinAttemptsPort).getAndUpdate("kkm-old") { it }
+            val stored = second.pinAttempts.getAndUpdate("kkm-old") { it }
             assertEquals(PinAttempts(5, 1_000L), stored)
         } finally {
             second.close()

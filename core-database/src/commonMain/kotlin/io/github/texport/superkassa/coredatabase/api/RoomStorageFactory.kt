@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.coredatabase.api
 
+import io.github.texport.superkassa.core.domain.api.port.integration.PinAttemptsPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 import io.github.texport.superkassa.coredatabase.impl.adapter.DefaultRoomStorageAdapter
@@ -39,7 +40,7 @@ object RoomStorageFactory {
         } catch (e: Exception) {
             throw StorageOpenException(dbPath, e)
         }
-        return RoomStoragePair(storage.storagePort, storage.queueStoragePort)
+        return RoomStoragePair(storage.storagePort, storage.queueStoragePort, storage.pinAttempts)
     }
 
     /**
@@ -48,6 +49,7 @@ object RoomStorageFactory {
      * @return Пара интерфейсов [StoragePort] и [QueueStoragePort].
      */
     fun createDefaultStorage(): RoomStoragePair {
+        val pinAttempts = RoomPinAttempts(InMemoryPinAttemptDao())
         val adapter = DefaultRoomStorageAdapter(
             queueDao = InMemoryQueueCommandDao(),
             kkmDao = InMemoryKkmDao(),
@@ -56,9 +58,9 @@ object RoomStorageFactory {
             fiscalDocumentDao = InMemoryFiscalDocumentDao(),
             counterDao = InMemoryCounterDao(),
             idempotencyDao = InMemoryIdempotencyDao(),
-            pinAttempts = RoomPinAttempts(InMemoryPinAttemptDao())
+            pinAttempts = pinAttempts
         )
-        return RoomStoragePair(adapter, adapter)
+        return RoomStoragePair(adapter, adapter, pinAttempts)
     }
 }
 
@@ -73,9 +75,12 @@ class StorageOpenException(dbPath: String, cause: Throwable) :
     IllegalStateException("Cash register database '$dbPath' cannot be opened, the file is left untouched: ${cause.message}", cause)
 
 /**
- * Пара портов локального хранилища.
+ * Порты локального хранилища.
+ *
+ * @property pinAttempts счёт неверных пинов той же базы; ядру передаётся явно.
  */
 data class RoomStoragePair(
     val storagePort: StoragePort,
-    val queueStoragePort: QueueStoragePort
+    val queueStoragePort: QueueStoragePort,
+    val pinAttempts: PinAttemptsPort
 )

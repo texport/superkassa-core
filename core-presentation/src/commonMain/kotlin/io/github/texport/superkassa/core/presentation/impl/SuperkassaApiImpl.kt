@@ -92,7 +92,7 @@ class SuperkassaApiImpl(
     internal val timeValidator: TimeValidatorPort,
     private val printApi: PrintApi,
     /** Счёт неверных пинов; сборка ядра даёт один на все входы по пину. */
-    pinGuard: PinGuard = PinGuard.of(storage, clock::now)
+    pinGuard: PinGuard
 ) : SuperkassaApi, PrintApi by printApi {
 
     internal val logger = getLogger(SuperkassaApiImpl::class)

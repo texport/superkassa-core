@@ -1,5 +1,7 @@
 package io.github.texport.superkassa.core.presentation.impl
 
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.MemoryPinAttempts
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.PinGuard
 import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser as DomainKkmUser
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup as DomainVatGroup
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime as DomainTaxRegime
@@ -86,7 +88,8 @@ class SuperkassaApiImplTest {
         receiptRenderPort = receiptRender,
         documentConvertPort = docConvert,
         timeValidator = timeValidator,
-        printApi = printApi
+        printApi = printApi,
+        pinGuard = PinGuard(MemoryPinAttempts())
     )
 
     init {
@@ -1367,7 +1370,8 @@ class SuperkassaApiImplTest {
             receiptRenderPort = receiptRender,
             documentConvertPort = docConvert,
             timeValidator = timeValidator,
-            printApi = printApi
+            printApi = printApi,
+            pinGuard = PinGuard(MemoryPinAttempts())
         )
 
         val types = apiOn204.getPaymentTypes().associateBy { it.code }
