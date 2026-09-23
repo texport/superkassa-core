@@ -7,6 +7,7 @@ import io.github.texport.superkassa.core.domain.api.exception.SuperkassaExceptio
 import io.github.texport.superkassa.core.presentation.api.model.user.UserUpdateRequest
 import io.github.texport.superkassa.coredatabase.api.getDatabaseBuilder
 import io.github.texport.superkassa.coredatabase.api.openRoomStorage
+import io.github.texport.superkassa.testing.api.clock.MovableClock
 import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.test.AfterTest

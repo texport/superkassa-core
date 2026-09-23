@@ -259,7 +259,8 @@ tasks.named<Jar>("jvmJar") {
     // Встраиваемая сборка публикуется своим артефактом со своими зависимостями
     // (движок PDF, шрифты) и в общий jar ядра не входит. Перенос с узла нужен
     // только приложению при обновлении — узлу, который берёт этот jar, он чужой.
-    subprojects.filter { it.name !in setOf("core-embedded", "core-import-node") }.forEach { sub ->
+    // Оснастка проверок нужна только тестам потребителей и в рабочий jar не входит.
+    subprojects.filter { it.name !in setOf("core-embedded", "core-import-node", "core-testing") }.forEach { sub ->
         dependsOn(sub.tasks.named("compileKotlinJvm"))
         val compileKotlin = sub.tasks.named("compileKotlinJvm", org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class)
         from(compileKotlin.map { it.destinationDirectory })
