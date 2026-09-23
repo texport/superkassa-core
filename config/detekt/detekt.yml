@@ -94,6 +94,11 @@ naming:
   PackageNaming:
     active: true
     packagePattern: '^[a-z_]+(\.[a-z_][a-z0-9_]*)*$'
+  MatchingDeclarationName:
+    active: true
+    # jvmCommon — общий исходник JVM и Android (src/jvmCommonMain): его actual
+    # лежат в файлах с этим суффиксом, как ios- и jvm-варианты в своих.
+    multiplatformTargets: ['ios', 'android', 'js', 'jvm', 'native', 'iosArm64', 'iosX64', 'macosX64', 'mingwX64', 'linuxX64', 'jvmCommon']
 
 exceptions:
   active: true

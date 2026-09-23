@@ -66,6 +66,8 @@ allprojects {
                 files(
                     "src/commonMain/kotlin",
                     "src/jvmMain/kotlin",
+                    // Общий исходник JVM и Android: без него detekt не видел jvm- и android-код core-embedded.
+                    "src/jvmCommonMain/kotlin",
                     "src/androidMain/kotlin",
                     "src/iosMain/kotlin"
                 )
