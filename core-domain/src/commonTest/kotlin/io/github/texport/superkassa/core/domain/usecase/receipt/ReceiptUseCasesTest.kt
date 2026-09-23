@@ -547,7 +547,7 @@ class ReceiptUseCasesTest {
             markupPercent = null,
             markupSum = null,
             taken = Decimal.parse("100.0"),
-            defaultVatGroup = "VAT_12"
+            vatGroup = "VAT_12"
         )
         val failure = assertFailsWith<ValidationException> { processReceipt.execute(req) }
         assertEquals("RECEIPT_VAT_NOT_ALLOWED", failure.code)
@@ -1354,7 +1354,7 @@ class ReceiptUseCasesTest {
             markupPercent = null,
             markupSum = null,
             taken = Decimal.parse("100.0"),
-            defaultVatGroup = "INVALID"
+            vatGroup = "INVALID"
         )
         assertFailsWith<IllegalArgumentException> {
             processReceipt.execute(req)

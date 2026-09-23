@@ -34,6 +34,22 @@ internal fun withBasisVat(items: List<ReceiptItem>, basis: ReceiptRequest): List
     }
 }
 
+/**
+ * НДС возврата суммой по чеку-основанию.
+ *
+ * Основание с НДС на весь чек возвращается так же — ставкой основания на
+ * весь чек. Основание с НДС по позициям раскладывает строки возврата по
+ * своим ставкам ([withBasisVat]).
+ *
+ * @param items позиции возврата.
+ * @param basis сохранённый чек-основание.
+ */
+internal fun basisVat(items: List<ReceiptItem>, basis: ReceiptRequest): VatScope {
+    val whole = basis.vatGroup
+    if (whole != null && items.none { it.vatGroup != null }) return VatScope(items, whole)
+    return VatScope(withBasisVat(items, basis), null)
+}
+
 /** Оборот основания по ставкам, с налогом; то, что не обложено, — «без НДС». */
 private fun turnoversByRate(basis: ReceiptRequest): List<Pair<VatGroup, Long>> {
     val taxed = TaxCalculator().calculate(basis).ticketTaxes

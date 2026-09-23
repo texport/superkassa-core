@@ -83,6 +83,9 @@ object CoreStrings {
     fun parentTicketRequiredForReturns(): TrilingualMessage = CoreStringsImpl.parentTicketRequiredForReturns()
     fun receiptDiscountScopesConflict(): TrilingualMessage = CoreStringsImpl.receiptDiscountScopesConflict()
 
+    /** НДС задан и на весь чек, и у позиций: способ в чеке один. */
+    fun receiptVatScopesConflict(): TrilingualMessage = CoreStringsImpl.receiptVatScopesConflict()
+
     /** Скидка и наценка на сам чек вместе: сервис приёма принимает одно из двух. */
     fun receiptDiscountAndMarkupConflict(): TrilingualMessage =
         CoreStringsImpl.receiptDiscountAndMarkupConflict()

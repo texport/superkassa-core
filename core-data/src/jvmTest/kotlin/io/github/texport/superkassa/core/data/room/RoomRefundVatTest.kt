@@ -2,7 +2,6 @@ package io.github.texport.superkassa.core.data.room
 
 import io.github.texport.superkassa.core.data.room.RoomKassa.Companion.ADMIN_PIN
 import io.github.texport.superkassa.core.data.room.RoomKassa.Companion.CASHIER_PIN
-import io.github.texport.superkassa.core.data.room.RoomKassa.Companion.KGD_NUMBER
 import io.github.texport.superkassa.core.data.room.RoomKassa.Companion.KKM
 import io.github.texport.superkassa.core.data.room.RoomKassa.Companion.cash
 import io.github.texport.superkassa.core.domain.api.exception.SuperkassaException
@@ -10,13 +9,8 @@ import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
 import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
-import io.github.texport.superkassa.core.presentation.api.model.receipt.ParentTicketRequest
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptItemRequest
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptSellRequest
-import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptSellReturnRequest
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.temporal.ChronoUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -33,7 +27,7 @@ class RoomRefundVatTest {
     fun `возврат суммой продажи без НДС уходит без налога, а не по ставке кассы`() {
         val sale = sell(listOf(line("1000.00", vat = VatGroup.NO_VAT)), "1000.00")
 
-        val refund = refundByAmount(sale, "1000.00", "1000.00")
+        val refund = kassa.refundByAmount(sale, "1000.00", "1000.00")
 
         assertEquals(emptyMap(), bfdTicketTax(kassa.bfd.lastTicket()))
         assertEquals(emptyList(), stored(refund).ticketTaxes.orEmpty())
@@ -44,7 +38,7 @@ class RoomRefundVatTest {
     fun `возврат суммой по чеку с двумя ставками делится между ними в пропорции основания`() {
         val sale = sell(listOf(line("1160.00", vat = VatGroup.VAT_16), line("1000.00", vat = VatGroup.NO_VAT)), "2160.00")
 
-        val refund = refundByAmount(sale, "2160.00", "1080.00")
+        val refund = kassa.refundByAmount(sale, "2160.00", "1080.00")
 
         assertEquals(mapOf(VAT_16_PERCENT to 8_000L), bfdTicketTax(kassa.bfd.lastTicket()))
         assertEquals(
@@ -70,26 +64,6 @@ class RoomRefundVatTest {
         KKM, CASHIER_PIN,
         ReceiptSellRequest(idempotencyKey = "sale-$total", items = items, payments = listOf(cash(total)))
     ).documentId
-
-    /** Возврат одной строкой без ставки, как его собирает касса при возврате суммой. */
-    private fun refundByAmount(saleId: String, saleTotal: String, amount: String): String {
-        val sale = kassa.document(saleId)
-        val basis = ParentTicketRequest(
-            parentTicketNumber = checkNotNull(sale.docNo),
-            parentTicketDateTime = Instant.ofEpochMilli(sale.createdAt).truncatedTo(ChronoUnit.SECONDS)
-                .atOffset(ZoneOffset.UTC).toLocalDateTime().toString(),
-            kgdKkmId = KGD_NUMBER,
-            parentTicketTotal = Decimal.parse(saleTotal),
-            parentTicketIsOffline = false
-        )
-        val byAmount = ReceiptItemRequest(name = "Возврат", price = Decimal.parse(amount), quantity = Decimal.parse("1"))
-        return kassa.api.createSellReturnReceipt(
-            KKM, CASHIER_PIN,
-            ReceiptSellReturnRequest(
-                idempotencyKey = "return-$amount", items = listOf(byAmount), payments = listOf(cash(amount)), parentTicket = basis
-            )
-        ).documentId
-    }
 
     private fun stored(documentId: String) = checkNotNull(kassa.storage.findFiscalDocumentWithReceiptPayload(documentId)).second
 

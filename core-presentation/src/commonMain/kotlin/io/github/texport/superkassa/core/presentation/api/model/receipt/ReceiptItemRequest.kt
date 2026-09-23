@@ -69,8 +69,9 @@ data class ReceiptItemRequest(
     @field:Max(999_999_999)
     val quantity: Decimal,
     @Schema(
-        description = "Группа НДС для позиции. Допустимые значения: NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16. Если не указана — используется defaultVatGroup кассы.",
-        allowableValues = ["NO_VAT", "VAT_0", "VAT_5", "VAT_10", "VAT_16"],
+        description = "Ставка НДС позиции, когда НДС в чеке задан по позициям. Допустимые значения: NO_VAT, VAT_0, " +
+            "VAT_5, VAT_10, VAT_12, VAT_16. Не указана — ставка кассы по умолчанию. Взаимоисключающе с vatGroup чека.",
+        allowableValues = ["NO_VAT", "VAT_0", "VAT_5", "VAT_10", "VAT_12", "VAT_16"],
         example = "VAT_16"
     )
     val vatGroup: String? = null,

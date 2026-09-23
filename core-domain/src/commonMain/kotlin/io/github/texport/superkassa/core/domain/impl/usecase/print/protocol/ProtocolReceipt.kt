@@ -29,20 +29,23 @@ import kotlinx.serialization.json.JsonObject
 internal fun receiptOf(ticket: JsonObject, kkm: KkmInfo): ReceiptRequest {
     val items = ticket.children("items")
     val amounts = ticket.child("amounts")
-    val taxes = taxLinesOf(items)
+    val total = amounts?.money("total") ?: Money(0, 0)
+    val wholeReceipt = ticket.children("taxes")
+    val taxes = if (wholeReceipt.isEmpty()) taxLinesOf(items) else receiptTaxLinesOf(wholeReceipt, total)
     return ReceiptRequest(
         kkmId = kkm.id,
         pin = "",
         operation = operationOf(ticket.text("operation")),
         items = items.mapNotNull(::goodOf),
         payments = ticket.children("payments").map(::paymentOf),
-        total = amounts?.money("total") ?: Money(0, 0),
+        total = total,
         taken = amounts?.money("taken"),
         change = amounts?.money("change"),
         idempotencyKey = ticket.text("printedDocumentNumber").orEmpty(),
         parentTicket = ticket.child("parentTicket")?.let(::parentOf),
         taxRegime = if (taxes.isEmpty()) TaxRegime.NO_VAT else TaxRegime.VAT_PAYER,
         defaultVatGroup = taxes.firstOrNull()?.vatGroup,
+        vatGroup = taxes.firstOrNull()?.vatGroup?.takeIf { wholeReceipt.isNotEmpty() },
         discount = modifierOf(amounts?.child("discount"), items, "discount"),
         markup = modifierOf(amounts?.child("markup"), items, "markup"),
         customerBin = ticket.child("extensionOptions")?.text("customerIinOrBin"),
@@ -154,6 +157,17 @@ private fun taxLinesOf(items: List<JsonObject>): List<TaxLine> {
             taxSum = Money.fromTiyn(tax)
         )
     }
+}
+
+/**
+ * Налог на весь чек (`taxes` самого чека).
+ *
+ * Оборот такого налога — итог чека, как его считает БФД; налог — из пакета.
+ */
+private fun receiptTaxLinesOf(taxes: List<JsonObject>, total: Money): List<TaxLine> = taxes.mapNotNull { line ->
+    val group = vatGroupOf(line.number("percent")) ?: return@mapNotNull null
+    val tax = line.tiyn("sum")
+    TaxLine(group, group.percent, Money.fromTiyn(total.tiyn() - tax), Money.fromTiyn(tax))
 }
 
 /** Ставка, по которой ещё ничего не набрано. */

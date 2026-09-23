@@ -91,7 +91,7 @@ object ReceiptMapper {
         payments: List<ReceiptPaymentRequest>,
         taken: Decimal?,
         parentTicket: ParentTicketRequest? = null,
-        defaultVatGroup: String? = null,
+        vatGroup: String? = null,
         customerBin: String? = null,
         domain: ReceiptDomainRequest? = null
     ): CreateReceiptCommand {
@@ -108,7 +108,7 @@ object ReceiptMapper {
             payments = payments.map { toPaymentInput(it) },
             taken = taken,
             parentTicket = toParentTicket(parentTicket),
-            defaultVatGroup = defaultVatGroup,
+            vatGroup = vatGroup,
             customerBin = customerBin,
             domain = toDomainAttributes(domain)
         )
@@ -139,7 +139,7 @@ object ReceiptMapper {
             payments = dto.payments.map { toPaymentInput(it) },
             taken = dto.taken,
             parentTicket = toParentTicket(dto.parentTicket),
-            defaultVatGroup = dto.defaultVatGroup,
+            vatGroup = dto.vatGroup,
             customerBin = dto.customerBin
         )
 

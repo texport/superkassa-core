@@ -149,7 +149,7 @@ class ReceiptMapperTest {
             markupSum = null,
             payments = listOf(paymentDto),
             taken = Decimal.parse("250.0"),
-            defaultVatGroup = "VAT_0"
+            vatGroup = "VAT_0"
         )
 
         assertEquals("kkm-1", command.kkmId)
@@ -159,7 +159,7 @@ class ReceiptMapperTest {
         assertEquals(1, command.items.size)
         assertEquals(1, command.payments.size)
         assertEquals(Decimal.parse("250.0"), command.taken)
-        assertEquals("VAT_0", command.defaultVatGroup)
+        assertEquals("VAT_0", command.vatGroup)
     }
 
     @Test
@@ -220,7 +220,7 @@ class ReceiptMapperTest {
             taken = Decimal.parse("0.0")
         )
         assertNull(command.parentTicket)
-        assertNull(command.defaultVatGroup)
+        assertNull(command.vatGroup)
         assertNull(command.customerBin)
     }
 }

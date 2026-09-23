@@ -70,6 +70,7 @@ internal class SaleReceiptRenderer(
         val itemsHtml = SaleItemsComponent.render(
             items = receipt.items,
             defaultVatGroup = receipt.defaultVatGroup ?: VatGroup.NO_VAT,
+            receiptVat = receipt.vatGroup,
             taxRegime = receipt.taxRegime,
             receiptDiscount = receipt.discount,
             t = { t(it) },

@@ -43,6 +43,24 @@ class ProtocolReceiptDefaultsTest {
     }
 
     @Test
+    fun `налог на весь чек печатается ставкой чека с оборотом итога`() {
+        val document = documentOf(
+            """
+            {"request": {"command": "COMMAND_TICKET", "ticket": {
+              "amounts": {"total": {"bills": "650", "coins": 0}},
+              "items": [{"type": "ITEM_TYPE_COMMODITY", "commodity": {"sum": {"bills": "650", "coins": 0}}}],
+              "taxes": [{"taxType": 100, "percent": 16000, "sum": {"bills": "89", "coins": 66}, "isInTotalSum": true}]
+            }}}
+            """.trimIndent()
+        ) as ProtocolDocument.Receipt
+
+        val tax = document.receipt.ticketTaxes.orEmpty().single()
+        assertEquals(VatGroup.VAT_16, document.receipt.vatGroup)
+        assertEquals(8_966L to 56_034L, tax.taxSum.tiyn() to tax.taxBase.tiyn())
+        assertNull(document.receipt.items.single().vatGroup)
+    }
+
+    @Test
     fun `итоги без сумм и позиция без полей не мешают чеку`() {
         val document = documentOf(
             """

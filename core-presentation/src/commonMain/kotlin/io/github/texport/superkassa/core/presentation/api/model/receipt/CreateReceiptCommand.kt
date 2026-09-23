@@ -54,8 +54,14 @@ data class CreateReceiptCommand(
     val parentTicket: ParentTicketRequest? = null,
     /** Отраслевые реквизиты чека. */
     val domain: ReceiptDomainRequest? = null,
-    @Schema(description = "Группа НДС по умолчанию для чека (NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16)", example = "NO_VAT")
-    val defaultVatGroup: String? = null,
+    @Schema(
+        description = "НДС на весь чек: одна ставка на весь итог чека. Допустимые значения: NO_VAT, VAT_0, VAT_5, " +
+            "VAT_10, VAT_12, VAT_16. Взаимоисключающе со ставками позиций (vatGroup позиции), как скидка на чек " +
+            "и на позиции: заданы оба — отказ RECEIPT_VAT_SCOPES_CONFLICT. Не указана — НДС по позициям, " +
+            "позиция без ставки облагается ставкой кассы по умолчанию.",
+        example = "VAT_16"
+    )
+    val vatGroup: String? = null,
     @Schema(description = "БИН/ИИН покупателя (для юридических лиц)", example = "123456789012")
     val customerBin: String? = null
 )

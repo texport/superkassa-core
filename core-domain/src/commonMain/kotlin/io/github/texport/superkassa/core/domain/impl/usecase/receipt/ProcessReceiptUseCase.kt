@@ -1,13 +1,11 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.receipt
 
 import io.github.texport.superkassa.core.domain.impl.helper.tax.TaxCalculator
-import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.receipt.PaymentType
-import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
@@ -133,15 +131,16 @@ class ProcessReceiptUseCase(
 
         val receiptDiscount = if (receiptDiscountTiyn > 0) Money.fromTiyn(receiptDiscountTiyn) else null
         val receiptMarkup = if (receiptMarkupTiyn > 0) Money.fromTiyn(receiptMarkupTiyn) else null
-        val defaultVatGroup = command.defaultVatGroup?.takeIf { it.isNotBlank() }
-            ?.let { vatGroupOf(it, "defaultVatGroup") }
+        // НДС на весь чек или по позициям — одно из двух, как скидка.
+        val receiptVat = command.vatGroup?.takeIf { it.isNotBlank() }?.let { vatGroupOf(it, "vatGroup") }
+        requireOneVatScope(receiptVat, receiptItems)
 
         // Ставка, которую режим кассы не допускает, отвергается, а не
         // отбрасывается молча. Раньше «Без НДС» + VAT_12 на позиции
         // доходило до ОФД чеком без налога: кассир видел и печатал
         // «НДС 12%», а в кабинете у чека налог был пуст.
-        requireVatAllowedByRegime(kkm, receiptItems, defaultVatGroup)
-        val items = withRefundBasisVat(command, kkm, receiptItems)
+        requireVatAllowedByRegime(kkm, receiptItems, receiptVat)
+        val vat = withRefundBasisVat(command, kkm, VatScope(receiptItems, receiptVat))
 
         // 5a. Возврат не может превысить остаток по чеку-основанию.
         requireRefundFitsBasis(command, totalMoney)
@@ -151,14 +150,15 @@ class ProcessReceiptUseCase(
             kkmId = command.kkmId,
             pin = command.pin,
             operation = command.operation,
-            items = items,
+            items = vat.items,
             payments = receiptPayments,
             total = totalMoney,
             taken = takenMoney,
             change = changeMoney,
             idempotencyKey = command.idempotencyKey,
             parentTicket = command.parentTicket,
-            defaultVatGroup = defaultVatGroup ?: kkm.defaultVatGroup,
+            defaultVatGroup = kkm.defaultVatGroup,
+            vatGroup = vat.receiptVat,
             taxRegime = kkm.taxRegime,
             discount = receiptDiscount,
             markup = receiptMarkup,
@@ -260,20 +260,16 @@ class ProcessReceiptUseCase(
     }
 
     /**
-     * Позиции возврата суммой со ставкой чека-основания.
+     * НДС возврата суммой — тем способом и по тем ставкам, что у чека-основания.
      *
      * Основание ищется только у возврата и только когда касса выделяет НДС:
      * неплательщику ставка строки ни на что не влияет.
      */
-    private fun withRefundBasisVat(
-        command: CreateReceiptCommand,
-        kkm: KkmInfo,
-        items: List<ReceiptItem>
-    ): List<ReceiptItem> {
-        if (kkm.taxRegime == TaxRegime.NO_VAT || items.all { it.vatGroup != null }) return items
-        val parent = command.parentTicket?.takeIf { command.operation.isReturn() } ?: return items
-        val basis = refundBasis.find(command.kkmId, kkm.registrationNumber, parent) ?: return items
-        return withBasisVat(items, basis)
+    private fun withRefundBasisVat(command: CreateReceiptCommand, kkm: KkmInfo, sent: VatScope): VatScope {
+        if (kkm.taxRegime == TaxRegime.NO_VAT || sent.items.all { it.vatGroup != null }) return sent
+        val parent = command.parentTicket?.takeIf { command.operation.isReturn() } ?: return sent
+        val basis = refundBasis.find(command.kkmId, kkm.registrationNumber, parent) ?: return sent
+        return basisVat(sent.items, basis)
     }
 
     /**
@@ -300,32 +296,6 @@ class ProcessReceiptUseCase(
             throw ValidationException(CoreStrings.insufficientCash(), "INSUFFICIENT_CASH")
         }
     }
-}
-
-/**
- * Проверяет, что ставки чека допускает налоговый режим кассы.
- *
- * Неплательщик НДС налог не выделяет: при режиме NO_VAT расчёт налога
- * даёт пустой список, и ставка позиции никуда не уходит. Принять такую
- * ставку — значит показать кассиру и покупателю налог, которого в чеке
- * ОФД нет. Отказ громкий и называет ставку, чтобы кассир понял, что
- * исправлять.
- *
- * @param kkm касса, от имени которой оформляется чек.
- * @param items позиции чека.
- * @param defaultVatGroup ставка чека, присланная вызывающим, либо `null`.
- * @throws ValidationException если режим кассы ставку не допускает.
- */
-private fun requireVatAllowedByRegime(
-    kkm: KkmInfo,
-    items: List<ReceiptItem>,
-    defaultVatGroup: VatGroup?
-) {
-    if (kkm.taxRegime != TaxRegime.NO_VAT) return
-    val offending = items.firstNotNullOfOrNull { it.vatGroup?.takeIf { group -> group != VatGroup.NO_VAT } }
-        ?: defaultVatGroup?.takeIf { it != VatGroup.NO_VAT }
-        ?: return
-    throw ValidationException(CoreStrings.receiptVatNotAllowed(offending.name), "RECEIPT_VAT_NOT_ALLOWED")
 }
 
 private fun ReceiptOperationType.isReturn(): Boolean =

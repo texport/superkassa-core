@@ -31,7 +31,7 @@ fun SuperkassaApiImpl.createSellReceiptImpl(kkmId: String, pin: String, request:
             markupSum = request.markupSum,
             payments = request.payments,
             taken = request.taken,
-            defaultVatGroup = request.defaultVatGroup,
+            vatGroup = request.vatGroup,
             customerBin = request.customerBin,
             domain = request.domain
         )
@@ -60,7 +60,7 @@ fun SuperkassaApiImpl.createSellReturnReceiptImpl(kkmId: String, pin: String, re
             payments = request.payments,
             taken = request.taken,
             parentTicket = request.parentTicket,
-            defaultVatGroup = request.defaultVatGroup,
+            vatGroup = request.vatGroup,
             customerBin = request.customerBin,
             domain = request.domain
         )
@@ -88,7 +88,7 @@ fun SuperkassaApiImpl.createBuyReceiptImpl(kkmId: String, pin: String, request: 
             markupSum = request.markupSum,
             payments = request.payments,
             taken = request.taken,
-            defaultVatGroup = request.defaultVatGroup,
+            vatGroup = request.vatGroup,
             customerBin = request.customerBin,
             domain = request.domain
         )
@@ -117,7 +117,7 @@ fun SuperkassaApiImpl.createBuyReturnReceiptImpl(kkmId: String, pin: String, req
             payments = request.payments,
             taken = request.taken,
             parentTicket = request.parentTicket,
-            defaultVatGroup = request.defaultVatGroup,
+            vatGroup = request.vatGroup,
             customerBin = request.customerBin,
             domain = request.domain
         )

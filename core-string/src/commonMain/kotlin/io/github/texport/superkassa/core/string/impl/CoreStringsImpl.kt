@@ -466,6 +466,12 @@ internal object CoreStringsImpl {
         en = "This receipt has already been fully refunded"
     )
 
+    internal fun receiptVatScopesConflict(): TrilingualMessage = TrilingualMessage(
+        ru = "НДС в чеке задаётся одним способом: либо ставкой на весь чек, либо ставками позиций",
+        kk = "Чекте ҚҚС бір тәсілмен беріледі: не бүкіл чекке бір мөлшерлемемен, не позициялардың мөлшерлемелерімен",
+        en = "VAT in a receipt is set one way: either one rate for the whole receipt or rates on the items"
+    )
+
     internal fun receiptVatNotAllowed(group: String): TrilingualMessage = TrilingualMessage(
         ru = "Касса не является плательщиком НДС: ставка $group в чеке недопустима",
         kk = "Касса ҚҚС төлеушісі емес: чектегі $group мөлшерлемесі жарамсыз",

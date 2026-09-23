@@ -18,7 +18,9 @@ import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
  * @property idempotencyKey Уникальный ключ идемпотентности запроса.
  * @property parentTicket Ссылка на родительский чек (заполняется для операций возврата).
  * @property taxRegime Налоговый режим, применяемый к чеку (по умолчанию NO_VAT).
- * @property defaultVatGroup Ставка НДС по умолчанию на весь чек (если null, используется ставка по умолчанию для ККМ).
+ * @property defaultVatGroup Ставка кассы: ею облагается позиция без своей ставки, когда НДС задан по позициям.
+ * @property vatGroup НДС на весь чек: одна ставка на весь итог чека, позиции своих ставок не несут.
+ * `null` — НДС по позициям. Способы взаимоисключающие, как скидка на чек и на позиции.
  * @property discount Сумма скидки на весь чек.
  * @property markup Сумма наценки на весь чек.
  * @property customerBin БИН/ИИН покупателя (если требуется указание).
@@ -39,6 +41,7 @@ data class ReceiptRequest(
     val domain: ReceiptDomain? = null,
     val taxRegime: TaxRegime = TaxRegime.NO_VAT,
     val defaultVatGroup: VatGroup? = null,
+    val vatGroup: VatGroup? = null,
     val discount: Money? = null,
     val markup: Money? = null,
     val customerBin: String? = null,

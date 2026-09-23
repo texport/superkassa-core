@@ -11,9 +11,13 @@ package io.github.texport.superkassa.core.domain.api.model.receipt
  * @property modifierTaxes налог скидки или наценки на чек по ставкам.
  * Уходит в БФД в `taxes` скидки или наценки: по нему БФД уменьшает
  * или увеличивает налог чека.
+ * @property receiptTaxes налог на весь чек, когда НДС задан одной ставкой
+ * на чек. Уходит в БФД в `taxes` самого чека, а позиции, скидка и наценка
+ * налогов тогда не несут: CPCR допускает налоги либо там, либо там.
  */
 data class TicketTaxResult(
     val ticketTaxes: List<TaxLine>,
     val itemTaxes: List<TaxLine?> = emptyList(),
-    val modifierTaxes: List<TaxLine> = emptyList()
+    val modifierTaxes: List<TaxLine> = emptyList(),
+    val receiptTaxes: List<TaxLine> = emptyList()
 )

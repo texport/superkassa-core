@@ -268,6 +268,9 @@ object OfdTicketRequestBuilder {
                                     }
                                 }
                             )
+                            // НДС на весь чек — налогом самого чека: позиции, скидка
+                            // и наценка налогов тогда не несут (CPCR, TicketRequest.taxes).
+                            taxes.receiptTaxes.takeIf { it.isNotEmpty() }?.let { put("taxes", OfdTaxJson.taxes(it)) }
                             put(
                                 "amounts",
                                 buildJsonObject {

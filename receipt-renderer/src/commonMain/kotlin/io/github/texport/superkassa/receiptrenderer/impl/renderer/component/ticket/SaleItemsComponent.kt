@@ -12,6 +12,8 @@ internal object SaleItemsComponent {
     fun render(
         items: List<ReceiptItem>,
         defaultVatGroup: VatGroup,
+        /** НДС на весь чек: ставка печатается один раз в налогах чека, а не у позиций. */
+        receiptVat: VatGroup?,
         taxRegime: TaxRegime,
         receiptDiscount: Money?,
         t: (String) -> String,
@@ -59,7 +61,7 @@ internal object SaleItemsComponent {
             // кассы: в смешанном режиме всегда, у плательщика НДС — когда
             // позиция облагается иначе, например продаётся без НДС.
             val ownRate = taxRegime == TaxRegime.VAT_PAYER && itemVat != defaultVatGroup
-            val vatHtml = if (taxRegime == TaxRegime.MIXED || ownRate) {
+            val vatHtml = if (receiptVat == null && (taxRegime == TaxRegime.MIXED || ownRate)) {
                 "<div class=\"item-vat\">$vatLabel</div>"
             } else {
                 ""

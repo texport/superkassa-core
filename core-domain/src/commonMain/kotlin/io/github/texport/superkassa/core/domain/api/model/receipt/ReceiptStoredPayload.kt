@@ -19,7 +19,8 @@ import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
  * @property change Сумма сдачи.
  * @property parentTicket Ссылка на исходный чек (при возврате).
  * @property taxRegime Применяемый налоговый режим.
- * @property defaultVatGroup Ставка НДС по умолчанию.
+ * @property defaultVatGroup Ставка кассы для позиций без своей ставки.
+ * @property vatGroup НДС на весь чек; `null` — НДС по позициям (и у всех чеков, записанных раньше).
  * @property discount Сумма общей скидки на чек.
  * @property markup Сумма общей наценки на чек.
  * @property customerBin БИН/ИИН покупателя.
@@ -40,6 +41,7 @@ data class ReceiptStoredPayload(
     val domain: ReceiptDomain? = null,
     val taxRegime: TaxRegime = TaxRegime.NO_VAT,
     val defaultVatGroup: VatGroup = VatGroup.NO_VAT,
+    val vatGroup: VatGroup? = null,
     val discount: Money? = null,
     val markup: Money? = null,
     val customerBin: String? = null,
@@ -65,6 +67,7 @@ data class ReceiptStoredPayload(
         domain = domain,
         taxRegime = taxRegime,
         defaultVatGroup = defaultVatGroup,
+        vatGroup = vatGroup,
         discount = discount,
         markup = markup,
         customerBin = customerBin,
@@ -89,6 +92,7 @@ data class ReceiptStoredPayload(
             domain = request.domain,
             taxRegime = request.taxRegime,
             defaultVatGroup = request.defaultVatGroup ?: VatGroup.NO_VAT,
+            vatGroup = request.vatGroup,
             discount = request.discount,
             markup = request.markup,
             customerBin = request.customerBin,

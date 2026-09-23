@@ -28,6 +28,9 @@ import kotlin.math.sign
  * - Ставка позиции берётся у позиции, ставка кассы — когда своей нет.
  *   Неплательщик НДС налог не выделяет.
  * - НДС 0 % — налог с нулевой суммой. «Без НДС» — позиция без налога.
+ * - НДС на весь чек — налог итога чека по одной ставке. Так его считает
+ *   БФД, получив налог в `taxes` чека (`OperationCalculator.updateTaxes`):
+ *   оборот — итог чека со скидкой или наценкой, налог — присланный.
  */
 class TaxCalculator {
 
@@ -37,6 +40,7 @@ class TaxCalculator {
      * @param request чек с позициями, режимом и ставкой кассы, скидкой или наценкой.
      */
     fun calculate(request: ReceiptRequest): TicketTaxResult {
+        if (request.vatGroup != null) return wholeReceipt(request)
         val itemTaxes = request.items.map { item ->
             taxOf(vatGroupOf(item, request.taxRegime, request.defaultVatGroup), item.sum.tiyn())
         }
@@ -46,6 +50,18 @@ class TaxCalculator {
             ticketTaxes = groups.filter { it.turnover > 0 }.map { it.line() },
             itemTaxes = itemTaxes,
             modifierTaxes = groups.mapNotNull { it.modifierTax }.filter { it.taxSum.tiyn() > 0 }
+        )
+    }
+
+    /** Налог на весь чек: одна ставка на итог, позиции налогов не несут. */
+    private fun wholeReceipt(request: ReceiptRequest): TicketTaxResult {
+        val group = request.vatGroup?.takeIf { request.taxRegime != TaxRegime.NO_VAT }
+        val total = request.total.tiyn()
+        val line = taxOf(group, total)?.takeIf { total > 0L }
+        return TicketTaxResult(
+            ticketTaxes = listOfNotNull(line),
+            itemTaxes = request.items.map { null },
+            receiptTaxes = listOfNotNull(line)
         )
     }
 

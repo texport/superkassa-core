@@ -38,10 +38,13 @@ data class ReceiptBuyRequest(
     @Schema(description = "Сдача (в тенге, опционально)", example = "499.25")
     val change: Decimal? = null,
     @Schema(
-        description = "Группа НДС на весь чек. Если не указана — используется настройка ККМ. NO_VAT, VAT_0, VAT_5, VAT_10, VAT_16.",
-        example = "NO_VAT"
+        description = "НДС на весь чек: одна ставка на весь итог чека. Допустимые значения: NO_VAT, VAT_0, VAT_5, " +
+            "VAT_10, VAT_12, VAT_16. Взаимоисключающе со ставками позиций (vatGroup позиции), как скидка на чек " +
+            "и на позиции: заданы оба — отказ RECEIPT_VAT_SCOPES_CONFLICT. Не указана — НДС по позициям, " +
+            "позиция без ставки облагается ставкой кассы по умолчанию.",
+        example = "VAT_16"
     )
-    val defaultVatGroup: String? = null,
+    val vatGroup: String? = null,
     @Schema(description = "Способы оплаты. Допустимые типы: CASH, CARD, ELECTRONIC.")
     @field:NotEmpty(message = "Укажите хотя бы один способ оплаты")
     val payments: List<@Valid ReceiptPaymentRequest>,

@@ -23,7 +23,8 @@ data class CreateReceiptCommand(
     val taken: Decimal?,
     val parentTicket: ParentTicket? = null,
     val domain: io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDomain? = null,
-    val defaultVatGroup: String? = null,
+    /** НДС на весь чек; `null` — НДС по позициям. Взаимоисключающе со ставками позиций. */
+    val vatGroup: String? = null,
     val customerBin: String? = null
 ) {
     /**

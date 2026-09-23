@@ -9,19 +9,31 @@ import kz.kazakhtelecom.proto.v203.Money as BfdMoney
  * Налог чека по ставкам так, как его складывает БФД.
  *
  * Повторяет эталон `OperationCalculator.updateTaxes` и
- * `mergeTaxReportIntoReport`: налоги позиций прибавляются, налоги сторно
- * вычитаются, налог скидки на чек вычитается, наценки — прибавляется.
- * Позиция или скидка без `taxes` налог чека не меняет.
+ * `mergeTaxReportIntoReport`: налог на весь чек (`taxes` чека) берётся
+ * как есть, и тогда налоги позиций не читаются. Иначе налоги позиций
+ * прибавляются, налоги сторно вычитаются, налог скидки на чек вычитается,
+ * наценки — прибавляется. Позиция или скидка без `taxes` налог чека не меняет.
  *
  * @return ставка в тысячных процента → налог в тиынах.
  */
 internal fun bfdTicketTax(ticket: TicketRequest): Map<Int, Long> {
+    if (ticket.taxes.isNotEmpty()) return ticket.taxes.associate { it.percent to it.sum.tiyn() }
     val signed = ticket.items.flatMap { item ->
         item.commodity?.taxes.orEmpty().map { it to 1L } + item.storno_commodity?.taxes.orEmpty().map { it to -1L }
     } + ticket.amounts.discount?.taxes.orEmpty().map { it to -1L } +
         ticket.amounts.markup?.taxes.orEmpty().map { it to 1L }
     return signed.groupBy({ (tax, _) -> tax.percent }) { (tax, sign) -> sign * tax.sum.tiyn() }
         .mapValues { (_, sums) -> sums.sum() }
+}
+
+/**
+ * Налоги заданы и у чека, и у позиций, скидки или наценки — такой чек
+ * эталон отвергает («Taxes mix error», `TicketValidation.validateTaxesMix`).
+ */
+internal fun taxesMixed(ticket: TicketRequest): Boolean {
+    val elsewhere = ticket.items.any { it.commodity?.taxes.orEmpty().isNotEmpty() || it.storno_commodity?.taxes.orEmpty().isNotEmpty() } ||
+        ticket.amounts.discount?.taxes.orEmpty().isNotEmpty() || ticket.amounts.markup?.taxes.orEmpty().isNotEmpty()
+    return ticket.taxes.isNotEmpty() && elsewhere
 }
 
 /** Последний чек, ушедший в БФД. */
