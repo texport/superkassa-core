@@ -173,6 +173,25 @@ allprojects {
         }
     }
 
+    // kotlin-test приносит JUnit 5.10, а он метод с @Test, возвращающий значение
+    // (тело-выражение вида `= runBlocking { assertNotNull(x) }`), молча не
+    // запускает. JUnit 6 сообщает о таком методе при поиске проверок, а порог
+    // WARNING делает сообщение падением прогона. JUnit 4 такой метод роняет сам.
+    plugins.withId("org.jetbrains.kotlin.multiplatform") {
+        configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
+            sourceSets.matching { it.name == "jvmTest" || it.name == "androidHostTest" }.configureEach {
+                dependencies.addProvider(
+                    implementationConfigurationName,
+                    dependencies.platform(rootProject.libs.junit.bom)
+                )
+            }
+        }
+    }
+
+    tasks.withType<Test>().configureEach {
+        systemProperty("junit.platform.discovery.issue.severity.critical", "WARNING")
+    }
+
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
         if (name.contains("Test")) {
             enabled = false
