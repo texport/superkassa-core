@@ -50,11 +50,9 @@ internal class EmbeddedSuperkassa private constructor(
     /** Хранилище ядра: для проверок сборки, приложению оно не нужно. */
     internal val storage: StoragePort get() = database.storagePort
 
-    /** Досылка очереди одним заходом, не дожидаясь паузы: для проверок сборки. */
-    internal fun sendQueueNow(): Int = sender.sendOnce()
+    override fun sendQueueNow(): Int = sender.sendOnce()
 
-    /** Проверка автозакрытия одним заходом, не дожидаясь паузы: для проверок сборки. */
-    internal fun closeDueShiftsNow(): Int = shiftCloser.closeDueOnce()
+    override fun closeDueShiftsNow(): Int = shiftCloser.closeDueOnce()
 
     private var closed = false
 
