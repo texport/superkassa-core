@@ -35,7 +35,7 @@ internal class Base64TokenCodecAdapter : TokenCodecPort {
             // Парсим в Long
             text.toLongOrNull()
         } catch (e: IllegalArgumentException) {
-            logger.warn("Invalid Base64 format in token: {}", e.message)
+            logger.warn("Stored token is not valid Base64: {}", e::class.simpleName)
             null
         }
     }

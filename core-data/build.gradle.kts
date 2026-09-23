@@ -70,6 +70,8 @@ kotlin {
                 implementation(libs.ofd.kt.proto)
                 // Касса на файловой базе: проверки открывают её строителем Room.
                 implementation(libs.room.runtime)
+                // Журнал читается проверкой: в него не должны попадать пакеты и токен.
+                implementation(libs.logback.classic)
             }
         }
     }

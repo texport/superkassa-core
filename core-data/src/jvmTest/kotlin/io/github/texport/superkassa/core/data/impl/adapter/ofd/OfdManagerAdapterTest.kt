@@ -859,59 +859,6 @@ class OfdManagerAdapterTest {
     }
 
     @Test
-    fun testSendSuccessWithPrettyPrintJson() {
-        val prettyConfig = OfdConfig("2.0.3", prettyPrintJson = true)
-        val prettyAdapter = OfdManagerAdapter(
-            config = prettyConfig,
-            codec = codec,
-            networkClient = networkClient,
-            requestBuilders = listOf(builder),
-            timeoutSeconds = 1L,
-            reconnectIntervalSeconds = 1L
-        )
-
-        val request = OfdCommandRequest(
-            kkmId = "kkm-pretty",
-            ofdProviderId = "KAZAKHTELECOM",
-            ofdEnvironmentId = "PROD",
-            commandType = OfdCommandType.TICKET,
-            payloadRef = "doc-1",
-            token = 123L,
-            reqNum = 10,
-            deviceId = 1L
-        )
-
-        val requestBytes = byteArrayOf(1, 2)
-        val responseBytes = byteArrayOf(3, 4)
-
-        val responseJson = Json.parseToJsonElement(
-            """{
-                "header": {"token": 124, "reqNum": 11},
-                "payload": {
-                    "result": {
-                        "resultCode": 0,
-                        "resultText": "Success"
-                    },
-                    "ticket": {
-                        "fiscalSign": "12345678",
-                        "qr_code": "http://ofd.kz/t/123"
-                    }
-                }
-            }"""
-        ) as JsonObject
-
-        every { builder.canHandle(OfdCommandType.TICKET) } returns true
-        every { builder.build(request, prettyConfig) } returns responseJson
-        every { codec.encode(any()) } returns requestBytes
-
-        coEvery { networkClient.sendAndReceive(any(), requestBytes) } returns Result.success(responseBytes)
-        every { codec.decode(responseBytes) } returns responseJson
-
-        val result = prettyAdapter.send(request)
-        assertEquals(OfdCommandStatus.OK, result.status)
-    }
-
-    @Test
     fun testSendSuccessWithCamelCaseTicketNumber() {
         val request = OfdCommandRequest(
             kkmId = "kkm-camel",

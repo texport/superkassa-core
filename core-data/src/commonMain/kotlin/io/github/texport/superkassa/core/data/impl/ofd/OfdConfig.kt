@@ -6,6 +6,5 @@ package io.github.texport.superkassa.core.data.impl.ofd
  * @property protocolVersion Версия протокола ОФД, используемая для сериализации и десериализации сообщений.
  */
 data class OfdConfig(
-    val protocolVersion: String,
-    val prettyPrintJson: Boolean = false
+    val protocolVersion: String
 )

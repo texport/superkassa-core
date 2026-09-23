@@ -43,7 +43,7 @@ class NomenclatureRequestBuilderStrategyTest {
             offlineBeginMillis = 1700000000000L,
             offlineEndMillis = 1700000000000L
         )
-        val config = OfdConfig(protocolVersion = "203", prettyPrintJson = false)
+        val config = OfdConfig(protocolVersion = "203")
 
         val json = strategy.build(command, config)
         assertNotNull(json)

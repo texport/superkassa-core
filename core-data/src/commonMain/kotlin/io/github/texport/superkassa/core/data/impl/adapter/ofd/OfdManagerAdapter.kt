@@ -28,6 +28,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kz.mybrain.network.OfdNetworkClient
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 import kz.mybrain.network.OfdEndpoint as NetworkEndpoint
 
 /**
@@ -49,32 +51,6 @@ internal class OfdManagerAdapter(
     private val now: () -> Long = { kotlin.time.Clock.System.now().toEpochMilliseconds() }
 ) : OfdManagerPort {
     private val logger = getLogger(OfdManagerAdapter::class)
-    private val prettyJson = kotlinx.serialization.json.Json { prettyPrint = true }
-
-    private fun formatJson(json: kotlinx.serialization.json.JsonElement): String {
-        val safe = withoutToken(json)
-        return if (config.prettyPrintJson) {
-            prettyJson.encodeToString(kotlinx.serialization.json.JsonElement.serializer(), safe)
-        } else {
-            safe.toString()
-        }
-    }
-
-    /**
-     * Убирает токен из пакета перед записью в журнал.
-     *
-     * Токен — это право отправлять фискальные документы от имени кассы,
-     * и в журнале ему места нет. Остальной пакет для разбора обмена нужен,
-     * поэтому прячется одно поле, а не весь дамп.
-     */
-    private fun withoutToken(json: kotlinx.serialization.json.JsonElement): kotlinx.serialization.json.JsonElement {
-        val packet = json as? JsonObject ?: return json
-        val header = packet[HEADER_FIELD] as? JsonObject ?: return json
-        if (!header.containsKey(TOKEN_FIELD)) return json
-        val hidden = JsonObject(header + (TOKEN_FIELD to kotlinx.serialization.json.JsonPrimitive(TOKEN_MASK)))
-        return JsonObject(packet + (HEADER_FIELD to hidden))
-    }
-
     private val reconnectIntervalMs: Long = reconnectIntervalSeconds.coerceAtLeast(
         MIN_RECONNECT_INTERVAL_SECONDS
     ) * SECONDS_TO_MILLIS
@@ -101,9 +77,6 @@ internal class OfdManagerAdapter(
 
         /** Запас страховочного предела над сроком сетевого клиента. */
         private const val GUARD_MARGIN_SECONDS = 1L
-        private const val HEADER_FIELD = "header"
-        private const val TOKEN_FIELD = "token"
-        private const val TOKEN_MASK = "***"
 
         /**
          * Дефолтный набор стратегий (без StoragePort).
@@ -132,6 +105,7 @@ internal class OfdManagerAdapter(
                 resultCode = null
             )
         }
+        val started = TimeSource.Monotonic.markNow()
         return try {
             val endpoint = resolveEndpoint(command)
                 ?: return OfdCommandResult(
@@ -147,10 +121,6 @@ internal class OfdManagerAdapter(
                         "Missing required request parameters"
                     )
                 )
-            logger.debug("OFD SEND JSON: ${formatJson(json)}")
-            val sendMsg = "OFD SEND: commandType=${command.commandType}, " +
-                "kkmId=${command.kkmId}, reqNum=${command.reqNum}"
-            logger.info(sendMsg)
             val bytes = codec.encode(json)
             val response = runBlocking {
                 try {
@@ -181,9 +151,7 @@ internal class OfdManagerAdapter(
                     error.contains("refused", ignoreCase = true)
 
                 lastNoConnectionMillis[throttleKey] = now
-                val sendFailMsg = "OFD SEND FAILED: commandType=${command.commandType}, " +
-                    "kkmId=${command.kkmId}, error=$error"
-                logger.warn(sendFailMsg)
+                logger.warn("BFD ${exchange(command, started)} failed: ${exception?.let { it::class.simpleName }}")
 
                 return OfdCommandResult(
                     status = if (isNetworkError) OfdCommandStatus.TIMEOUT else OfdCommandStatus.FAILED,
@@ -193,7 +161,6 @@ internal class OfdManagerAdapter(
 
             val responseBytes = response.getOrThrow()
             val responseJson = codec.decode(responseBytes)
-            logger.debug("DEBUG_OFD_RESPONSE_JSON: ${formatJson(responseJson)}")
             val resultCode = extractResultCode(responseJson)
             val resultText = extractResultText(responseJson)
             val responseToken = extractHeaderToken(responseJson)
@@ -208,15 +175,8 @@ internal class OfdManagerAdapter(
                 else -> OfdCommandStatus.FAILED
             }
 
-            if (status == OfdCommandStatus.OK) {
-                val successMsg = "OFD RECV SUCCESS: commandType=${command.commandType}, " +
-                    "resultCode=0, responseReqNum=$responseReqNum, fiscalSign=$fiscalSign"
-                logger.info(successMsg)
-            } else {
-                val errorMsg = "OFD RECV ERROR: commandType=${command.commandType}, " +
-                    "resultCode=$resultCode, text=$resultText"
-                logger.warn(errorMsg)
-            }
+            val answered = "BFD ${exchange(command, started)} answered with code $resultCode"
+            if (status == OfdCommandStatus.OK) logger.info(answered) else logger.warn(answered)
 
             OfdCommandResult(
                 status = status,
@@ -237,10 +197,7 @@ internal class OfdManagerAdapter(
                 }
             )
         } catch (ex: OfdProtocolException) {
-            val protoErrorMsg = "OFD protocol error for kkmId=${command.kkmId}, " +
-                "commandType=${command.commandType}, payloadRef=${command.payloadRef}: " +
-                "${ex.message ?: "unknown"}"
-            logger.warn(protoErrorMsg)
+            logger.warn("BFD ${exchange(command, started)} failed: packet cannot be encoded or decoded")
             // Кода результата здесь нет: ОФД отказал на уровне протокола
             // и своего кода не присылал. Прежде подставлялось `-1`, и кассир
             // читал в журнале «Код отказа −1» — число, которого в CPCR нет.
@@ -261,12 +218,8 @@ internal class OfdManagerAdapter(
                 errorMsg.contains("connection", ignoreCase = true) ||
                 errorMsg.contains("refused", ignoreCase = true)
 
-            if (isNetworkError) {
-                val netErrMsg = "OFD connection failed for kkmId=${command.kkmId}: $errorMsg"
-                logger.warn(netErrMsg)
-            } else {
-                logger.error("OFD request failed with unexpected error", ex)
-            }
+            val failed = "BFD ${exchange(command, started)} failed: $exName"
+            if (isNetworkError) logger.warn(failed) else logger.error(failed)
 
             lastNoConnectionMillis[throttleKey] = now
 
@@ -276,6 +229,17 @@ internal class OfdManagerAdapter(
             )
         }
     }
+
+    /**
+     * Обмен в журнале: команда, номер запроса и длительность — и только.
+     *
+     * Пакеты, токен и фискальные документы в журнал не пишутся: в них
+     * покупатель, суммы и право слать документы от имени кассы. Разбор
+     * обмена ведётся по номеру запроса и коду ответа, а текст отказа
+     * получает вызывающий в результате.
+     */
+    private fun exchange(command: OfdCommandRequest, started: TimeMark): String =
+        "${command.commandType} reqNum=${command.reqNum} in ${started.elapsedNow().inWholeMilliseconds} ms"
 
     /** Адрес отправки берётся из перечисления провайдеров по контуру команды. */
     private fun resolveEndpoint(command: OfdCommandRequest): NetworkEndpoint? {
