@@ -24,11 +24,10 @@ version = "1.5.0-SNAPSHOT"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
-    // В Central уходят общий jar ядра и модули, которые приложения берут
-    // отдельно; внутренние модули ядра живут внутри общего jar.
+    // В Central уходят корень ядра и каждый его модуль отдельным артефактом:
+    // Android- и iOS-потребитель получает код модулей только так.
     add("nmcpAggregation", project(":"))
-    add("nmcpAggregation", project(":core-embedded"))
-    add("nmcpAggregation", project(":core-import-node"))
+    subprojects.forEach { add("nmcpAggregation", project(it.path)) }
 }
 
 /** Имя артефакта модуля ядра: core-embedded-jvm → superkassa-core-embedded-jvm. */
@@ -129,49 +128,34 @@ allprojects {
                     }
                 }
                 
-                // Remove local subproject dependencies from the generated POM
-                pom.withXml {
-                    val root = asNode()
-                    val depsNode = root.children().firstOrNull { 
-                        (it as? groovy.util.Node)?.name().toString().endsWith("dependencies") 
-                    } as? groovy.util.Node
-                    if (depsNode != null) {
-                        val toRemove = mutableListOf<groovy.util.Node>()
-                        for (child in depsNode.children()) {
-                            if (child is groovy.util.Node && child.name().toString().endsWith("dependency")) {
-                                val artifactIdNode = child.children().firstOrNull { 
-                                    (it as? groovy.util.Node)?.name().toString().endsWith("artifactId") 
-                                } as? groovy.util.Node
-                                val artifactId = artifactIdNode?.value()?.toString() ?: ""
-                                if (artifactId.contains("delivery") || artifactId.contains("queue") || 
-                                    artifactId.contains("renderer") || artifactId.contains("domain") || 
-                                    artifactId.contains("presentation") || artifactId.contains("data") || 
-                                    artifactId.contains("string")
-                                ) {
-                                    toRemove.add(child)
-                                }
+                // Jar ядра для JVM собран вместе с классами своих модулей (см. jvmJar):
+                // так его берёт узел. Зависимость на те же модули в его POM дала
+                // бы каждый класс дважды, поэтому из POM этой публикации они
+                // убираются. Остальные публикации ссылаются на модули как есть:
+                // модули выгружаются в Central сами.
+                if (project == rootProject && name == "jvm") {
+                    pom.withXml {
+                        val depsNode = asNode().children()
+                            .filterIsInstance<groovy.util.Node>()
+                            .firstOrNull { it.name().toString().endsWith("dependencies") }
+                        val bundled = depsNode?.children()
+                            ?.filterIsInstance<groovy.util.Node>()
+                            ?.filter { dependency ->
+                                val artifactId = dependency.children()
+                                    .filterIsInstance<groovy.util.Node>()
+                                    .firstOrNull { it.name().toString().endsWith("artifactId") }
+                                    ?.text().orEmpty()
+                                artifactId.startsWith("superkassa-")
                             }
-                        }
-                        toRemove.forEach { depsNode.remove(it) }
-                        // Внутренние модули ядра в Central не выгружаются: их классы
-                        // лежат в общем superkassa-core. Отдельно публикуемый модуль
-                        // (core-embedded, core-import-node) вместо них зависит от него,
-                        // той же платформы и той же версии.
-                        if (project != rootProject && toRemove.isNotEmpty()) {
-                            val core = depsNode.appendNode("dependency")
-                            core.appendNode("groupId", rootProject.group.toString())
-                            core.appendNode(
-                                "artifactId",
-                                this@configureEach.artifactId.replace("superkassa-${project.name}", rootProject.name)
-                            )
-                            core.appendNode("version", rootProject.version.toString())
-                            core.appendNode("scope", "compile")
-                        }
+                            .orEmpty()
+                        bundled.forEach { depsNode?.remove(it) }
                     }
                 }
             }
         }
         
+        // Отдаёт публикации модуля корневой агрегации для Maven Central.
+        if (project != rootProject) plugins.apply("com.gradleup.nmcp")
         plugins.apply("signing")
         configure<SigningExtension> {
             val signingKey = System.getenv("SIGNING_KEY")
