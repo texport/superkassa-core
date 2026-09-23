@@ -46,8 +46,19 @@ class FontsTest {
     }
 
     @Test
+    fun `шрифт форм пропорциональный - узкая буква уже широкой`() {
+        FONTS.forEach { file ->
+            val stream = checkNotNull(javaClass.getResourceAsStream(FONT_DIR + file)) { "Font $file is missing" }
+            val font = stream.use { OTFParser().parse(RandomAccessReadBuffer(it)) }
+            val cmap = font.getUnicodeCmapLookup(true)
+            val width = { c: Char -> font.getAdvanceWidth(cmap.getGlyphId(c.code)) }
+            assertTrue(width('і') < width('Ш'), "$file: і ${width('і')}, Ш ${width('Ш')}")
+        }
+    }
+
+    @Test
     fun `рядом с каждым шрифтом лежит его лицензия`() {
-        listOf("SourceCodePro-OFL.txt").forEach { file ->
+        listOf("NotoSans-OFL.txt").forEach { file ->
             val text = checkNotNull(javaClass.getResourceAsStream(FONT_DIR + file)).use { String(it.readBytes()) }
             assertContains(text, "SIL OPEN FONT LICENSE Version 1.1")
         }
@@ -61,15 +72,18 @@ class FontsTest {
             val receipt = kassa.api.createSellReceipt(KKM_ID, CASHIER_PIN, kazakhSale())
 
             val pdf = kassa.print.getDocumentPrintPdf(KKM_ID, receipt.documentId, CASHIER_PIN)
-            File(File("build/documents").apply { mkdirs() }, "kazakh-receipt.pdf").writeBytes(pdf)
+            val documents = File("build/documents").apply { mkdirs() }
+            File(documents, "kazakh-receipt.pdf").writeBytes(pdf)
+            File(documents, "kazakh-receipt.png").writeBytes(kassa.print.getDocumentPrintPng(KKM_ID, receipt.documentId, CASHIER_PIN))
 
             val drawn = GlyphCheck(pdf)
             assertTrue(drawn.characters > 0, "the receipt draws text")
             assertEquals(emptyList(), drawn.empty, "characters drawn with the empty glyph")
-            assertTrue(drawn.fonts.all { it is PDType0Font && "SourceCodePro" in it.name }, "fonts: ${drawn.fonts.map { it.name }}")
-            assertContains(drawn.text, "Нан $KAZAKH")
-            assertContains(drawn.text, "Bread №5")
-            assertContains(drawn.text, "₸")
+            assertTrue(drawn.fonts.all { it is PDType0Font && "NotoSans" in it.name }, "fonts: ${drawn.fonts.map { it.name }}")
+            // Строки ленты переносятся по ширине букв: текст сверяется без переносов.
+            val text = drawn.text.replace(Regex("\\s+"), " ")
+            assertContains(text, "Нан $KAZAKH Bread №5")
+            assertContains(text, "₸")
         }
     }
 
@@ -97,7 +111,7 @@ class FontsTest {
 
     private companion object {
         const val FONT_DIR = "/io/github/texport/superkassa/embedded/fonts/"
-        val FONTS = listOf("SourceCodePro-Regular.ttf", "SourceCodePro-Bold.ttf")
+        val FONTS = listOf("NotoSans-Regular.ttf", "NotoSans-Bold.ttf")
         const val KAZAKH = "ӘәҒғҚқҢңӨөҰұҮүҺһІі"
         const val KAZAKH_NAME = "Нан $KAZAKH Bread №5"
         val REQUIRED: String = KAZAKH + "₸№" + ('А'..'я').joinToString("") + "Ёё" +
