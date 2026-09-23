@@ -4,21 +4,19 @@ import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryReque
 import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryPort
 
 /**
- * Адаптер доставки электронных чеков клиентам по умолчанию для KMP.
+ * Доставка по умолчанию там, где каналов доставки не настроено.
  *
- * Отправляет ссылки на чеки и документы на номер телефона (SMS) или адрес электронной почты (Email)
- * с помощью мультиплатформенного HTTP-клиента Ktor.
+ * Ничего не отправляет и поэтому всегда отвечает отказом. Прежде она
+ * отвечала успехом на любой запрос с получателем: чек записывался
+ * доставленным покупателю, которому не уходило ничего.
  */
 class DefaultKtorDeliveryAdapter : DeliveryPort {
 
     /**
-     * Выполняет отправку электронного чека по запросу [request].
+     * Отказ: отправлять нечем.
      *
-     * @param request запрос доставки [DeliveryRequest], содержащий тип канала и адрес назначения.
-     * @return `true` если чек успешно принят к отправке шлюзом доставки, иначе `false`.
+     * @param request запрос доставки.
+     * @return всегда `false`.
      */
-    override fun deliver(request: DeliveryRequest): Boolean {
-        if (request.destination.isNullOrBlank()) return false
-        return true
-    }
+    override fun deliver(request: DeliveryRequest): Boolean = false
 }

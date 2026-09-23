@@ -3,7 +3,6 @@ package io.github.texport.superkassa.delivery.impl
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryRequest
 import kotlin.test.Test
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 /**
  * Адаптер доставки по умолчанию: получателя обязан проверять он сам.
@@ -25,8 +24,8 @@ class DefaultKtorDeliveryAdapterTest {
     )
 
     @Test
-    fun `доставка с указанным получателем принимается`() {
-        assertTrue(adapter.deliver(request("buyer@example.kz")))
+    fun `доставка с получателем не выдаётся за отправленную`() {
+        assertFalse(adapter.deliver(request("buyer@example.kz")))
     }
 
     @Test
