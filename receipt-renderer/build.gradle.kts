@@ -57,8 +57,17 @@ kotlin {
             }
         }
         jvmMain {
+            kotlin.srcDir("src/jvmCommonMain/kotlin")
             dependencies {
                 implementation(libs.slf4j.api)
+                implementation(libs.zxing.core)
+            }
+        }
+        // Кодировщик QR на JVM и Android один и тот же: один исходник на обе цели.
+        androidMain {
+            kotlin.srcDir("src/jvmCommonMain/kotlin")
+            dependencies {
+                implementation(libs.zxing.core)
             }
         }
         commonTest {

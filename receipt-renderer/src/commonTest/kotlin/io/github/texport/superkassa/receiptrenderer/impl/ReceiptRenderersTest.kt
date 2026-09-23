@@ -82,8 +82,8 @@ class ReceiptRenderersTest {
     @Test
     fun testQrCodeGeneratorAdapter() {
         val adapter = DefaultQrCodeGeneratorAdapter()
-        val dataUri = adapter.generatePngDataUri("https://test.ru", 200)
+        val dataUri = adapter.generatePngDataUri("https://consumer.oofd.kz/r/1", 200)
         assertNotNull(dataUri)
-        assertTrue(dataUri.startsWith("data:image/svg+xml;"))
+        assertTrue(dataUri.startsWith("data:image/png;base64,"))
     }
 }
