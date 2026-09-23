@@ -44,7 +44,10 @@ class NodeImportRefusalTest {
     fun `процесс узла над этим рабочим местом — отказ`() {
         node()
         // Так приложение запускает узел: рабочее место — свойством в командной строке.
-        val process = ProcessBuilder("/bin/sh", "-c", "sleep 30", "-Dsuperkassa.home=${home.path}").start()
+        // Команда оболочки не последняя (`; :`): иначе оболочка заменяет себя
+        // процессом sleep, и свойство пропадает из командной строки раньше,
+        // чем его ищет перенос, — так тест падал на раннере macOS.
+        val process = ProcessBuilder("/bin/sh", "-c", "sleep 30; :", "-Dsuperkassa.home=${home.path}").start()
         try {
             refused("Node process") { importNodeData(home.path, target.path) }
         } finally {
