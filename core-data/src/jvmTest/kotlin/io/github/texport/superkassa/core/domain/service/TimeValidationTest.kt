@@ -84,7 +84,7 @@ class TimeValidationTest {
 
         val exception = assertFailsWith<ValidationException> {
             useCase.initKkmSimple(
-                pin = "0000", // Default bootstrap admin pin
+                adminPin = "7391",
                 ofdId = "KAZAKHTELECOM",
                 ofdEnvironment = "TEST",
                 ofdSystemId = "203534",

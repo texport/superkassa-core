@@ -12,9 +12,8 @@ import io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper
 import io.github.texport.superkassa.core.string.api.CoreStrings
 
 @Throws(Exception::class)
-fun SuperkassaApiImpl.initKkmImpl(pin: String, request: KkmInitDirectRequest): KkmResponse =
+fun SuperkassaApiImpl.initKkmImpl(request: KkmInitDirectRequest): KkmResponse =
     registerKkmUseCase.initKkm(
-        pin = pin,
         ofdId = request.ofdId,
         ofdEnvironment = request.ofdEnvironment,
         ofdSystemId = request.ofdSystemId,
@@ -24,11 +23,11 @@ fun SuperkassaApiImpl.initKkmImpl(pin: String, request: KkmInitDirectRequest): K
         manufactureYear = request.manufactureYear,
         serviceInfo = request.serviceInfo?.let { KkmMapper.toDomain(it) },
         oked = request.oked,
-        adminPin = request.adminPin
+        adminPin = request.adminPin.orEmpty()
     ).let { KkmMapper.toResponse(it) }
 
 @Throws(Exception::class)
-fun SuperkassaApiImpl.initKkmSimpleImpl(pin: String, request: KkmInitSimpleRequest): KkmResponse {
+fun SuperkassaApiImpl.initKkmSimpleImpl(request: KkmInitSimpleRequest): KkmResponse {
     logger.info(
         "API -> initKkmSimple: systemId='{}', ofdId='{}', env='{}'",
         request.ofdSystemId,
@@ -37,14 +36,13 @@ fun SuperkassaApiImpl.initKkmSimpleImpl(pin: String, request: KkmInitSimpleReque
     )
     return try {
         val result = registerKkmUseCase.initKkmSimple(
-            pin = pin,
             ofdId = request.ofdId,
             ofdEnvironment = request.ofdEnvironment,
             ofdSystemId = request.ofdSystemId,
             ofdToken = request.ofdToken,
             defaultVatGroup = DomainVatGroup.valueOf(request.defaultVatGroup.name),
             oked = request.oked,
-            adminPin = request.adminPin
+            adminPin = request.adminPin.orEmpty()
         )
         logger.info("API -> initKkmSimple SUCCESS: kkmId='{}'", result.id)
         KkmMapper.toResponse(result)

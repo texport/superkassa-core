@@ -33,11 +33,10 @@ class UserUseCasesTest {
     init {
         every { storage.findKkmForUpdate(any()) } answers { storage.findKkm(firstArg()) }
         every { authorizeUserUseCase.requireKkm(any(), any()) } answers { authorizeUserUseCase.requireKkm(firstArg()) }
-        every { authorizeUserUseCase.requireRole(any(), any(), any(), any()) } answers { authorizeUserUseCase.requireRole(firstArg(), secondArg(), thirdArg()) }
         every { pinHasher.hash(any()) } answers { "hash-" + firstArg<String>() }
         every { storage.findUserByPin(any(), any()) } answers { KkmUser("admin", "Admin", UserRole.ADMIN, 0L) }
         // Вызывающего правку узнаёт общий вход по пину; здесь он — по хешу из хранилища.
-        every { authorizeUserUseCase.identify(any(), any(), any()) } answers {
+        every { authorizeUserUseCase.identify(any(), any()) } answers {
             storage.findUserByPin(firstArg(), pinHasher.hash(secondArg())) ?: error("caller not stubbed")
         }
     }
@@ -237,31 +236,42 @@ class UserUseCasesTest {
     }
 
     @Test
-    fun testCreateUserDefaultPin() {
+    fun testCreateUserPinLengthOutOfRange() {
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
 
-        assertFailsWith<ValidationException> {
-            createUser.execute("kkm-1", "admin-pin", "John", UserRole.ADMIN, "0000")
-        }
-        assertFailsWith<ValidationException> {
-            createUser.execute("kkm-1", "admin-pin", "John", UserRole.ADMIN, "1111")
+        listOf("123", "12345678901").forEach { pin ->
+            val refusal = assertFailsWith<ValidationException> {
+                createUser.execute("kkm-1", "admin-pin", "John", UserRole.CASHIER, pin)
+            }
+            assertEquals("USER_PIN_LENGTH", refusal.code, pin)
         }
     }
 
     @Test
-    fun testUpdateUserDefaultPin() {
-        val existing = KkmUser("user-1", "John", UserRole.CASHIER, 500L)
+    fun testCreateUserAcceptsFormerStandardPinAsOrdinary() {
+        // Пинов по умолчанию нет, а значит, нет и особых: пин выбирает сам пользователь.
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { authorizeUserUseCase.requireRole("kkm-1", "admin-pin", any()) } returns mockk()
+        every { idGenerator.nextId() } returns "user-1"
+        every { clock.now() } returns 1000L
+        every { storage.createUser("kkm-1", "user-1", "John", UserRole.CASHIER, "hash-0000", 1000L) } returns true
+
+        val user = createUser.execute("kkm-1", "admin-pin", "John", UserRole.CASHIER, "0000")
+
+        assertEquals("user-1", user.id)
+    }
+
+    @Test
+    fun testUpdateUserPinLengthOutOfRange() {
+        val existing = KkmUser("user-1", "John", UserRole.CASHIER, 500L)
+        every { authorizeUserUseCase.requireKkm("kkm-1") } returns mockk()
         every { storage.listUsers("kkm-1") } returns listOf(existing)
 
-        assertFailsWith<ValidationException> {
-            updateUser.execute("kkm-1", "user-1", "admin-pin", "John New", UserRole.ADMIN, "0000")
+        val refusal = assertFailsWith<ValidationException> {
+            updateUser.execute("kkm-1", "user-1", "admin-pin", null, null, "123")
         }
-        assertFailsWith<ValidationException> {
-            updateUser.execute("kkm-1", "user-1", "admin-pin", "John New", UserRole.ADMIN, "1111")
-        }
+        assertEquals("USER_PIN_LENGTH", refusal.code)
     }
 
     @Test

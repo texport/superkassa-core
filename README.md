@@ -119,9 +119,9 @@ val api: SuperkassaApi = SuperkassaCoreEngine.createProduction(dbPath = "superka
 Here is an example of registering a cashier sell receipt once initialized:
 
 ```kotlin
-// 1. Initialize physical KKM
+// 1. Initialize physical KKM. There is no default PIN: the administrator
+//    of the new cash register gets the PIN given here (4 to 10 characters).
 val kkm = api.initKkm(
-    pin = "1234",
     request = KkmInitDirectRequest(
         ofdId = "kazakhtelecom",
         ofdEnvironment = "prod",
@@ -129,14 +129,15 @@ val kkm = api.initKkm(
         ofdToken = "token-abc-123",
         kkmKgdId = "123456789012",
         factoryNumber = "SWK-0001",
-        manufactureYear = 2026
+        manufactureYear = 2026,
+        adminPin = "7391"
     )
 )
 
 // 2. Register sell receipt
 val sellResult = api.createSellReceipt(
     kkmId = kkm.id,
-    pin = "1111",
+    pin = "7391",
     request = ReceiptSellRequest(
         items = listOf(
             ReceiptItemRequest(

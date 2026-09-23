@@ -4,13 +4,13 @@ import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
-import io.github.texport.superkassa.core.domain.api.model.auth.StandardPin
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import io.github.texport.superkassa.core.domain.api.port.internal.PinHasherPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.ChosenPin
 
 /**
  * Сценарий (Use Case) создания нового пользователя кассового аппарата (ККМ).
@@ -41,7 +41,7 @@ class CreateUserUseCase(
      * @param role Роль создаваемого пользователя (например, [UserRole.CASHIER]).
      * @param userPin Персональный ПИН-код создаваемого пользователя.
      * @return Созданный объект пользователя [KkmUser].
-     * @throws ValidationException Если имя или ПИН-код нового пользователя пусты.
+     * @throws ValidationException Если имя пусто или ПИН-код нового пользователя не проходит [ChosenPin].
      * @throws ConflictException Если пользователь с таким ПИН-кодом уже существует в рамках кассы.
      */
     fun execute(kkmId: String, pin: String, name: String, role: UserRole, userPin: String): KkmUser {
@@ -50,12 +50,7 @@ class CreateUserUseCase(
         if (name.isBlank()) {
             throw ValidationException(CoreStrings.userNameRequired(), "USER_NAME_REQUIRED")
         }
-        if (userPin.isBlank()) {
-            throw ValidationException(CoreStrings.userPinRequired(), "USER_PIN_REQUIRED")
-        }
-        if (StandardPin.isStandard(userPin)) {
-            throw ValidationException(CoreStrings.defaultPinNotAllowed(), "DEFAULT_PIN_NOT_ALLOWED")
-        }
+        ChosenPin.require(userPin)
         val now = clock.now()
         val userId = idGenerator.nextId()
         val created = storage.createUser(

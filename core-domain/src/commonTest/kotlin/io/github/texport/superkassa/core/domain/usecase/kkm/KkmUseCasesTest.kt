@@ -9,11 +9,9 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
-import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
-import io.github.texport.superkassa.core.domain.api.model.auth.StandardPin
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
@@ -82,10 +80,11 @@ class KkmUseCasesTest {
     // ==========================================
 
     @Test
-    fun testInitKkmForbiddenPin() {
-        assertFailsWith<ForbiddenException> {
+    fun testInitKkmRequiresAdminPin() {
+        // Пина по умолчанию нет: без заданного пина в новую кассу войти было бы нечем.
+        every { kkmCommonHelper.ensureSystemTimeValid() } returns Unit
+        val refusal = assertFailsWith<ValidationException> {
             registerKkm.initKkm(
-                pin = "1111",
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -94,9 +93,12 @@ class KkmUseCasesTest {
                 factoryNumber = "fact-1",
                 manufactureYear = 2026,
                 serviceInfo = null,
-                oked = "12345"
+                oked = "12345",
+                adminPin = " "
             )
         }
+        assertEquals("KKM_ADMIN_PIN_REQUIRED", refusal.code)
+        verify(exactly = 0) { kkmCommonHelper.sendOfdCommand(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -104,7 +106,7 @@ class KkmUseCasesTest {
         every { kkmCommonHelper.ensureSystemTimeValid() } returns Unit
         assertFailsWith<ValidationException> {
             registerKkm.initKkm(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "",
@@ -127,7 +129,7 @@ class KkmUseCasesTest {
 
         assertFailsWith<ConflictException> {
             registerKkm.initKkm(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -151,7 +153,7 @@ class KkmUseCasesTest {
 
         assertFailsWith<ConflictException> {
             registerKkm.initKkm(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -175,7 +177,7 @@ class KkmUseCasesTest {
 
         assertFailsWith<ValidationException> {
             registerKkm.initKkm(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -190,7 +192,7 @@ class KkmUseCasesTest {
 
         assertFailsWith<ValidationException> {
             registerKkm.initKkm(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -236,7 +238,7 @@ class KkmUseCasesTest {
         every { storage.listUsers("kkm-id-123") } returns emptyList()
 
         val res = registerKkm.initKkm(
-            pin = "0000",
+            adminPin = ADMIN_PIN,
             ofdId = "ofd",
             ofdEnvironment = "prod",
             ofdSystemId = "sys-1",
@@ -286,7 +288,7 @@ class KkmUseCasesTest {
 
         assertFailsWith<ConflictException> {
             registerKkm.initKkm(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -301,37 +303,38 @@ class KkmUseCasesTest {
     }
 
     @Test
-    fun testInitKkmSimpleForbiddenPin() {
-        assertFailsWith<ForbiddenException> {
-            registerKkm.initKkmSimple(
-                pin = "1111",
-                ofdId = "ofd",
-                ofdEnvironment = "prod",
-                ofdSystemId = "sys-1",
-                ofdToken = "token",
-                defaultVatGroup = VatGroup.VAT_10,
-                oked = "12345"
-            )
-        }
-    }
-
-    @Test
-    fun testInitKkmSimpleRejectsStandardAdminPin() {
-        // Касса с таким пином родилась бы недоступной: узел по нему не пускает,
-        // а сменить его можно только войдя.
+    fun testInitKkmSimpleRequiresAdminPin() {
         every { kkmCommonHelper.ensureSystemTimeValid() } returns Unit
-        assertFailsWith<ValidationException> {
+        val refusal = assertFailsWith<ValidationException> {
             registerKkm.initKkmSimple(
-                pin = "0000",
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
                 ofdToken = "token",
                 defaultVatGroup = VatGroup.VAT_10,
                 oked = "12345",
-                adminPin = "1111"
+                adminPin = ""
             )
         }
+        assertEquals("KKM_ADMIN_PIN_REQUIRED", refusal.code)
+        verify(exactly = 0) { kkmCommonHelper.sendOfdCommand(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun testInitKkmSimpleRejectsTooShortAdminPin() {
+        every { kkmCommonHelper.ensureSystemTimeValid() } returns Unit
+        val refusal = assertFailsWith<ValidationException> {
+            registerKkm.initKkmSimple(
+                ofdId = "ofd",
+                ofdEnvironment = "prod",
+                ofdSystemId = "sys-1",
+                ofdToken = "token",
+                defaultVatGroup = VatGroup.VAT_10,
+                oked = "12345",
+                adminPin = "739"
+            )
+        }
+        assertEquals("USER_PIN_LENGTH", refusal.code)
     }
 
     @Test
@@ -339,7 +342,7 @@ class KkmUseCasesTest {
         every { kkmCommonHelper.ensureSystemTimeValid() } returns Unit
         assertFailsWith<ValidationException> {
             registerKkm.initKkmSimple(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "",
@@ -359,7 +362,7 @@ class KkmUseCasesTest {
 
         assertFailsWith<ConflictException> {
             registerKkm.initKkmSimple(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -396,7 +399,7 @@ class KkmUseCasesTest {
 
         assertFailsWith<ValidationException> {
             registerKkm.initKkmSimple(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -436,7 +439,7 @@ class KkmUseCasesTest {
 
         assertFailsWith<ValidationException> {
             registerKkm.initKkmSimple(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -485,7 +488,7 @@ class KkmUseCasesTest {
 
         assertFailsWith<ConflictException> {
             registerKkm.initKkmSimple(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -548,7 +551,7 @@ class KkmUseCasesTest {
         every { storage.listUsers("kkm-id-123") } returns emptyList()
 
         val res = registerKkm.initKkmSimple(
-            pin = "0000",
+            adminPin = ADMIN_PIN,
             ofdId = "ofd",
             ofdEnvironment = "prod",
             ofdSystemId = "sys-1",
@@ -612,7 +615,7 @@ class KkmUseCasesTest {
 
         assertFailsWith<ConflictException> {
             registerKkm.initKkmSimple(
-                pin = "0000",
+                adminPin = ADMIN_PIN,
                 ofdId = "ofd",
                 ofdEnvironment = "prod",
                 ofdSystemId = "sys-1",
@@ -637,6 +640,7 @@ class KkmUseCasesTest {
             factoryNumber = null,
             ofdTag = "ofd-tag",
             okedOverride = "12345",
+            adminPin = ADMIN_PIN,
             updateKkm = {}
         )
 
@@ -655,6 +659,7 @@ class KkmUseCasesTest {
             factoryNumber = "fact-1",
             ofdTag = "ofd-tag",
             okedOverride = "12345",
+            adminPin = ADMIN_PIN,
             updateKkm = { stored = true }
         )
         every { tokenCodec.parseToken("token") } returns 555L
@@ -675,6 +680,7 @@ class KkmUseCasesTest {
             factoryNumber = "fact-1",
             ofdTag = "ofd-tag",
             okedOverride = "12345",
+            adminPin = ADMIN_PIN,
             updateKkm = mockk(relaxed = true)
         )
         every { tokenCodec.parseToken("token") } returns 555L
@@ -746,6 +752,7 @@ class KkmUseCasesTest {
             factoryNumber = "fact-1",
             ofdTag = "ofd-tag",
             okedOverride = null,
+            adminPin = ADMIN_PIN,
             updateKkm = mockk(relaxed = true)
         )
         every { tokenCodec.parseToken("token") } returns 555L
@@ -857,7 +864,7 @@ class KkmUseCasesTest {
     @Test
     fun testInitializeKkmRegistrationKeepsExistingUsers() {
         every { storage.listUsers("kkm-1") } returns listOf(mockk())
-        initializeKkmRegistration.ensureAdministrator("kkm-1", 1000L)
+        initializeKkmRegistration.ensureAdministrator("kkm-1", 1000L, ADMIN_PIN)
         verify(exactly = 0) { storage.createUser(any(), any(), any(), any(), any(), any()) }
     }
 
@@ -872,20 +879,6 @@ class KkmUseCasesTest {
 
         verify {
             storage.createUser("kkm-1", "user-1", any(), UserRole.ADMIN, "hash-4821", 1000L)
-        }
-    }
-
-    @Test
-    fun testInitializeKkmRegistrationFallsBackToBootstrapPin() {
-        every { storage.listUsers("kkm-1") } returns emptyList()
-        every { idGenerator.nextId() } returns "user-1"
-        every { pinHasher.hash(any()) } answers { "hash-" + firstArg<String>() }
-        every { storage.createUser(any(), any(), any(), any(), any(), any()) } returns true
-
-        initializeKkmRegistration.ensureAdministrator("kkm-1", 1000L, "   ")
-
-        verify {
-            storage.createUser("kkm-1", "user-1", any(), UserRole.ADMIN, "hash-" + StandardPin.BOOTSTRAP, 1000L)
         }
     }
 
@@ -1247,5 +1240,9 @@ class KkmUseCasesTest {
         assertFailsWith<ConflictException> {
             enforceWithDefault.execute(kkm.copy(autonomousSince = 0L, state = KkmState.ACTIVE.name))
         }
+    }
+
+    private companion object {
+        const val ADMIN_PIN = "7391"
     }
 }

@@ -53,7 +53,7 @@ class IdempotentOperationExecutorTest {
     fun testExecuteNewOperationSuccess() {
         val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = KkmState.ACTIVE.name)
         every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
-        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any(), any()) } returns mockk()
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
         every { storage.findIdempotencyResponse("kkm-1", "key-1") } returns null
         every { idGenerator.nextId() } returns "doc-1"
         every { clock.now() } returns 1000L
@@ -90,7 +90,7 @@ class IdempotentOperationExecutorTest {
     fun testExecuteIdempotencyHit() {
         val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = KkmState.ACTIVE.name)
         every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
-        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any(), any()) } returns mockk()
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
         every { storage.findIdempotencyResponse("kkm-1", "key-1") } returns "doc-existing"
         every { storage.findFiscalDocumentById("doc-existing") } returns existing("SENT")
 
@@ -132,7 +132,7 @@ class IdempotentOperationExecutorTest {
     fun `смена ровно суток операции ещё допускает`() {
         val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = KkmState.ACTIVE.name)
         every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
-        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any(), any()) } returns mockk()
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
         every { storage.findOpenShift("kkm-1") } returns shift
         every { storage.firstPaymentTimeInShift("shift-1") } returns NOW - DAY
         every { storage.findIdempotencyResponse("kkm-1", "key-1") } returns "doc-existing"
@@ -145,7 +145,7 @@ class IdempotentOperationExecutorTest {
     fun `повтор документа, ушедшего в очередь, отвечает «в очереди», а не «доставлен»`() {
         val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = KkmState.ACTIVE.name)
         every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
-        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any(), any()) } returns mockk()
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
         every { storage.findIdempotencyResponse("kkm-1", "key-1") } returns "doc-existing"
         every { storage.findFiscalDocumentById("doc-existing") } returns existing("PENDING")
 
@@ -174,7 +174,7 @@ class IdempotentOperationExecutorTest {
     fun testExecuteKkmProgrammingState() {
         val kkm = KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = KkmState.PROGRAMMING.name)
         every { authorizeUserUseCase.requireKkm("kkm-1", any()) } returns kkm
-        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any(), any()) } returns mockk()
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
         every { requireOperationalUseCase.execute(kkm) } throws ValidationException(
             trilingualMessage = CoreStrings.kkmInProgramming(),
             code = "KKM_IN_PROGRAMMING"

@@ -38,7 +38,6 @@ object CoreStrings {
     fun userNameRequired(): TrilingualMessage = CoreStringsImpl.userNameRequired()
     fun userRoleRequired(roleName: String): TrilingualMessage = CoreStringsImpl.userRoleRequired(roleName)
     fun userPinConflict(): TrilingualMessage = CoreStringsImpl.userPinConflict()
-    fun defaultPinNotAllowed(): TrilingualMessage = CoreStringsImpl.defaultPinNotAllowed()
     fun userUpdateEmpty(): TrilingualMessage = CoreStringsImpl.userUpdateEmpty()
     fun kkmDeleteRequiresProgramming(): TrilingualMessage = CoreStringsImpl.kkmDeleteRequiresProgramming()
     fun kkmDeleteShiftOpen(): TrilingualMessage = CoreStringsImpl.kkmDeleteShiftOpen()
@@ -153,6 +152,9 @@ object CoreStrings {
     fun valueOutOfRange(field: String, bounds: String): TrilingualMessage = AmountStrings.valueOutOfRange(field, bounds)
     fun cashSumTooSmall(): TrilingualMessage = AmountStrings.cashSumTooSmall()
     fun pinLocked(retryAfterSeconds: Long): TrilingualMessage = AccessStrings.pinLocked(retryAfterSeconds)
+    fun pinLengthInvalid(shortest: Int, longest: Int): TrilingualMessage =
+        AccessStrings.pinLengthInvalid(shortest, longest)
+    fun kkmAdminPinRequired(): TrilingualMessage = AccessStrings.kkmAdminPinRequired()
     fun pageLimitOutOfRange(largest: Int): TrilingualMessage = AccessStrings.pageLimitOutOfRange(largest)
     fun pageOffsetNegative(): TrilingualMessage = AccessStrings.pageOffsetNegative()
     fun periodInvalid(): TrilingualMessage = AccessStrings.periodInvalid()

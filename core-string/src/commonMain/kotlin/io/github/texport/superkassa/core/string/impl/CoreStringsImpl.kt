@@ -185,12 +185,6 @@ internal object CoreStringsImpl {
         en = "This PIN is already taken on this cash register. Set a different one."
     )
 
-    internal fun defaultPinNotAllowed(): TrilingualMessage = TrilingualMessage(
-        ru = "Использование стандартного ПИН-кода запрещено. Пожалуйста, смените ПИН-код в настройках.",
-        kk = "Стандартты ПИН-кодты пайдалануға тыйым салынады. ПИН-кодты баптаулардан өзгертіңіз.",
-        en = "Using default PIN is not allowed. Please change your PIN in settings."
-    )
-
     internal fun userUpdateEmpty(): TrilingualMessage = TrilingualMessage(
         ru = "Нужно передать хотя бы одно поле для обновления пользователя",
         kk = "Пайдаланушыны жаңарту үшін кем дегенде бір өрісті беру керек",
