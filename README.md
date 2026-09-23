@@ -158,6 +158,34 @@ val sellResult = api.createSellReceipt(
 println("Receipt registered successfully with ticket number: ${sellResult.ticketNumber}")
 ```
 
+### Testing Screens on the Real Core (`core-testing`)
+
+`superkassa-core-testing` is test tooling for applications and the node: the
+embedded core on a data directory with an in-process BFD (`FakeBfd`) and a
+movable clock, no external systems. Add it to test dependencies only:
+
+```kotlin
+testImplementation("io.github.texport:superkassa-core-testing:<version>")
+```
+
+```kotlin
+TestBench.open(SuperkassaPlatform(dataDir)).use { bench ->
+    // Registered the owner's way: BFD number and token, admin PIN, cashier PIN.
+    val kassa = bench.registerKassa(
+        KassaSetup(adminPin = "7391", cashierPin = "4826", vat = VatMode.Payer(VatGroup.VAT_16))
+    )
+    kassa.openShift()
+    val sale = kassa.sell()
+    kassa.refund(sale)
+    kassa.offlineSale()          // the BFD is unreachable once: the document waits in the queue
+    bench.bfd.reject(CommandTypeEnum.COMMAND_TICKET, 13)   // faults: unreachable, lost, held, refused
+    // Hand bench.superkassa and kassa.kkmId to the screen under test.
+}
+```
+
+The BFD substitution in the embedded assembly requires an explicit
+`@OptIn(ReplacedExternals::class)`, so production code cannot enable it by accident.
+
 ## Architecture Boundary
 
 The project follows a strict Clean Architecture boundary design across all seven modules:
@@ -168,6 +196,7 @@ The project follows a strict Clean Architecture boundary design across all seven
 - **offline-queue (Local Database Queue):** Manages local command queueing, retry mechanisms, and localizable error mapping.
 - **receipt-renderer (Visual Layout Engine):** Responsible for building print layouts in HTML for different paper widths (58mm, 80mm, Fullscreen), color themes, and multi-language localizations.
 - **core-string & delivery:** Utilities for localization strings and transport adapters for delivering documents.
+- **core-testing (Test Tooling):** In-process BFD with the production reference rules for token and request number, and a ready cash register on a data directory. Test dependency only; not part of the node jar.
 
 ---
 

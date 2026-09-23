@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.data.room
 
+import io.github.texport.superkassa.testing.api.bfd.FakeBfd
 import kz.kazakhtelecom.proto.v203.OperationTypeEnum
 import kz.kazakhtelecom.proto.v203.TicketRequest
 import kz.kazakhtelecom.proto.v203.ZXReport

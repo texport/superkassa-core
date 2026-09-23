@@ -38,7 +38,7 @@ class RoomShiftCloseTest {
         val close = kassa.bfd.closeShifts().single()
         assertEquals(true, close.withdraw_money)
         assertTrue(kassa.bfd.moneyPlacements().isEmpty(), "withdrawal is not sent on its own after the Z-report")
-        assertEquals(mapOf(1 to 350_000L), kassa.bfd.withdrawnByShift())
+        assertEquals(mapOf(1 to 350_000L), kassa.bfd.withdrawnByShift(RoomKassa.SYSTEM_ID))
         val z = checkNotNull(close.z_report)
         assertEquals(BfdMoney(bills = 0, coins = 0), z.cash_sum)
         val withdrawal = z.money_placements.single { it.operation == MoneyPlacementEnum.MONEY_PLACEMENT_WITHDRAWAL }
@@ -78,7 +78,7 @@ class RoomShiftCloseTest {
 
         assertEquals(DeliveryStatus.ONLINE_OK, accepted.deliveryStatus, accepted.deliveryError)
         assertNull(kassa.storage.findOpenShift(KKM))
-        assertEquals(mapOf(1 to 350_000L), kassa.bfd.withdrawnByShift())
+        assertEquals(mapOf(1 to 350_000L), kassa.bfd.withdrawnByShift(RoomKassa.SYSTEM_ID))
         val z = checkNotNull(kassa.bfd.closeShifts().last().z_report)
         assertEquals(1, z.money_placements.single { it.operation == MoneyPlacementEnum.MONEY_PLACEMENT_WITHDRAWAL }.operations_count)
     }

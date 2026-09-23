@@ -8,6 +8,7 @@ import io.github.texport.superkassa.core.data.room.RoomKassa.Companion.item
 import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.presentation.api.model.kkm.CashOperationRequest
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptSellRequest
+import io.github.texport.superkassa.testing.api.clock.MovableClock
 import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,7 +60,7 @@ class BfdExchangeTest {
         kassa.api.cashIn(KKM, CASHIER_PIN, CashOperationRequest(Decimal.parse("50.00"), "in-1"))
         val next = sell("300.00", "sale-2")
 
-        assertEquals(kassa.bfd.issuedToken, kassa.token())
+        assertEquals(kassa.bfd.issuedToken(RoomKassa.SYSTEM_ID), kassa.token())
         assertEquals("SENT", kassa.document(next).ofdStatus)
         assertEquals(2, kassa.bfd.countedTickets().size)
     }
@@ -89,7 +90,7 @@ class BfdExchangeTest {
         assertEquals(1, kassa.bfd.countedTickets().size, "the BFD counted the ticket once")
         assertEquals("SENT", kassa.document(sale).ofdStatus)
         assertEquals("ACTIVE", kassa.kkm().state)
-        assertEquals(kassa.bfd.issuedToken, kassa.token())
+        assertEquals(kassa.bfd.issuedToken(RoomKassa.SYSTEM_ID), kassa.token())
         assertEquals("SENT", kassa.document(sell("700.00", "sale-next")).ofdStatus)
         assertNull(kassa.kkm().blockReasonCode)
     }

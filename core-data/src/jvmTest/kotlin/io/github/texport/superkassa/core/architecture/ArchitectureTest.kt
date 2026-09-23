@@ -18,6 +18,13 @@ class ArchitectureTest {
                 !location.contains("/appleTest/") &&
                 !location.contains("/iosTest/")
             }
+            // Встраиваемая сборка и оснастка проверок попадают на путь вместе с тестовыми
+            // зависимостями: слои ядра они собирают, а не образуют, и их границы
+            // проверяет свой модуль.
+            .withImportOption { location ->
+                !location.contains("/io/github/texport/superkassa/embedded/") &&
+                !location.contains("/io/github/texport/superkassa/testing/")
+            }
             .importPackages("io.github.texport.superkassa")
 
         layeredArchitecture()

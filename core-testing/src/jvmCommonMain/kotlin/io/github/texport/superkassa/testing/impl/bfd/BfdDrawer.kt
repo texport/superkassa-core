@@ -1,4 +1,4 @@
-package io.github.texport.superkassa.core.data.room
+package io.github.texport.superkassa.testing.impl.bfd
 
 import kz.kazakhtelecom.proto.v203.MoneyPlacementEnum
 import kz.kazakhtelecom.proto.v203.OperationTypeEnum
@@ -28,10 +28,13 @@ internal class BfdDrawer {
         request.ticket?.let { cashTiyn += cashOf(it) }
         request.money_placement?.let { place(it.operation, tiyn(it.sum)) }
         request.close_shift?.let {
-            if (it.withdraw_money == true && cashTiyn != 0L) place(MoneyPlacementEnum.MONEY_PLACEMENT_WITHDRAWAL, cashTiyn)
+            if (it.withdraw_money == true && cashTiyn != 0L) withdrawAll()
             shift += 1
         }
     }
+
+    /** Закрытие смены с изъятием забирает из ящика весь остаток. */
+    private fun withdrawAll() = place(MoneyPlacementEnum.MONEY_PLACEMENT_WITHDRAWAL, cashTiyn)
 
     private fun place(operation: MoneyPlacementEnum, sum: Long) {
         if (operation == MoneyPlacementEnum.MONEY_PLACEMENT_WITHDRAWAL) {

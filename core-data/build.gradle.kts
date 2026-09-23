@@ -68,6 +68,8 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(libs.mockk)
                 implementation(libs.ofd.kt.proto)
+                // БФД внутри процесса и переводимые часы — общая оснастка проверок.
+                implementation(project(":core-testing"))
                 // Касса на файловой базе: проверки открывают её строителем Room.
                 implementation(libs.room.runtime)
                 // Журнал читается проверкой: в него не должны попадать пакеты и токен.

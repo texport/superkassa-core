@@ -8,6 +8,7 @@ import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ParentTicketRequest
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptItemRequest
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptSellReturnRequest
+import io.github.texport.superkassa.testing.api.clock.MovableClock
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit

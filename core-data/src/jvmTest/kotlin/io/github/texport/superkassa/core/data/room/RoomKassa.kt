@@ -25,6 +25,7 @@ import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptP
 import io.github.texport.superkassa.coredatabase.api.RoomStorage
 import io.github.texport.superkassa.coredatabase.api.openInMemoryRoomStorage
 import io.github.texport.superkassa.receiptrenderer.impl.adapter.DefaultQrCodeGeneratorAdapter
+import io.github.texport.superkassa.testing.api.bfd.FakeBfd
 
 /**
  * Касса на ядре с Room и тестовым БФД: сборка та же, что в приложении,
@@ -95,7 +96,7 @@ internal class RoomKassa(
                 id = KKM, createdAt = now, updatedAt = now,
                 mode = KkmMode.REGISTRATION.name, state = KkmState.ACTIVE.name,
                 ofdProvider = "KAZAKHTELECOM:TEST", registrationNumber = KGD_NUMBER, factoryNumber = "KZT0000001",
-                systemId = "100500", ofdServiceInfo = SERVICE_INFO,
+                systemId = SYSTEM_ID.toString(), ofdServiceInfo = SERVICE_INFO,
                 tokenEncryptedBase64 = Base64TokenCodecAdapter().encodeToken(TOKEN), tokenUpdatedAt = now,
                 taxRegime = taxRegime, defaultVatGroup = kassaVat
             )
@@ -131,6 +132,9 @@ internal class RoomKassa(
         const val ADMIN_PIN = "8765"
         const val CASHIER_PIN = "4321"
         const val TOKEN = 123_456_789L
+
+        /** Номер кассы в БФД. */
+        const val SYSTEM_ID = 100_500L
 
         /** Больше интервала восстановления связи (не менее 60 с по протоколу). */
 
