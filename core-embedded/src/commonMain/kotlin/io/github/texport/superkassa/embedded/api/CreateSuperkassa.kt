@@ -14,3 +14,17 @@ import io.github.texport.superkassa.embedded.impl.EmbeddedSuperkassa
  */
 fun createSuperkassa(platform: SuperkassaPlatform, config: SuperkassaConfig): Superkassa =
     EmbeddedSuperkassa.open(platform, config, ofdTransport = null)
+
+/**
+ * Поднимает кассу так же, как [createSuperkassa], но на внешних системах
+ * проверки: БФД, часы и проверка часов берутся из [externals].
+ *
+ * Сборка, база, очередь и автозакрытие — те же, что в рабочем пути;
+ * подменяется только то, что уходит за пределы процесса.
+ *
+ * @throws IllegalStateException если каталог занят, база не найдена там, где её ждали,
+ *   или [Externals.timeGuard] не принял часы [Externals.clock].
+ */
+@ReplacedExternals
+fun createSuperkassa(platform: SuperkassaPlatform, config: SuperkassaConfig, externals: Externals): Superkassa =
+    EmbeddedSuperkassa.open(platform, config, externals.bfd, externals.timeGuard, externals.clock)

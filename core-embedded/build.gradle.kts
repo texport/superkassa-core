@@ -32,7 +32,8 @@ kotlin {
             implementation(libs.sqlite.bundled)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
-            implementation(libs.ofd.network.client)
+            // Транспорт до БФД — часть открытой сборки: проверка подставляет свой (см. ReplacedExternals).
+            api(libs.ofd.network.client)
         }
         // Файлы, сокет и потоки на JVM и Android одни и те же: один исходник
         // собирается в обе цели, вместо двух копий.
