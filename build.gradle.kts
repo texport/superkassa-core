@@ -20,7 +20,11 @@ plugins {
 }
 
 group = "io.github.texport"
-version = "1.5.0-SNAPSHOT"
+// Линия версии; номер выпуска (1.5.0, 1.5.1, …) назначает выпуск по меткам git
+// и передаёт свойством -PreleaseVersion. Без него — <линия>.0-SNAPSHOT: под
+// этой версией ядро берут из mavenLocal приложения.
+val versionLine = "1.5"
+version = providers.gradleProperty("releaseVersion").orNull ?: "$versionLine.0-SNAPSHOT"
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
