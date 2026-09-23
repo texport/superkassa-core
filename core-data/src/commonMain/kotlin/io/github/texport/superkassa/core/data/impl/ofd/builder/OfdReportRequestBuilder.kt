@@ -85,6 +85,8 @@ object OfdReportRequestBuilder {
      * @param frShiftNumber фискальный номер закрываемой смены.
      * @param zxReport JSON-объект отчета, подготовленный методом [buildZxReportInternal].
      * @param serviceBlock сформированный ранее служебный JSON-блок.
+     * @param withdrawMoney изъять всю наличность в закрываемой смене (CPCR,
+     *   `CloseShiftRequest.withdraw_money`); отчёт [zxReport] уже несёт это изъятие.
      * @return Полный JSON-объект [JsonObject] запроса закрытия смены.
      */
     fun buildCloseShiftRequest(
@@ -98,7 +100,8 @@ object OfdReportRequestBuilder {
         zxReport: JsonObject,
         serviceBlock: JsonObject,
         isOffline: Boolean = false,
-        printedDocumentNumber: Long? = null
+        printedDocumentNumber: Long? = null,
+        withdrawMoney: Boolean = false
     ): JsonObject {
         val ofdIdNorm = ofdId.lowercase()
         return buildJsonObject {
@@ -125,7 +128,7 @@ object OfdReportRequestBuilder {
                             put("isOffline", JsonPrimitive(isOffline))
                             printedDocumentNumber?.let { put("printedDocumentNumber", JsonPrimitive(it)) }
                             put("frShiftNumber", JsonPrimitive(frShiftNumber))
-                            put("withdrawMoney", JsonPrimitive(false))
+                            put("withdrawMoney", JsonPrimitive(withdrawMoney))
                             put(
                                 "operator",
                                 buildJsonObject {

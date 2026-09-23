@@ -186,9 +186,9 @@ class ShiftUseCasesTest {
     /**
      * Автоизъятие записывает то, что в ящике, а не в сто раз больше.
      *
-     * Счётчик `cash.sum` хранится в тиынах, а `Money(bills, coins)` первым
-     * берёт тенге. `Money(currentCash, 0)` превращал 9 720 ₸ ящика
-     * в документ на 972 000 ₸ — и такой уходил в ОФД.
+     * Остаток ящика — сменный счётчик `cash.sum`, пересобранный по
+     * документам смены, в тиынах; `Money(bills, coins)` первым берёт тенге.
+     * `Money(currentCash, 0)` превращал 9 720 ₸ ящика в документ на 972 000 ₸.
      */
     @Test
     fun testCloseShiftAutoCashoutTakesWhatIsInTheDrawer() {
@@ -201,8 +201,8 @@ class ShiftUseCasesTest {
         every {
             sendFiscalCommandUseCase.execute("kkm-1", any(), any())
         } returns OfdCommandResult(status = OfdCommandStatus.OK)
-        every { storage.loadCounters("kkm-1", CounterScopes.GLOBAL, null) } returns
-            mapOf(CounterKeyFormats.CASH_SUM to 972_000L)
+        every { storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1") } returns
+            mapOf("start_shift_cash.sum" to 972_000L)
 
         closeShift.execute("kkm-1", "1234")
 
@@ -225,39 +225,58 @@ class ShiftUseCasesTest {
     }
 
     /**
-     * Доставленное автоизъятие перестаёт числиться ожидающим отправки.
+     * Изъятие при закрытии едет внутри Z-отчёта (CPCR, `withdraw_money`).
      *
-     * Отправку только записывали в журнал, и документ оставался
-     * «ожидает отправки» даже после того, как ОФД его принял.
+     * Прежде оно уходило в ОФД отдельной командой после Z-отчёта и ложилось
+     * у БФД в следующую смену. Теперь отдельной отправки нет, а документ
+     * изъятия помечен как проведённый вместе с Z-отчётом.
      */
     @Test
-    fun `доставленное автоизъятие отмечается отправленным`() {
+    fun `изъятие при закрытии отдельно в ОФД не уходит`() {
         every { storage.findKkm("kkm-1") } returns kkm.copy(autoCashout = true)
         val shift = ShiftInfo(id = "shift-1", kkmId = "kkm-1", shiftNo = 7L, status = ShiftStatus.OPEN, openedAt = 1000L)
         every { storage.findOpenShift("kkm-1") } returns shift
-        every { idGenerator.nextId() } returns "doc-1"
+        every { idGenerator.nextId() } returnsMany listOf("out-1", "z-1")
         every { clock.now() } returns 2000L
         every { queue.canSendDirectly("kkm-1") } returns true
-        every {
-            sendFiscalCommandUseCase.execute("kkm-1", any(), any())
-        } returns OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
-        every { storage.loadCounters("kkm-1", CounterScopes.GLOBAL, null) } returns
-            mapOf(CounterKeyFormats.CASH_SUM to 510_100L)
+        every { sendFiscalCommandUseCase.execute("kkm-1", OfdCommandType.CLOSE_SHIFT, "z-1") } returns
+            OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0)
+        every { storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1") } returns
+            mapOf("start_shift_cash.sum" to 510_100L)
 
         closeShift.execute("kkm-1", "1234")
 
+        verify(exactly = 0) { sendFiscalCommandUseCase.execute(any(), OfdCommandType.MONEY_PLACEMENT, any()) }
         verify {
-            storage.updateReceiptStatus(
-                documentId = "doc-1",
-                fiscalSign = null,
-                autonomousSign = null,
-                ofdStatus = "SENT",
-                ofdErrorCode = null,
-                deliveredAt = 2000L,
-                isAutonomous = false,
-                ofdErrorText = null
-            )
+            storage.updateReceiptStatus("out-1", null, null, "INTERNAL", null, null, false, null)
+            storage.closeShift("shift-1", ShiftStatus.CLOSED, 2000L, "z-1")
         }
+    }
+
+    /**
+     * Отклонённый Z-отчёт смену не закрывает, а изъятие отменяет.
+     *
+     * Прежде касса закрывала смену при любом ответе, и у БФД она
+     * оставалась открытой.
+     */
+    @Test
+    fun `отклонённый Z-отчёт смену не закрывает и изъятие отменяет`() {
+        every { storage.findKkm("kkm-1") } returns kkm.copy(autoCashout = true)
+        val shift = ShiftInfo(id = "shift-1", kkmId = "kkm-1", shiftNo = 7L, status = ShiftStatus.OPEN, openedAt = 1000L)
+        every { storage.findOpenShift("kkm-1") } returns shift
+        every { idGenerator.nextId() } returnsMany listOf("out-1", "z-1")
+        every { clock.now() } returns 2000L
+        every { queue.canSendDirectly("kkm-1") } returns true
+        every { sendFiscalCommandUseCase.execute("kkm-1", OfdCommandType.CLOSE_SHIFT, "z-1") } returns
+            OfdCommandResult(status = OfdCommandStatus.FAILED, resultCode = 13, errorMessage = "Rejected")
+        every { storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1") } returns
+            mapOf("start_shift_cash.sum" to 510_100L)
+
+        val res = closeShift.execute("kkm-1", "1234")
+
+        assertEquals(DeliveryStatus.ONLINE_ERROR, res.deliveryStatus)
+        verify(exactly = 0) { storage.closeShift(any(), any(), any(), any()) }
+        verify { storage.updateReceiptStatus("out-1", null, null, "FAILED", null, null, false, null) }
     }
 
     @Test
@@ -345,6 +364,7 @@ class ShiftUseCasesTest {
         assertEquals("doc-1", res.documentId)
         assertEquals(DeliveryStatus.ONLINE_ERROR, res.deliveryStatus)
         assertEquals("Invalid request format", res.deliveryError)
+        verify(exactly = 0) { storage.closeShift(any(), any(), any(), any()) }
     }
 
     // ==========================================

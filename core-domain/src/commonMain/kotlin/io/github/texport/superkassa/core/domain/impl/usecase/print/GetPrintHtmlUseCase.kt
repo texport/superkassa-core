@@ -6,6 +6,7 @@ import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.common.CounterScopes
+import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLayoutType
@@ -15,6 +16,8 @@ import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderP
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
+import io.github.texport.superkassa.core.domain.impl.helper.zxreport.ZxReportBuilder
+import io.github.texport.superkassa.core.domain.impl.usecase.shift.RecalculateShiftCountersUseCase
 
 /**
  * Сценарий (Use Case) получения печатной формы документа в формате HTML.
@@ -36,7 +39,8 @@ class GetPrintHtmlUseCase(
     private val receiptRenderPort: ReceiptRenderPort,
     private val authorizeUserUseCase: AuthorizeUserUseCase,
     private val kkmCommonHelper: KkmCommonHelper,
-    private val getReceiptHtml: GetReceiptHtmlUseCase
+    private val getReceiptHtml: GetReceiptHtmlUseCase,
+    private val recalculate: RecalculateShiftCountersUseCase = RecalculateShiftCountersUseCase(storage)
 ) {
     /**
      * Выполняет сценарий генерации печатной формы документа в формате HTML.
@@ -114,11 +118,7 @@ class GetPrintHtmlUseCase(
                 layout
             )
             "CASH_IN", "CASH_OUT" -> receiptRenderPort.renderCashOperationHtml(doc, kkm, layout)
-            "REPORT_X", "X_REPORT" -> {
-                val shift = storage.findShiftById(doc.shiftId) ?: getOpenShift(kkm.id, pin)
-                val counters = storage.loadCounters(kkm.id, CounterScopes.SHIFT, shift.id)
-                receiptRenderPort.renderXReportHtml(shift, counters, kkm, null, doc.docNo?.toString(), layout)
-            }
+            "REPORT_X", "X_REPORT" -> issuedXReportHtml(kkm, doc, pin, layout)
             "SHIFT_OPEN", "OPEN_SHIFT" -> {
                 val shift = storage.findShiftById(doc.shiftId) ?: getOpenShift(kkm.id, pin)
                 val ofdStatus = resolveOfdStatus(kkm.id, shift.openDocumentId)
@@ -142,6 +142,26 @@ class GetPrintHtmlUseCase(
                 }
             }
         }
+    }
+
+    /**
+     * Перепечатка X-отчёта — копия выданного документа.
+     *
+     * Итоги — по документам смены до времени отчёта, время — время отчёта.
+     * Прежде перепечатка рисовала нынешние счётчики смены и нынешнее время:
+     * X-отчёт, снятый утром, вечером печатался с вечерней выручкой.
+     */
+    private fun issuedXReportHtml(kkm: KkmInfo, doc: FiscalDocumentSnapshot, pin: String, layout: ReceiptLayoutType?): String {
+        val shift = storage.findShiftById(doc.shiftId) ?: getOpenShift(kkm.id, pin)
+        val counters = recalculate.rebuildShiftCounters(kkm.id, shift, until = doc.createdAt)
+        val report = ZxReportBuilder.build(
+            counters = counters,
+            dateTimeMillis = doc.createdAt,
+            shiftNumber = shift.shiftNo.toInt(),
+            openShiftTimeMillis = shift.openedAt,
+            closeShiftTimeMillis = null
+        )
+        return receiptRenderPort.renderXReportHtml(report, kkm, null, doc.docNo?.toString(), layout)
     }
 
     /**

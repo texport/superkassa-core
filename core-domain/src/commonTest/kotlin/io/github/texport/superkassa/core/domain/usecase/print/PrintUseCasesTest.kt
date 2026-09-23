@@ -2,6 +2,7 @@ package io.github.texport.superkassa.core.domain.impl.usecase.print
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
@@ -18,6 +19,7 @@ import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.report.PrintDocumentType
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
+import io.github.texport.superkassa.core.domain.api.model.zxreport.ZxReportInput
 import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
 import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
@@ -431,10 +433,36 @@ class PrintUseCasesTest {
         every { storage.findFiscalDocumentById("doc-x") } returns xReportDoc
         every { storage.findShiftById("shift-1") } returns shift
         every { storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1") } returns emptyMap()
-        every { receiptRenderPort.renderXReportHtml(shift, emptyMap(), kkm, null, "77", null) } returns "<html>xreport 77</html>"
+        every { storage.listFiscalDocumentsByShift("kkm-1", "shift-1", any(), any()) } returns emptyList()
+        every { receiptRenderPort.renderXReportHtml(any<ZxReportInput>(), kkm, null, "77", null) } returns "<html>xreport 77</html>"
 
         val res = getPrintHtml.execute("kkm-1", PrintDocumentType.DOCUMENT, "doc-x", null, "1234")
         assertEquals("<html>xreport 77</html>", res)
-        verify { receiptRenderPort.renderXReportHtml(shift, emptyMap(), kkm, null, "77", null) }
+        verify { receiptRenderPort.renderXReportHtml(any<ZxReportInput>(), kkm, null, "77", null) }
+    }
+
+    /**
+     * Перепечатка X-отчёта — копия выданного: итоги по документам до его
+     * времени и его время. Прежде рисовались нынешние счётчики смены
+     * и нынешнее время.
+     */
+    @Test
+    fun `перепечатка X-отчёта несёт итоги и время документа, а не нынешние`() {
+        every { authorizeUserUseCase.requireKkm("kkm-1") } returns kkm
+        every { authorizeUserUseCase.requireRole("kkm-1", "1234", setOf(UserRole.CASHIER, UserRole.ADMIN)) } returns mockk()
+        val shift = ShiftInfo(id = "shift-1", kkmId = "kkm-1", shiftNo = 1L, status = ShiftStatus.OPEN, openedAt = 100L)
+        val before = snapshot.copy(id = "in-1", docType = "CASH_IN", createdAt = 500L, totalAmount = 10_000L, ofdStatus = "SENT")
+        val after = snapshot.copy(id = "in-2", docType = "CASH_IN", createdAt = 1_500L, totalAmount = 70_000L, ofdStatus = "SENT")
+        every { storage.findFiscalDocumentById("doc-x") } returns snapshot.copy(id = "doc-x", docType = "REPORT_X", createdAt = 1_000L)
+        every { storage.findShiftById("shift-1") } returns shift
+        every { storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1") } returns emptyMap()
+        every { storage.listFiscalDocumentsByShift("kkm-1", "shift-1", any(), 0) } returns listOf(before, after)
+        every { storage.listFiscalDocumentsByShift("kkm-1", "shift-1", any(), neq(0)) } returns emptyList()
+        val report = slot<ZxReportInput>()
+        every { receiptRenderPort.renderXReportHtml(capture(report), kkm, null, any(), null) } returns "<html>x</html>"
+
+        getPrintHtml.execute("kkm-1", PrintDocumentType.DOCUMENT, "doc-x", null, "1234")
+
+        assertEquals(1_000L to 10_000L, report.captured.dateTimeMillis to report.captured.cashSumTiyn)
     }
 }

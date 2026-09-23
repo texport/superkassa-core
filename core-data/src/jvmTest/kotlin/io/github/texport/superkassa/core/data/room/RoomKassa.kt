@@ -35,7 +35,8 @@ import io.github.texport.superkassa.receiptrenderer.impl.adapter.DefaultQrCodeGe
  */
 internal class RoomKassa(
     private val taxRegime: TaxRegime = TaxRegime.NO_VAT,
-    private val kassaVat: VatGroup = VatGroup.NO_VAT
+    private val kassaVat: VatGroup = VatGroup.NO_VAT,
+    clock: ClockPort = DefaultClockAdapter()
 ) {
     val bfd = FakeBfd()
     val storage: StoragePort = openInMemoryRoomStorage().storagePort
@@ -43,7 +44,7 @@ internal class RoomKassa(
         storage = storage,
         settings = MemorySettings(),
         delivery = DefaultKtorDeliveryAdapter(),
-        clock = DefaultClockAdapter(),
+        clock = clock,
         timeValidator = TrustedClock,
         qrCode = DefaultQrCodeGeneratorAdapter(),
         pdfConverter = NoDocuments,
@@ -61,6 +62,13 @@ internal class RoomKassa(
     }
 
     fun document(id: String): FiscalDocumentSnapshot = checkNotNull(storage.findFiscalDocumentById(id)) { "no document $id" }
+
+    /** Настройки кассы, как их правит администратор: через режим программирования. */
+    fun settings(autoCloseShift: Boolean = false, autoCashout: Boolean = false) {
+        api.enterProgramming(KKM, ADMIN_PIN)
+        api.updateKkmSettings(KKM, ADMIN_PIN, autoCloseShift = autoCloseShift, autoCashout = autoCashout)
+        api.exitProgramming(KKM, ADMIN_PIN)
+    }
 
     private fun register() {
         val now = System.currentTimeMillis()

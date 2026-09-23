@@ -69,9 +69,11 @@ class RecalculateShiftCountersUseCase(
      *
      * @param kkmId Уникальный идентификатор ККМ.
      * @param shift Информация о смене.
+     * @param until Итоги на этот момент: документы позже него не входят. Так
+     *   перепечатка X-отчёта показывает то, что было в выданном документе.
      * @return [Map] Карта восстановленных счетчиков (ключ-значение).
      */
-    fun rebuildShiftCounters(kkmId: String, shift: ShiftInfo): Map<String, Long> {
+    fun rebuildShiftCounters(kkmId: String, shift: ShiftInfo, until: Long = Long.MAX_VALUE): Map<String, Long> {
         val existing = storage.loadCounters(kkmId, CounterScopes.SHIFT, shift.id)
         val result = mutableMapOf<String, Long>()
 
@@ -106,7 +108,7 @@ class RecalculateShiftCountersUseCase(
         while (true) {
             val docs = storage.listFiscalDocumentsByShift(kkmId, shift.id, limit = limit, offset = offset)
             if (docs.isEmpty()) break
-            docs.filter { it.becameFiscal() }.forEach { doc ->
+            docs.filter { it.becameFiscal() && it.createdAt <= until }.forEach { doc ->
                 when {
                     doc.docType in ReceiptDocumentTypes.ALL -> applyReceiptDocument(doc, result)
                     doc.docType == CashOperationType.CASH_IN.name ||

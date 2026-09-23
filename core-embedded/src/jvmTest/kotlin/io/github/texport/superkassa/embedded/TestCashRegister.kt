@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.embedded
 
+import io.github.texport.superkassa.core.data.api.systemClock
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.domain.api.model.common.TimeValidationResult
@@ -20,6 +21,8 @@ import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.Base64
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 /** Касса для проверок: каталог, ОФД без связи и часы, которые не ходят в сеть. */
 internal object TestCashRegister {
@@ -43,11 +46,21 @@ internal object TestCashRegister {
         override fun validate(clock: ClockPort) = TimeValidationResult(ok = true)
     }
 
-    fun open(dir: File, ofd: OfdNetworkClient = UnreachableOfd()): EmbeddedSuperkassa = EmbeddedSuperkassa.open(
+    fun open(
+        dir: File,
+        ofd: OfdNetworkClient = UnreachableOfd(),
+        clock: ClockPort = systemClock(),
+        shiftCheckInterval: Duration = 1.minutes
+    ): EmbeddedSuperkassa = EmbeddedSuperkassa.open(
         platform = SuperkassaPlatform(dir.absolutePath),
-        config = SuperkassaConfig(ofdProviderId = "KAZAKHTELECOM", ofdProtocolVersion = "203"),
+        config = SuperkassaConfig(
+            ofdProviderId = "KAZAKHTELECOM",
+            ofdProtocolVersion = "203",
+            shiftCheckInterval = shiftCheckInterval
+        ),
         ofdTransport = ofd,
-        timeGuard = trustedClock
+        timeGuard = trustedClock,
+        clock = clock
     )
 
     /** Касса, зарегистрированная раньше: её записи кладутся в базу, как их оставила бы регистрация. */

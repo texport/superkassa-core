@@ -6,6 +6,8 @@ import io.github.texport.superkassa.core.presentation.impl.mapper.ReceiptMapper
 import io.github.texport.superkassa.core.presentation.api.model.kkm.DocumentDetailsResponse
 import io.github.texport.superkassa.core.domain.api.exception.ConflictException
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
+import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus as ShiftState
 import io.github.texport.superkassa.core.presentation.api.model.kkm.FiscalDocumentResponse
 import io.github.texport.superkassa.core.presentation.api.model.shift.*
 import io.github.texport.superkassa.core.presentation.impl.mapper.KkmMapper
@@ -15,13 +17,23 @@ import io.github.texport.superkassa.core.string.api.CoreStrings
 fun SuperkassaApiImpl.openShiftImpl(kkmId: String, pin: String): ShiftResponse {
     logger.info("API -> openShift: kkmId='$kkmId'")
     return try {
-        val result = openShiftUseCase.execute(kkmId, pin).let { ShiftMapper.toResponse(it) }
+        val result = shiftResponse(openShiftUseCase.execute(kkmId, pin))
         logger.info("API -> openShift SUCCESS: shiftNo=${result.shiftNo}")
         result
     } catch (e: Exception) {
         logger.error("API -> openShift ERROR for kkmId='$kkmId'", e)
         throw e
     }
+}
+
+/** Смена для экрана: у открытой — её предел в сутки по тем же правилу и часам, что у запрета продаж. */
+internal fun SuperkassaApiImpl.shiftResponse(shift: ShiftInfo): ShiftResponse =
+    ShiftMapper.toResponse(shift, shift.takeIf { it.status == ShiftState.OPEN }?.let { shiftDayLimit.stateOf(it) })
+
+fun SuperkassaApiImpl.autoCloseShiftImpl(kkmId: String): ReportResponse? {
+    val result = autoCloseShiftUseCase.execute(kkmId) ?: return null
+    logger.info("API -> autoCloseShift: kkmId='$kkmId', documentId=${result.documentId}, delivery=${result.deliveryStatus}")
+    return ShiftMapper.toResponse(result)
 }
 
 fun SuperkassaApiImpl.closeShiftImpl(kkmId: String, pin: String): ReportResponse {
@@ -56,7 +68,7 @@ fun SuperkassaApiImpl.getOpenShiftImpl(kkmId: String, pin: String): ShiftRespons
             storage.findOpenShift(kkmId)
                 ?: throw ConflictException(CoreStrings.shiftNotOpen(), "SHIFT_NOT_OPEN")
             )
-            .let { ShiftMapper.toResponse(it) }
+            .let { shiftResponse(it) }
     } catch (e: Exception) {
         logger.error("API -> getOpenShift ERROR for kkmId='$kkmId'", e)
         throw e
@@ -67,7 +79,7 @@ fun SuperkassaApiImpl.getLocalOpenShiftImpl(kkmId: String, pin: String): ShiftRe
     logger.debug("API -> getLocalOpenShift: kkmId='$kkmId'")
     authorization.requireKkm(kkmId)
     authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
-    return storage.findOpenShift(kkmId)?.let { ShiftMapper.toResponse(it) }
+    return storage.findOpenShift(kkmId)?.let { shiftResponse(it) }
 }
 
 fun SuperkassaApiImpl.listShiftsImpl(
@@ -79,7 +91,7 @@ fun SuperkassaApiImpl.listShiftsImpl(
     logger.debug("API -> listShifts: kkmId='$kkmId', limit=$limit, offset=$offset")
     authorization.requireKkm(kkmId)
     authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
-    return storage.listShifts(kkmId, limit.coerceIn(1, 500), offset).map { ShiftMapper.toResponse(it) }
+    return storage.listShifts(kkmId, limit.coerceIn(1, 500), offset).map { shiftResponse(it) }
 }
 
 fun SuperkassaApiImpl.listShiftDocumentsImpl(

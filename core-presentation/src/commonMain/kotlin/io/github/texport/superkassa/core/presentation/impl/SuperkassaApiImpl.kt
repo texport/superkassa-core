@@ -39,7 +39,9 @@ import io.github.texport.superkassa.core.presentation.api.model.receipt.CreateRe
 import io.github.texport.superkassa.core.domain.impl.usecase.queue.GetQueueStatusUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.queue.ListQueueItemsUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.queue.RetryFailedQueueItemsUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.shift.AutoCloseShiftUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.shift.CloseShiftUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.shift.ShiftDayLimit
 import io.github.texport.superkassa.core.domain.impl.usecase.shift.OpenShiftUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.shift.RecalculateShiftCountersUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.user.CreateUserUseCase
@@ -229,6 +231,8 @@ class SuperkassaApiImpl(
         clock = clock,
         authorizeUser = authorization
     )
+    internal val shiftDayLimit = ShiftDayLimit(storage, clock)
+    internal val autoCloseShiftUseCase = AutoCloseShiftUseCase(storage, shiftDayLimit, closeShiftUseCase)
 
     // Document Processor Use Cases
     internal val deliverReceiptUseCase = DeliverReceiptUseCase(receiptDeliveryHelper)
@@ -449,6 +453,10 @@ class SuperkassaApiImpl(
     @Throws(Exception::class)
     override fun closeShift(kkmId: String, pin: String): ReportResponse =
         closeShiftImpl(kkmId, pin)
+
+    @Throws(Exception::class)
+    override fun autoCloseShift(kkmId: String): ReportResponse? =
+        autoCloseShiftImpl(kkmId)
 
     @Throws(Exception::class)
     override fun getOpenShift(kkmId: String, pin: String): ShiftResponse =

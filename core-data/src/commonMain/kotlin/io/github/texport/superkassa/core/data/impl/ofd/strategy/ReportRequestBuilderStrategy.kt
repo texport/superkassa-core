@@ -9,6 +9,7 @@ import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandRequest
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.usecase.shift.RecalculateShiftCountersUseCase
+import io.github.texport.superkassa.core.domain.api.model.zxreport.ZxReportInput
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -53,28 +54,13 @@ class ReportRequestBuilderStrategy(
      */
     override fun build(command: OfdCommandRequest, config: OfdConfig): JsonObject? {
         val serviceBlock = buildServiceBlock(command) ?: return null
-        // Отчёт, оформленный при оборванной связи, обязан это сообщать.
-        val documentForNumbers = storage?.findFiscalDocumentById(command.payloadRef)
-        val isOffline = documentForNumbers?.isAutonomous ?: false
+        val document = storage.findFiscalDocumentById(command.payloadRef)
         // Смена берётся та, в которой отчёт сняли, а не та, что открыта сейчас.
         // Прежде отчёт собирался по открытой смене, и досылка после
         // её закрытия собрать запрос уже не могла: задача уходила
         // в отбраковку, документ навсегда оставался неотправленным,
         // а очередь при этом показывала ноль.
-        val shift = shiftOf(documentForNumbers, command.kkmId) ?: return null
-
-        val counters = recalculateShiftCountersUseCase
-            .execute(command.kkmId, shift)
-        val now = command.offlineEndMillis ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
-        val shiftNo = shift.shiftNo.toInt().coerceAtLeast(0)
-        val zxInput = ZxReportBuilder.build(
-            counters = counters,
-            dateTimeMillis = now,
-            shiftNumber = shiftNo,
-            openShiftTimeMillis = shift.openedAt,
-            closeShiftTimeMillis = null
-        )
-
+        val shift = shiftOf(document, command.kkmId) ?: return null
         return OfdRequestFactory.buildReportRequest(
             ofdId = command.ofdProviderId.lowercase(),
             protocolVersion = config.protocolVersion,
@@ -82,10 +68,29 @@ class ReportRequestBuilderStrategy(
             token = command.token,
             reqNum = command.reqNum,
             reportType = "REPORT_X",
-            zxReport = zxInput,
+            zxReport = reportOf(command, document, shift),
             serviceBlock = serviceBlock,
-            isOffline = isOffline,
-            printedDocumentNumber = documentForNumbers?.printedDocumentNumber
+            // Отчёт, оформленный при оборванной связи, обязан это сообщать.
+            isOffline = document?.isAutonomous ?: false,
+            printedDocumentNumber = document?.printedDocumentNumber
+        )
+    }
+
+    /**
+     * Итоги и время — на момент документа, как на его бумаге: досылка
+     * из очереди прежде отправляла итоги и время самой отправки.
+     * Счётчики смены при этом сверяются с документами, как и прежде.
+     */
+    private fun reportOf(command: OfdCommandRequest, document: FiscalDocumentSnapshot?, shift: ShiftInfo): ZxReportInput {
+        val current = recalculateShiftCountersUseCase.execute(command.kkmId, shift)
+        val counters = document?.let { recalculateShiftCountersUseCase.rebuildShiftCounters(command.kkmId, shift, it.createdAt) }
+        val takenAt = document?.createdAt ?: command.offlineEndMillis ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
+        return ZxReportBuilder.build(
+            counters = counters ?: current,
+            dateTimeMillis = takenAt,
+            shiftNumber = shift.shiftNo.toInt().coerceAtLeast(0),
+            openShiftTimeMillis = shift.openedAt,
+            closeShiftTimeMillis = null
         )
     }
 }

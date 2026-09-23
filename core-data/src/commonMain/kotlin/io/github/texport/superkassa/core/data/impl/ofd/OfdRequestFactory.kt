@@ -197,6 +197,7 @@ object OfdRequestFactory {
      * @param frShiftNumber Номер смены фискального регистратора.
      * @param zxReport Сформированные показатели Z-отчета в виде JSON-объекта.
      * @param serviceBlock Сервисный блок ОФД.
+     * @param withdrawMoney Изъять всю наличность в закрываемой смене.
      * @return JSON-объект запроса закрытия смены.
      */
     fun buildCloseShiftRequest(
@@ -210,9 +211,11 @@ object OfdRequestFactory {
         zxReport: JsonObject,
         serviceBlock: JsonObject,
         isOffline: Boolean = false,
-        printedDocumentNumber: Long? = null
+        printedDocumentNumber: Long? = null,
+        withdrawMoney: Boolean = false
     ): JsonObject = OfdReportRequestBuilder.buildCloseShiftRequest(
-        ofdId, protocolVersion, deviceId, token, reqNum, closeTimeMillis, frShiftNumber, zxReport, serviceBlock, isOffline, printedDocumentNumber
+        ofdId, protocolVersion, deviceId, token, reqNum, closeTimeMillis, frShiftNumber, zxReport, serviceBlock,
+        isOffline, printedDocumentNumber, withdrawMoney
     )
 
     /**

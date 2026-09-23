@@ -20,6 +20,7 @@ import io.github.texport.superkassa.embedded.impl.delivery.EmbeddedDelivery
 import io.github.texport.superkassa.embedded.impl.queue.QueueSender
 import io.github.texport.superkassa.embedded.impl.queue.queueDispatcher
 import io.github.texport.superkassa.embedded.impl.settings.FileCoreSettings
+import io.github.texport.superkassa.embedded.impl.shift.ShiftAutoCloser
 import io.github.texport.superkassa.embedded.impl.storage.DataFiles
 import io.github.texport.superkassa.embedded.impl.storage.LocalFiles
 import io.github.texport.superkassa.receiptrenderer.impl.adapter.DefaultQrCodeGeneratorAdapter
@@ -29,13 +30,14 @@ import kz.mybrain.network.OfdNetworkClient
  * Сборка кассы в процессе приложения — единственная точка входа модуля.
  *
  * Порядок открытия: замок каталога, проверка «настройки есть — база есть»,
- * база, проверка часов, ядро, досылка очереди. Любой отказ по дороге
+ * база, проверка часов, ядро, досылка очереди и автозакрытие смен. Любой отказ по дороге
  * закрывает уже открытое и уходит наружу с причиной.
  */
 internal class EmbeddedSuperkassa private constructor(
     private val lock: AutoCloseable,
     private val database: RoomStorage,
     private val sender: QueueSender,
+    private val shiftCloser: ShiftAutoCloser,
     override val api: SuperkassaApi,
     override val delivery: DeliveryApi,
     override val printer: DocumentPrinter
@@ -49,12 +51,16 @@ internal class EmbeddedSuperkassa private constructor(
     /** Досылка очереди одним заходом, не дожидаясь паузы: для проверок сборки. */
     internal fun sendQueueNow(): Int = sender.sendOnce()
 
+    /** Проверка автозакрытия одним заходом, не дожидаясь паузы: для проверок сборки. */
+    internal fun closeDueShiftsNow(): Int = shiftCloser.closeDueOnce()
+
     private var closed = false
 
     override fun close() {
         if (closed) return
         closed = true
         try {
+            shiftCloser.stop()
             sender.stop()
             database.close()
         } finally {
@@ -68,12 +74,14 @@ internal class EmbeddedSuperkassa private constructor(
          *
          * @param ofdTransport транспорт до ОФД; `null` — настоящий TCP-клиент.
          * @param timeGuard проверка часов; по умолчанию та же, что у узла.
+         * @param clock часы кассы; по умолчанию системные.
          */
         internal fun open(
             platform: SuperkassaPlatform,
             config: SuperkassaConfig,
             ofdTransport: OfdNetworkClient?,
-            timeGuard: TimeValidatorPort = systemTimeGuard()
+            timeGuard: TimeValidatorPort = systemTimeGuard(),
+            clock: ClockPort = systemClock()
         ): EmbeddedSuperkassa {
             val dir = platform.dataDir
             LocalFiles.ensureDirectory(dir)
@@ -83,7 +91,7 @@ internal class EmbeddedSuperkassa private constructor(
             try {
                 requireDatabaseWhereSettingsAre(dir)
                 database = openRoomStorage(platform.databaseBuilder("$dir/${DataFiles.DATABASE}"))
-                return assemble(platform, config, Parts(lock, database, ofdTransport, timeGuard)).also { opened = true }
+                return assemble(platform, config, Parts(lock, database, ofdTransport, timeGuard, clock)).also { opened = true }
             } finally {
                 // Сорвалось по дороге — закрывается уже открытое: база и замок каталога.
                 if (!opened) {
@@ -94,24 +102,26 @@ internal class EmbeddedSuperkassa private constructor(
         }
 
         private fun assemble(platform: SuperkassaPlatform, config: SuperkassaConfig, parts: Parts): EmbeddedSuperkassa {
-            val clock = systemClock()
-            val time = parts.timeGuard.validate(clock)
+            val time = parts.timeGuard.validate(parts.clock)
             check(time.ok) { "System time is not valid: ${time.reason}" }
-            val engine = engine(platform, config, parts, clock)
+            val engine = engine(platform, config, parts, parts.clock)
             val api = engine.buildApi(config.ownerId, config.ofdProviderId, config.ofdProtocolVersion)
             val storage = parts.database.storagePort
             val sender = QueueSender(storage, api.queue, config.queueInterval, config.queueBatchSize, queueDispatcher)
+            val shiftCloser = ShiftAutoCloser(storage, api, config.shiftCheckInterval, queueDispatcher)
             val kassa =
                 EmbeddedSuperkassa(
                     parts.lock,
                     parts.database,
                     sender,
+                    shiftCloser,
                     api,
                     engine.buildDeliveryApi(),
                     platform.printer()
                 )
-            // Досылка запускается последней: до этого сборка ещё может сорваться.
+            // Досылка и автозакрытие запускаются последними: до этого сборка ещё может сорваться.
             sender.start()
+            shiftCloser.start()
             return kassa
         }
 
@@ -146,6 +156,7 @@ internal class EmbeddedSuperkassa private constructor(
         val lock: AutoCloseable,
         val database: RoomStorage,
         val ofdTransport: OfdNetworkClient?,
-        val timeGuard: TimeValidatorPort
+        val timeGuard: TimeValidatorPort,
+        val clock: ClockPort
     )
 }

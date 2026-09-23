@@ -7,6 +7,7 @@ import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandRequest
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
+import io.github.texport.superkassa.core.domain.api.model.shift.isWithdrawalInZReport
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.usecase.shift.RecalculateShiftCountersUseCase
 import kotlinx.serialization.json.JsonObject
@@ -54,47 +55,56 @@ class CloseShiftRequestBuilderStrategy(
     /**
      * Строит JSON-запрос для закрытия смены на основе параметров команды и конфигурации ОФД.
      *
+     * Счётчики смены пересобираются из документов. Отчёт, оформленный
+     * при оборванной связи, сообщает об этом признаком автономности.
+     *
      * @param command запрос команды ОФД [OfdCommandRequest].
      * @param config настройки протокола ОФД [OfdConfig].
      * @return JSON-объект [JsonObject] запроса закрытия смены или `null`, если отсутствуют необходимые данные.
      */
     override fun build(command: OfdCommandRequest, config: OfdConfig): JsonObject? {
         val serviceBlock = buildServiceBlock(command) ?: return null
-        // Отчёт, оформленный при оборванной связи, обязан это сообщать.
-        val documentForNumbers = storage?.findFiscalDocumentById(command.payloadRef)
-        val isOffline = documentForNumbers?.isAutonomous ?: false
-        val shift = shiftOf(documentForNumbers, command.kkmId) ?: return null
-        // Для Z-отчета обязательно пересобираем счётчики смены из документов.
-        val counters = recalculateShiftCountersUseCase
-            .execute(command.kkmId, shift)
-        val now = command.offlineEndMillis ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val document = storage.findFiscalDocumentById(command.payloadRef)
+        val shift = shiftOf(document, command.kkmId) ?: return null
+        val counters = recalculateShiftCountersUseCase.execute(command.kkmId, shift)
+        // Время закрытия — время документа: то же, что у смены и на бумаге.
+        // Досылка из очереди прежде ставила время отправки.
+        val closedAt = document?.createdAt ?: command.offlineEndMillis ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
         val shiftNo = shift.shiftNo.toInt().coerceAtLeast(0)
-
-        val zxInput = ZxReportBuilder.build(
-            counters = counters,
-            dateTimeMillis = now,
-            shiftNumber = shiftNo,
-            openShiftTimeMillis = shift.openedAt,
-            closeShiftTimeMillis = now
-        )
-
-        val zxReport = OfdRequestFactory.buildZxReportInternal(zxInput)
-
+        val zxInput = ZxReportBuilder.build(counters, closedAt, shiftNo, shift.openedAt, closedAt)
         return OfdRequestFactory.buildCloseShiftRequest(
             ofdId = command.ofdProviderId.lowercase(),
             protocolVersion = config.protocolVersion,
             deviceId = command.deviceId,
             token = command.token,
             reqNum = command.reqNum,
-            closeTimeMillis = now,
+            closeTimeMillis = closedAt,
             frShiftNumber = shiftNo,
-            zxReport = zxReport,
+            zxReport = OfdRequestFactory.buildZxReportInternal(zxInput),
             serviceBlock = serviceBlock,
-            isOffline = isOffline,
-            printedDocumentNumber = documentForNumbers?.printedDocumentNumber
+            isOffline = document?.isAutonomous ?: false,
+            printedDocumentNumber = document?.printedDocumentNumber,
+            withdrawMoney = hasWithdrawalInZReport(shift)
         )
+    }
+
+    /**
+     * Изъятие при закрытии записано в смене — значит, БФД изымает остаток
+     * вместе с Z-отчётом. Отчёт кассы это изъятие уже несёт в счётчиках.
+     */
+    private fun hasWithdrawalInZReport(shift: ShiftInfo): Boolean {
+        var offset = 0
+        while (true) {
+            val page = storage.listFiscalDocumentsByShift(shift.kkmId, shift.id, limit = PAGE, offset = offset)
+            if (page.isEmpty()) return false
+            if (page.any { it.isWithdrawalInZReport() }) return true
+            offset += PAGE
+        }
     }
 }
 
 /** Признак «смены нет» в снимке документа. */
 private const val NO_SHIFT = "0"
+
+/** Страница документов смены при поиске изъятия. */
+private const val PAGE = 500

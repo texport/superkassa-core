@@ -16,5 +16,15 @@ data class ShiftResponse(
     @Schema(description = "Время открытия (epoch ms)", example = "1700000000000") val openedAt: Long,
     @Schema(description = "Время закрытия (epoch ms)", example = "1700000000000") val closedAt: Long? = null,
     @Schema(description = "ID документа открытия", example = "doc-open-uuid") val openDocumentId: String? = null,
-    @Schema(description = "ID документа закрытия", example = "doc-close-uuid") val closeDocumentId: String? = null
+    @Schema(description = "ID документа закрытия", example = "doc-close-uuid") val closeDocumentId: String? = null,
+    @Schema(
+        description = "Предел смены в сутки (epoch ms): после него касса отказывает в продаже, возврате, " +
+            "внесении и изъятии, пока смену не закроют. Сутки от первого платёжного документа смены; " +
+            "пусто — платёжных документов ещё нет",
+        example = "1700086400000"
+    ) val dayLimitAt: Long? = null,
+    @Schema(
+        description = "Предел пройден по часам кассы: операции получат отказ SHIFT_LONGER_THAN_DAY",
+        example = "false"
+    ) val dayLimitExceeded: Boolean = false
 )
