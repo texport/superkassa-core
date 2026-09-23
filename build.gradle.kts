@@ -48,8 +48,13 @@ allprojects {
             config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
             buildUponDefaultConfig = true
             allRules = true
-            autoCorrect = true
-            ignoreFailures = true
+            // Автоправка переписывает исходники на месте. На CI её правки
+            // пропадают вместе с раннером, а исправленное ею нарушение
+            // проверку не роняет, поэтому там она выключена.
+            autoCorrect = System.getenv("CI") == null
+            // Давние нарушения, которые правкой кода не снять без смены
+            // поведения ядра, записаны в baseline; новое сверх него роняет сборку.
+            baseline = file("$rootDir/config/detekt/baseline-${project.name}.xml")
             source.setFrom(
                 files(
                     "src/commonMain/kotlin",

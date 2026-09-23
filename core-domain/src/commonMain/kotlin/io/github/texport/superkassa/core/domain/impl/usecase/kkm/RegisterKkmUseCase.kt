@@ -10,7 +10,6 @@ import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmMode
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
-import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo

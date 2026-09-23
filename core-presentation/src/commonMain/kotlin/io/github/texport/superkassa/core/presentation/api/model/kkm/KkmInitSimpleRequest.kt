@@ -35,7 +35,10 @@ data class KkmInitSimpleRequest(
         example = "NO_VAT"
     )
     val defaultVatGroup: VatGroup = VatGroup.NO_VAT,
-    @Schema(description = "Ручной ввод ОКЭД при отсутствии данных от ОФД. Прежнее имя поля okved принимается.", example = "47111")
+    @Schema(
+        description = "Ручной ввод ОКЭД при отсутствии данных от ОФД. Прежнее имя поля okved принимается.",
+        example = "47111"
+    )
     @JsonNames("okved")
     val oked: String? = null,
     @Schema(

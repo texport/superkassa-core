@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>Filename:Annotations.kt$io.github.texport.superkassa.core.presentation.api.annotations.Annotations.kt</ID>
+    <ID>MatchingDeclarationName:Annotations.kt$Payload</ID>
+    <ID>SwallowedException:SuperkassaApiImpl.kt$SuperkassaApiImpl$e: Exception</ID>
+    <ID>SwallowedException:SuperkassaApiImplKkm.kt$e: Exception</ID>
+    <ID>SwallowedException:SuperkassaApiImplKkm.kt$limitExceeded: ConflictException</ID>
+    <ID>TooGenericExceptionCaught:SuperkassaApiImpl.kt$SuperkassaApiImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SuperkassaApiImplKkm.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SuperkassaApiImplReceipt.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SuperkassaApiImplShift.kt$e: Exception</ID>
+    <ID>TooManyFunctions:ReferenceMapper.kt$io.github.texport.superkassa.core.presentation.impl.mapper.ReferenceMapper.kt</ID>
+    <ID>TooManyFunctions:SuperkassaApi.kt$SuperkassaApi : PrintApi</ID>
+    <ID>TooManyFunctions:SuperkassaApiImpl.kt$SuperkassaApiImpl : SuperkassaApiPrintApi</ID>
+    <ID>TooManyFunctions:SuperkassaApiImplKkm.kt$io.github.texport.superkassa.core.presentation.impl.SuperkassaApiImplKkm.kt</ID>
+    <ID>TooManyFunctions:SuperkassaApiImplShift.kt$io.github.texport.superkassa.core.presentation.impl.SuperkassaApiImplShift.kt</ID>
+  </CurrentIssues>
+</SmellBaseline>

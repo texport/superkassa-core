@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>UnusedParameter:EscPosReceiptRenderer.kt$EscPosReceiptRenderer$paperWidthMm: Int = 80</ID>
+  </CurrentIssues>
+</SmellBaseline>

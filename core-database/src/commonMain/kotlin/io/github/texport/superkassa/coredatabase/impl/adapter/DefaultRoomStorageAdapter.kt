@@ -86,6 +86,7 @@ internal class DefaultRoomStorageAdapter(
     override fun renewQueueLock(cashboxId: String, ownerId: String, leaseUntil: Long, now: Long) =
         queue.renew(cashboxId, ownerId, leaseUntil, now)
     override fun releaseQueueLock(cashboxId: String, ownerId: String): Boolean = queue.release(cashboxId, ownerId)
+
     // --- Транзакции и ключи повтора ---
     override fun startTransaction() = writer.begin()
     override fun commitTransaction() = writer.commit()
@@ -96,6 +97,7 @@ internal class DefaultRoomStorageAdapter(
         writer.responseOf(kkmId, idempotencyKey)
     override fun updateIdempotencyResponse(kkmId: String, idempotencyKey: String, responseRef: String?) =
         writer.complete(kkmId, idempotencyKey, responseRef)
+
     // --- Кассы и кассиры ---
     override fun createKkm(info: KkmInfo): Boolean = kkms.create(info)
     override fun updateKkm(info: KkmInfo): Boolean = kkms.update(info)
@@ -136,6 +138,7 @@ internal class DefaultRoomStorageAdapter(
         runBlocking { idempotencyDao.deleteByKkm(kkmId) }
         return true
     }
+
     // --- Смены и счётчики ---
     override fun findShiftById(shiftId: String): ShiftInfo? = shifts.find(shiftId)
     override fun findOpenShift(kkmId: String): ShiftInfo? = shifts.findOpen(kkmId)
@@ -149,6 +152,7 @@ internal class DefaultRoomStorageAdapter(
     override fun listCounters(kkmId: String): List<CounterSnapshot> = shifts.listCounters(kkmId)
     override fun upsertCounter(kkmId: String, scope: String, shiftId: String?, key: String, value: Long) =
         shifts.upsertCounter(kkmId, scope, shiftId, key, value)
+
     // --- Документы ---
     override fun saveReceipt(request: ReceiptRequest, documentId: String, shiftId: String, createdAt: Long) =
         documents.saveReceipt(request, documentId, shiftId, createdAt)

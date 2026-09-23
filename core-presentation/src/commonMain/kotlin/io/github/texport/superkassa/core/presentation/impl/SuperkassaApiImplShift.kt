@@ -33,7 +33,9 @@ internal fun SuperkassaApiImpl.shiftResponse(shift: ShiftInfo): ShiftResponse =
 
 fun SuperkassaApiImpl.autoCloseShiftImpl(kkmId: String): ReportResponse? {
     val result = autoCloseShiftUseCase.execute(kkmId) ?: return null
-    logger.info("API -> autoCloseShift: kkmId='$kkmId', documentId=${result.documentId}, delivery=${result.deliveryStatus}")
+    logger.info(
+        "API -> autoCloseShift: kkmId='$kkmId', documentId=${result.documentId}, delivery=${result.deliveryStatus}"
+    )
     return ShiftMapper.toResponse(result)
 }
 

@@ -94,7 +94,14 @@ class CloseShiftUseCase(
     private fun deliver(kkmId: String, documentId: String, now: Long): Pair<ReportResult, Boolean> {
         if (!queue.canSendDirectly(kkmId)) {
             enqueue(kkmId, documentId)
-            storage.updateReceiptStatus(documentId, null, now.toString(), PENDING, deliveredAt = null, isAutonomous = true)
+            storage.updateReceiptStatus(
+                documentId,
+                null,
+                now.toString(),
+                PENDING,
+                deliveredAt = null,
+                isAutonomous = true
+            )
             return ReportResult(documentId, DeliveryStatus.OFFLINE_QUEUED) to true
         }
         val result = sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.CLOSE_SHIFT, documentId)

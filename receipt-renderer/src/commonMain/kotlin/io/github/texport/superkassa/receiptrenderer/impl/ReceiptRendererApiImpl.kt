@@ -15,8 +15,6 @@ import io.github.texport.superkassa.core.domain.api.model.zxreport.ZxReportInput
 import io.github.texport.superkassa.core.domain.api.port.integration.QrCodeGeneratorPort
 import io.github.texport.superkassa.receiptrenderer.impl.renderer.base.DocumentConstants
 
-import io.github.texport.superkassa.core.domain.impl.logging.getLogger
-
 /**
  * Внутренняя реализация движка рендеринга чеков.
  */
@@ -30,8 +28,6 @@ internal class ReceiptRendererApiImpl(
      */
     private val now: () -> Long = { kotlin.time.Clock.System.now().toEpochMilliseconds() }
 ) : ReceiptRendererApi {
-
-    private val logger = getLogger(ReceiptRendererApiImpl::class)
 
     private val saleRenderer = SaleReceiptRenderer(qrCodeGenerator)
     private val xReportRenderer = XReportRenderer(now)

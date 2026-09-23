@@ -72,7 +72,10 @@ object RoomStorageFactory {
  * схема новее приложения, нет шага миграции.
  */
 class StorageOpenException(dbPath: String, cause: Throwable) :
-    IllegalStateException("Cash register database '$dbPath' cannot be opened, the file is left untouched: ${cause.message}", cause)
+    IllegalStateException(
+        "Cash register database '$dbPath' cannot be opened, the file is left untouched: ${cause.message}",
+        cause
+    )
 
 /**
  * Порты локального хранилища.

@@ -93,7 +93,11 @@ internal class EmbeddedSuperkassa private constructor(
             try {
                 requireDatabaseWhereSettingsAre(dir)
                 database = openRoomStorage(platform.databaseBuilder("$dir/${DataFiles.DATABASE}"))
-                return assemble(platform, config, Parts(lock, database, ofdTransport, timeGuard, clock)).also { opened = true }
+                return assemble(
+                    platform,
+                    config,
+                    Parts(lock, database, ofdTransport, timeGuard, clock)
+                ).also { opened = true }
             } finally {
                 // Сорвалось по дороге — закрывается уже открытое: база и замок каталога.
                 if (!opened) {

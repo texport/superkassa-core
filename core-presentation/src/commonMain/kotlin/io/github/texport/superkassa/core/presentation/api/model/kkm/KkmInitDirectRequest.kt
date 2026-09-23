@@ -38,7 +38,10 @@ data class KkmInitDirectRequest(
     @field:Max(2100)
     val manufactureYear: Int,
     @Schema(description = "Сервисная информация ОФД") val serviceInfo: OfdServiceInfoResponse? = null,
-    @Schema(description = "Ручной ввод ОКЭД при отсутствии данных от ОФД. Прежнее имя поля okved принимается.", example = "47111")
+    @Schema(
+        description = "Ручной ввод ОКЭД при отсутствии данных от ОФД. Прежнее имя поля okved принимается.",
+        example = "47111"
+    )
     @JsonNames("okved")
     val oked: String? = null,
     @Schema(

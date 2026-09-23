@@ -100,10 +100,20 @@ interface PrintApi {
     fun getDocumentPrintHtml(kkmId: String, documentId: String, pin: String, layout: ReceiptLayoutType? = null): String
 
     /** Та же форма, что [getDocumentPrintHtml], в PDF. */
-    fun getDocumentPrintPdf(kkmId: String, documentId: String, pin: String, layout: ReceiptLayoutType? = null): ByteArray
+    fun getDocumentPrintPdf(
+        kkmId: String,
+        documentId: String,
+        pin: String,
+        layout: ReceiptLayoutType? = null
+    ): ByteArray
 
     /** Та же форма, что [getDocumentPrintHtml], в PNG. */
-    fun getDocumentPrintPng(kkmId: String, documentId: String, pin: String, layout: ReceiptLayoutType? = null): ByteArray
+    fun getDocumentPrintPng(
+        kkmId: String,
+        documentId: String,
+        pin: String,
+        layout: ReceiptLayoutType? = null
+    ): ByteArray
 
     /**
      * Печатная форма документа по пакету протокола, например присланному кабинетом.

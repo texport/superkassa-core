@@ -146,7 +146,9 @@ internal class InMemoryCounterDao : CounterDao {
 
     override suspend fun getByKey(key: String): CounterEntity? = rows[key]
 
-    override suspend fun listByPrefix(prefix: String): List<CounterEntity> = rows.values.filter { it.key.startsWith(prefix) }
+    override suspend fun listByPrefix(prefix: String): List<CounterEntity> = rows.values.filter {
+        it.key.startsWith(prefix)
+    }
 
     override suspend fun deleteByPrefix(prefix: String) {
         rows.entries.removeAll { it.key.startsWith(prefix) }

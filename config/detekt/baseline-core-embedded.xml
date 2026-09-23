@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>TooGenericExceptionCaught:EmbeddedDelivery.kt$EmbeddedDelivery$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:NetworkPrinterChannel.kt$NetworkPrinterChannel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:QueueSender.kt$QueueSender$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ShiftAutoCloser.kt$ShiftAutoCloser$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

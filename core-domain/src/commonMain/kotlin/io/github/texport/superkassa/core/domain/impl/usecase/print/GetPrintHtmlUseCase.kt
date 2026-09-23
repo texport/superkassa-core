@@ -151,7 +151,12 @@ class GetPrintHtmlUseCase(
      * Прежде перепечатка рисовала нынешние счётчики смены и нынешнее время:
      * X-отчёт, снятый утром, вечером печатался с вечерней выручкой.
      */
-    private fun issuedXReportHtml(kkm: KkmInfo, doc: FiscalDocumentSnapshot, pin: String, layout: ReceiptLayoutType?): String {
+    private fun issuedXReportHtml(
+        kkm: KkmInfo,
+        doc: FiscalDocumentSnapshot,
+        pin: String,
+        layout: ReceiptLayoutType?
+    ): String {
         val shift = storage.findShiftById(doc.shiftId) ?: getOpenShift(kkm.id, pin)
         val counters = recalculate.rebuildShiftCounters(kkm.id, shift, until = doc.createdAt)
         val report = ZxReportBuilder.build(

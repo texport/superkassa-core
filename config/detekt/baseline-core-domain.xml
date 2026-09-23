@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MatchingDeclarationName:ReceiptVat.kt$VatScope</ID>
+    <ID>TooGenericExceptionCaught:ReceiptDeliveryHelper.kt$ReceiptDeliveryHelper$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SendFiscalCommandUseCase.kt$SendFiscalCommandUseCase$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:StoragePort.kt$e: Exception</ID>
+    <ID>TooManyFunctions:StoragePort.kt$StoragePort</ID>
+  </CurrentIssues>
+</SmellBaseline>

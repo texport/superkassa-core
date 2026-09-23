@@ -123,7 +123,9 @@ object ReceiptMapper {
         deliveryError = result.deliveryError
     )
 
-    fun toDomain(dto: io.github.texport.superkassa.core.presentation.api.model.receipt.CreateReceiptCommand): io.github.texport.superkassa.core.domain.impl.usecase.receipt.CreateReceiptCommand =
+    fun toDomain(
+        dto: io.github.texport.superkassa.core.presentation.api.model.receipt.CreateReceiptCommand
+    ): io.github.texport.superkassa.core.domain.impl.usecase.receipt.CreateReceiptCommand =
         io.github.texport.superkassa.core.domain.impl.usecase.receipt.CreateReceiptCommand(
             kkmId = dto.kkmId,
             pin = dto.pin,

@@ -81,9 +81,19 @@ class ReportRequestBuilderStrategy(
      * из очереди прежде отправляла итоги и время самой отправки.
      * Счётчики смены при этом сверяются с документами, как и прежде.
      */
-    private fun reportOf(command: OfdCommandRequest, document: FiscalDocumentSnapshot?, shift: ShiftInfo): ZxReportInput {
+    private fun reportOf(
+        command: OfdCommandRequest,
+        document: FiscalDocumentSnapshot?,
+        shift: ShiftInfo
+    ): ZxReportInput {
         val current = recalculateShiftCountersUseCase.execute(command.kkmId, shift)
-        val counters = document?.let { recalculateShiftCountersUseCase.rebuildShiftCounters(command.kkmId, shift, it.createdAt) }
+        val counters = document?.let {
+            recalculateShiftCountersUseCase.rebuildShiftCounters(
+                command.kkmId,
+                shift,
+                it.createdAt
+            )
+        }
         val takenAt = document?.createdAt ?: command.offlineEndMillis ?: kotlin.time.Clock.System.now().toEpochMilliseconds()
         return ZxReportBuilder.build(
             counters = counters ?: current,

@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>SpreadOperator:RoomStorage.kt$(*ALL_MIGRATIONS)</ID>
+    <ID>SwallowedException:KkmEntity.kt$KkmEntity$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:KkmEntity.kt$KkmEntity$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:RoomStorage.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:RoomStorageFactory.kt$RoomStorageFactory$e: Exception</ID>
+    <ID>TooManyFunctions:DefaultRoomStorageAdapter.kt$DefaultRoomStorageAdapter : QueueStoragePortStoragePort</ID>
+  </CurrentIssues>
+</SmellBaseline>
