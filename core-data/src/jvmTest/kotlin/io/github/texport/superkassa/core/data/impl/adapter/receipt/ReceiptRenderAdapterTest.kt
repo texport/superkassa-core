@@ -34,10 +34,10 @@ class ReceiptRenderAdapterTest {
         branding = defaultBranding,
         ofdServiceInfo = OfdServiceInfo(
             orgTitle = "Test Org",
-            orgInn = "123456789012",
+            orgIinOrBin = "123456789012",
             orgAddress = "Test Address",
             orgAddressKz = "Test Address Kz",
-            orgOkved = "62010",
+            orgOked = "62010",
             geoLatitude = 432389,
             geoLongitude = 768897,
             geoSource = "GPS"

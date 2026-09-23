@@ -78,7 +78,7 @@ object CoreStrings {
     fun measureUnitCodeInvalid(code: String): TrilingualMessage = CoreStringsImpl.measureUnitCodeInvalid(code)
     fun measureUnitNotFound(code: String): TrilingualMessage = CoreStringsImpl.measureUnitNotFound(code)
     fun documentNotFound(): TrilingualMessage = CoreStringsImpl.documentNotFound()
-    fun okvedRequired(): TrilingualMessage = CoreStringsImpl.okvedRequired()
+    fun okedRequired(): TrilingualMessage = CoreStringsImpl.okedRequired()
     fun nomenclatureNotFound(barcode: String): TrilingualMessage = CoreStringsImpl.nomenclatureNotFound(barcode)
     fun parentTicketRequiredForReturns(): TrilingualMessage = CoreStringsImpl.parentTicketRequiredForReturns()
     fun receiptDiscountScopesConflict(): TrilingualMessage = CoreStringsImpl.receiptDiscountScopesConflict()

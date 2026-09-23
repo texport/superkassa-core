@@ -100,8 +100,10 @@ object OfdServiceRequestBuilder {
                             put("title", JsonPrimitive(serviceInfo.orgTitle))
                             put("address", JsonPrimitive(serviceInfo.orgAddress))
                             put("addressKz", JsonPrimitive(serviceInfo.orgAddressKz))
-                            put("inn", JsonPrimitive(serviceInfo.orgInn))
-                            put("okved", JsonPrimitive(serviceInfo.orgOkved))
+                            // Имена полей — из схемы протокола 2.0.3 кодека:
+                            // там БИН/ИИН и ОКЭД называются inn и okved.
+                            put("inn", JsonPrimitive(serviceInfo.orgIinOrBin))
+                            put("okved", JsonPrimitive(serviceInfo.orgOked))
                         }
                     )
                 }

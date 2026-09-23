@@ -158,14 +158,14 @@ class OfdModelTest {
 
     @Test
     fun testOfdServiceInfo() {
-        val s1 = OfdServiceInfo("title", "addr", "addrKz", "inn", "okved", 10, 20, "GPS")
+        val s1 = OfdServiceInfo("title", "addr", "addrKz", "060140012345", "47111", 10, 20, "GPS")
         val s1Copy = s1.copy()
-        val sSame = OfdServiceInfo("title", "addr", "addrKz", "inn", "okved", 10, 20, "GPS")
+        val sSame = OfdServiceInfo("title", "addr", "addrKz", "060140012345", "47111", 10, 20, "GPS")
         val sDiffTitle = s1.copy(orgTitle = "title2")
         val sDiffAddr = s1.copy(orgAddress = "addr2")
         val sDiffAddrKz = s1.copy(orgAddressKz = "addrKz2")
-        val sDiffInn = s1.copy(orgInn = "inn2")
-        val sDiffOkved = s1.copy(orgOkved = "okved2")
+        val sDiffBin = s1.copy(orgIinOrBin = "060140012346")
+        val sDiffOked = s1.copy(orgOked = "47112")
         val sDiffLat = s1.copy(geoLatitude = 11)
         val sDiffLong = s1.copy(geoLongitude = 21)
         val sDiffSrc = s1.copy(geoSource = "MANUAL")
@@ -180,8 +180,8 @@ class OfdModelTest {
         assertNotEquals(s1, sDiffTitle)
         assertNotEquals(s1, sDiffAddr)
         assertNotEquals(s1, sDiffAddrKz)
-        assertNotEquals(s1, sDiffInn)
-        assertNotEquals(s1, sDiffOkved)
+        assertNotEquals(s1, sDiffBin)
+        assertNotEquals(s1, sDiffOked)
         assertNotEquals(s1, sDiffLat)
         assertNotEquals(s1, sDiffLong)
         assertNotEquals(s1, sDiffSrc)
@@ -191,7 +191,7 @@ class OfdModelTest {
 
     @Test
     fun testOfdCommandRequest() {
-        val service = OfdServiceInfo("title", "addr", "addrKz", "inn", "okved", 10, 20, "GPS")
+        val service = OfdServiceInfo("title", "addr", "addrKz", "060140012345", "47111", 10, 20, "GPS")
         val req1 = OfdCommandRequest("kkm", OfdCommandType.TICKET, "ref", "telecom", "PROD", 1L, 2L, 3, "reg", "fac", "sys", service, 100L, 200L)
         val req1Copy = req1.copy()
         val reqSame = OfdCommandRequest("kkm", OfdCommandType.TICKET, "ref", "telecom", "PROD", 1L, 2L, 3, "reg", "fac", "sys", service, 100L, 200L)

@@ -78,7 +78,7 @@ internal class RoomDocumentReads(private val dao: FiscalDocumentDao, private val
             row.toDomain().copy(
                 registrationNumber = kkm?.registrationNumber,
                 taxpayerName = service?.orgTitle,
-                taxpayerBin = service?.orgInn,
+                taxpayerBin = service?.orgIinOrBin,
                 taxpayerAddress = service?.orgAddress,
                 factoryNumber = kkm?.factoryNumber,
                 ofdProvider = kkm?.ofdProvider

@@ -202,10 +202,10 @@ internal class ReceiptRendererApiImpl(
             branding = overrideBrandingLayout(branding, layoutType),
             ofdServiceInfo = OfdServiceInfo(
                 orgTitle = "ТОО ДЕМО-БРЕНДИНГ / DEMO-BRANDING",
-                orgInn = "123456789012",
+                orgIinOrBin = "123456789012",
                 orgAddress = "г. Алматы, пр. Абая, 123",
                 orgAddressKz = "Алматы қ., Абай даңғылы, 123",
-                orgOkved = "62010",
+                orgOked = "62010",
                 geoLatitude = 432389,
                 geoLongitude = 768897,
                 geoSource = "GPS"

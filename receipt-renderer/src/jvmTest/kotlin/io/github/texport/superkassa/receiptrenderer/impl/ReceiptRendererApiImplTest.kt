@@ -42,8 +42,8 @@ class ReceiptRendererApiImplTest {
             orgTitle = "Individual Entrepreneur Ivanov",
             orgAddress = "Almaty, Abay Ave 10",
             orgAddressKz = "Алматы, Абай даңғылы, 10",
-            orgInn = "987654321012",
-            orgOkved = "62010",
+            orgIinOrBin = "987654321012",
+            orgOked = "62010",
             geoLatitude = 432389,
             geoLongitude = 768897,
             geoSource = "GPS"
@@ -149,7 +149,7 @@ class ReceiptRendererApiImplTest {
             factoryNumber = "FN-888",
             ofdServiceInfo = defaultKkm.ofdServiceInfo?.copy(
                 orgTitle = "Individual Entrepreneur Ivanov",
-                orgInn = "987654321012",
+                orgIinOrBin = "987654321012",
                 orgAddress = "Almaty, Abay Ave 10"
             )
         )
@@ -332,7 +332,7 @@ class ReceiptRendererApiImplTest {
         val kkm = defaultKkm.copy(
             registrationNumber = "RN-999",
             ofdServiceInfo = defaultKkm.ofdServiceInfo?.copy(
-                orgInn = "987654321012"
+                orgIinOrBin = "987654321012"
             )
         )
 
@@ -679,7 +679,7 @@ class ReceiptRendererApiImplTest {
             factoryNumber = "FN-777666",
             ofdServiceInfo = defaultKkm.ofdServiceInfo?.copy(
                 orgTitle = "ИП Иванов С. П.",
-                orgInn = "920102300400",
+                orgIinOrBin = "920102300400",
                 orgAddress = "г. Алматы, ул. Толе Би, 50"
             )
         )

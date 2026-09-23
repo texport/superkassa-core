@@ -180,7 +180,7 @@ class KkmModelTest {
 
     @Test
     fun testKkmInfo() {
-        val service = OfdServiceInfo("title", "addr", "addrKz", "inn", "okved", 10, 20, "GPS")
+        val service = OfdServiceInfo("title", "addr", "addrKz", "060140012345", "47111", 10, 20, "GPS")
         val branding = ReceiptBranding(headerLogoUrl = "logo", headerMsg = "header", footerMsg = "footer")
         val k1 = KkmInfo(
             id = "kkm-1", createdAt = 1000L, updatedAt = 2000L, mode = "ACTIVE", state = "ACTIVE",

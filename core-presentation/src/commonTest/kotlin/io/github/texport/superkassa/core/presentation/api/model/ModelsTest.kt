@@ -367,8 +367,8 @@ class ModelsTest {
             orgTitle = "T1",
             orgAddress = "A1",
             orgAddressKz = "AK1",
-            orgInn = "I1",
-            orgOkved = "O1",
+            orgIinOrBin = "I1",
+            orgOked = "O1",
             geoLatitude = 10,
             geoLongitude = 20,
             geoSource = "S1"
@@ -377,8 +377,8 @@ class ModelsTest {
         assertEquals("T1", dtoOfd.orgTitle)
         assertEquals("A1", dtoOfd.orgAddress)
         assertEquals("AK1", dtoOfd.orgAddressKz)
-        assertEquals("I1", dtoOfd.orgInn)
-        assertEquals("O1", dtoOfd.orgOkved)
+        assertEquals("I1", dtoOfd.orgIinOrBin)
+        assertEquals("O1", dtoOfd.orgOked)
         assertEquals(10, dtoOfd.geoLatitude)
         assertEquals(20, dtoOfd.geoLongitude)
         assertEquals("S1", dtoOfd.geoSource)

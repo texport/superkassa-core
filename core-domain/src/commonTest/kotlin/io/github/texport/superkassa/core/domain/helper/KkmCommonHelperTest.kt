@@ -110,7 +110,7 @@ class KkmCommonHelperTest {
     fun testDefaultServiceInfoReturnsTemplate() {
         val info = helper.defaultServiceInfo()
         assertEquals("UNKNOWN", info.orgTitle)
-        assertEquals("000000000000", info.orgInn)
+        assertEquals("000000000000", info.orgIinOrBin)
     }
 
     @Test

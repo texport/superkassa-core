@@ -20,8 +20,8 @@ class OfdCommandRequestFactoryTest {
         orgTitle = "Org",
         orgAddress = "Addr",
         orgAddressKz = "AddrKz",
-        orgInn = "123",
-        orgOkved = "001",
+        orgIinOrBin = "123",
+        orgOked = "001",
         geoLatitude = 0,
         geoLongitude = 0,
         geoSource = "src"

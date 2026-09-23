@@ -1,8 +1,17 @@
 package io.github.texport.superkassa.core.presentation.api.model.kkm
 
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
+/**
+ * Сведения об организации и месте кассы.
+ *
+ * БИН/ИИН и ОКЭД прежде назывались `orgInn` и `orgOkved`; прежние имена
+ * принимаются при чтении — узел хранит сведения этим же видом.
+ */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @Schema(description = "Сервисная информация об организации и местоположении ККМ, полученная от ОФД")
 data class OfdServiceInfoResponse(
@@ -13,9 +22,11 @@ data class OfdServiceInfoResponse(
     @Schema(description = "Юридический адрес на казахском языке", example = "Алматы қ., Абай к-сі, 10")
     val orgAddressKz: String,
     @Schema(description = "ИИН/БИН организации налогоплательщика", example = "123456789012")
-    val orgInn: String,
+    @JsonNames("orgInn")
+    val orgIinOrBin: String,
     @Schema(description = "Код ОКЭД организации", example = "47111")
-    val orgOkved: String,
+    @JsonNames("orgOkved")
+    val orgOked: String,
     @Schema(
         description = "Географическая широта места установки ККМ (в миллионных долях градуса)",
         example = "43250000"

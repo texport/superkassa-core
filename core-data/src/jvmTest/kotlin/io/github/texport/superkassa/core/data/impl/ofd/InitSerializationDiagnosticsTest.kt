@@ -64,8 +64,8 @@ class InitSerializationDiagnosticsTest {
                             orgTitle = "UNKNOWN",
                             orgAddress = "UNKNOWN",
                             orgAddressKz = "UNKNOWN",
-                            orgInn = "000000000000",
-                            orgOkved = "00000",
+                            orgIinOrBin = "000000000000",
+                            orgOked = "00000",
                             geoLatitude = 0,
                             geoLongitude = 0,
                             geoSource = "UNKNOWN"
@@ -144,8 +144,8 @@ class InitSerializationDiagnosticsTest {
                 orgTitle = "UNKNOWN",
                 orgAddress = "UNKNOWN",
                 orgAddressKz = "UNKNOWN",
-                orgInn = "000000000000",
-                orgOkved = "00000",
+                orgIinOrBin = "000000000000",
+                orgOked = "00000",
                 geoLatitude = 0,
                 geoLongitude = 0,
                 geoSource = "UNKNOWN"

@@ -52,10 +52,10 @@ class RegisterKkmUseCase(
      * @param factoryNumber Заводской номер устройства.
      * @param manufactureYear Год выпуска устройства.
      * @param serviceInfo Дополнительные метаданные сервиса (если null, используются дефолтные).
-     * @param okved Код ОКВЭД организации.
+     * @param oked Код ОКЭД организации.
      * @param adminPin Пин администратора новой кассы; `null` — прежний стандартный.
      * @return Зарегистрированная информация о ККМ [KkmInfo].
-     * @throws ValidationException Если не заполнен идентификатор системы ОФД или не валиден ОКВЭД.
+     * @throws ValidationException Если не заполнен идентификатор системы ОФД или не валиден ОКЭД.
      * @throws ForbiddenException Если передан неверный ПИН-код администратора.
      * @throws ConflictException Если касса с таким регистрационным номером или системным ID уже существует.
      */
@@ -69,7 +69,7 @@ class RegisterKkmUseCase(
         factoryNumber: String,
         manufactureYear: Int,
         serviceInfo: OfdServiceInfo?,
-        okved: String?,
+        oked: String?,
         adminPin: String? = null
     ): KkmInfo {
         logger.info("initKkm: starting registration for systemId='$ofdSystemId', factoryNumber='$factoryNumber'")
@@ -99,7 +99,7 @@ class RegisterKkmUseCase(
 
         val kkmId = idGenerator.nextId()
         val rawServiceInfo = serviceInfo ?: kkmCommonHelper.defaultServiceInfo()
-        val finalServiceInfo = resolveAndValidateServiceInfo(rawServiceInfo, okved)
+        val finalServiceInfo = resolveAndValidateServiceInfo(rawServiceInfo, oked)
 
         val baseInfo = KkmInfo(
             id = kkmId,
@@ -122,7 +122,7 @@ class RegisterKkmUseCase(
                 registrationNumber = kkmKgdId,
                 factoryNumber = factoryNumber,
                 ofdTag = ofdTag,
-                okvedOverride = okved,
+                okedOverride = oked,
                 adminPin = adminPin,
                 updateKkm = { updatedKkm ->
                     val created = storage.createKkm(updatedKkm)
@@ -143,10 +143,10 @@ class RegisterKkmUseCase(
      * @param ofdSystemId Уникальный идентификатор ККМ в ОФД.
      * @param ofdToken Начальный токен доступа ОФД.
      * @param defaultVatGroup Группа НДС по умолчанию.
-     * @param okved Опциональный код ОКВЭД.
+     * @param oked Опциональный код ОКЭД.
      * @param adminPin Пин администратора новой кассы; `null` — прежний стандартный.
      * @return Зарегистрированная информация о ККМ [KkmInfo].
-     * @throws ValidationException Если не заполнен идентификатор системы ОФД, не валиден ОКВЭД
+     * @throws ValidationException Если не заполнен идентификатор системы ОФД, не валиден ОКЭД
      * или команды ОФД завершились ошибкой.
      * @throws ForbiddenException Если передан неверный ПИН-код администратора.
      * @throws ConflictException Если касса с таким ОФД ID или регистрационным номером уже существует.
@@ -158,7 +158,7 @@ class RegisterKkmUseCase(
         ofdSystemId: String,
         ofdToken: String,
         defaultVatGroup: VatGroup,
-        okved: String?,
+        oked: String?,
         adminPin: String? = null
     ): KkmInfo {
         logger.info("initKkmSimple: start initialization for systemId='$ofdSystemId', ofdId='$ofdId'")
@@ -252,7 +252,7 @@ class RegisterKkmUseCase(
             infoResult.responseJson,
             kkmCommonHelper.defaultServiceInfo()
         )
-        val resolvedServiceInfo = resolveAndValidateServiceInfo(rawServiceInfo, okved)
+        val resolvedServiceInfo = resolveAndValidateServiceInfo(rawServiceInfo, oked)
 
         val registrationNumber = OfdResponseParser.extractRegistrationNumber(infoResult.responseJson) ?: tempRegistrationNumber
         val factoryNumber = OfdResponseParser.extractFactoryNumber(infoResult.responseJson) ?: tempFactoryNumber
@@ -335,19 +335,19 @@ class RegisterKkmUseCase(
         ofdConfig.validateAndFormatTag(providerId, environmentId)
 
     /**
-     * Разрешает и валидирует информацию о сервисе ОФД с учетом ОКВЭД.
+     * Разрешает и валидирует информацию о сервисе ОФД с учетом ОКЭД.
      */
     private fun resolveAndValidateServiceInfo(
         rawServiceInfo: OfdServiceInfo,
-        okved: String?
+        oked: String?
     ): OfdServiceInfo {
-        val resolved = if (okved != null) {
-            rawServiceInfo.copy(orgOkved = okved)
+        val resolved = if (oked != null) {
+            rawServiceInfo.copy(orgOked = oked)
         } else {
             rawServiceInfo
         }
-        if (resolved.orgOkved.isBlank() || resolved.orgOkved == "00000") {
-            throw ValidationException(CoreStrings.okvedRequired(), "OKVED_REQUIRED")
+        if (resolved.orgOked.isBlank() || resolved.orgOked == "00000") {
+            throw ValidationException(CoreStrings.okedRequired(), "OKED_REQUIRED")
         }
         return resolved
     }

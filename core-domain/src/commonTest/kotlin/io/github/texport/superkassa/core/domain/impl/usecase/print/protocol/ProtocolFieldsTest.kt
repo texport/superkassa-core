@@ -76,7 +76,7 @@ class ProtocolFieldsTest {
         val known = kkm.copy(
             ofdServiceInfo = OfdServiceInfo(
                 orgTitle = "ТОО Прежнее", orgAddress = "Астана", orgAddressKz = "Астана қ.",
-                orgInn = "000000000000", orgOkved = "00000",
+                orgIinOrBin = "000000000000", orgOked = "00000",
                 geoLatitude = 43, geoLongitude = 76, geoSource = "GPS"
             )
         )
@@ -97,7 +97,7 @@ class ProtocolFieldsTest {
 
         assertEquals("", bare.ofdServiceInfo?.orgTitle)
         assertEquals("", bare.ofdServiceInfo?.orgAddressKz)
-        assertEquals("", bare.ofdServiceInfo?.orgOkved)
+        assertEquals("", bare.ofdServiceInfo?.orgOked)
         assertEquals("", bare.ofdServiceInfo?.geoSource)
         assertEquals(kkm.copy(ofdServiceInfo = bare.ofdServiceInfo), bare)
     }

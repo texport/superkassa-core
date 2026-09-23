@@ -2,11 +2,14 @@ package io.github.texport.superkassa.core.presentation.api.model.kkm
 
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import io.github.texport.superkassa.core.presentation.api.annotations.NotBlank
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
 /**
  * Упрощенный запрос на инициализацию ККМ без черновика.
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @Schema(description = "Упрощенный запрос на инициализацию ККМ (данные получаются из ОФД)")
 data class KkmInitSimpleRequest(
@@ -32,8 +35,9 @@ data class KkmInitSimpleRequest(
         example = "NO_VAT"
     )
     val defaultVatGroup: VatGroup = VatGroup.NO_VAT,
-    @Schema(description = "Ручной ввод ОКЭД при отсутствии данных от ОФД", example = "47111")
-    val okved: String? = null,
+    @Schema(description = "Ручной ввод ОКЭД при отсутствии данных от ОФД. Прежнее имя поля okved принимается.", example = "47111")
+    @JsonNames("okved")
+    val oked: String? = null,
     @Schema(
         description = "Пин администратора новой кассы. Без него касса заводится со стандартным " +
             "пином, а войти с ним узел не даёт — открыть такую кассу будет нельзя.",

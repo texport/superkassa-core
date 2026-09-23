@@ -18,8 +18,8 @@ object KkmMapper {
         orgTitle = ofd.orgTitle,
         orgAddress = ofd.orgAddress,
         orgAddressKz = ofd.orgAddressKz,
-        orgInn = ofd.orgInn,
-        orgOkved = ofd.orgOkved,
+        orgIinOrBin = ofd.orgIinOrBin,
+        orgOked = ofd.orgOked,
         geoLatitude = ofd.geoLatitude,
         geoLongitude = ofd.geoLongitude,
         geoSource = ofd.geoSource
@@ -29,8 +29,8 @@ object KkmMapper {
         orgTitle = dto.orgTitle,
         orgAddress = dto.orgAddress,
         orgAddressKz = dto.orgAddressKz,
-        orgInn = dto.orgInn,
-        orgOkved = dto.orgOkved,
+        orgIinOrBin = dto.orgIinOrBin,
+        orgOked = dto.orgOked,
         geoLatitude = dto.geoLatitude,
         geoLongitude = dto.geoLongitude,
         geoSource = dto.geoSource

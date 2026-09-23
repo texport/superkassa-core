@@ -24,8 +24,8 @@ class NomenclatureRequestBuilderStrategyTest {
             orgTitle = "Superkassa LLC",
             orgAddress = "Almaty, Abay 10",
             orgAddressKz = "Almaty, Abay 10",
-            orgInn = "123456789012",
-            orgOkved = "62.01"
+            orgIinOrBin = "123456789012",
+            orgOked = "62.01"
         )
         val command = OfdCommandRequest(
             kkmId = "kkm-1",

@@ -49,7 +49,7 @@ class RoomKkmRegistrationTest {
     private fun request() = KkmInitDirectRequest(
         ofdId = "KAZAKHTELECOM", ofdEnvironment = "TEST", ofdSystemId = SYSTEM_ID,
         ofdToken = RoomKassa.TOKEN.toString(), kkmKgdId = "010101099999", factoryNumber = "KZT0000099",
-        manufactureYear = 2026, okved = "47111", adminPin = "7391"
+        manufactureYear = 2026, oked = "47111", adminPin = "7391"
     )
 
     private companion object {

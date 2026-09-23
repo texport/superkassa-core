@@ -587,7 +587,7 @@ class SuperkassaApiImplTest {
             kkmKgdId = "123456789012",
             factoryNumber = "SWK-0001",
             manufactureYear = 2024,
-            okved = "47110"
+            oked = "47110"
         )
         val kkm = api.initKkm("0000", request)
         assertEquals("kkm-new", kkm.kkmId)
@@ -606,7 +606,7 @@ class SuperkassaApiImplTest {
             ofdEnvironment = "test",
             ofdSystemId = "200367",
             ofdToken = "32876190",
-            okved = "47110"
+            oked = "47110"
         )
         val kkm = api.initKkmSimple("0000", request)
         assertEquals("kkm-simple", kkm.kkmId)

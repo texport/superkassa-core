@@ -55,8 +55,8 @@ class OfdServiceRequestBuilderAdsTest {
         orgTitle = "ТОО «Сарыарқа Сауда»",
         orgAddress = "Алматы, пр. Абая, 150",
         orgAddressKz = "Алматы қаласы, Абай даңғылы, 150",
-        orgInn = "123456789012",
-        orgOkved = "47111",
+        orgIinOrBin = "123456789012",
+        orgOked = "47111",
         geoLatitude = 1,
         geoLongitude = 1,
         geoSource = "TEST"

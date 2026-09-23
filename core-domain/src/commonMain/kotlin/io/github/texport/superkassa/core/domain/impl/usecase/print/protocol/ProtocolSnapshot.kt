@@ -44,7 +44,7 @@ internal fun snapshotOf(
         deliveredAt = null,
         registrationNumber = kkm.registrationNumber,
         taxpayerName = kkm.ofdServiceInfo?.orgTitle,
-        taxpayerBin = kkm.ofdServiceInfo?.orgInn,
+        taxpayerBin = kkm.ofdServiceInfo?.orgIinOrBin,
         taxpayerAddress = kkm.ofdServiceInfo?.orgAddress,
         factoryNumber = kkm.factoryNumber
     )

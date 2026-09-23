@@ -23,7 +23,7 @@ fun SuperkassaApiImpl.initKkmImpl(pin: String, request: KkmInitDirectRequest): K
         factoryNumber = request.factoryNumber,
         manufactureYear = request.manufactureYear,
         serviceInfo = request.serviceInfo?.let { KkmMapper.toDomain(it) },
-        okved = request.okved,
+        oked = request.oked,
         adminPin = request.adminPin
     ).let { KkmMapper.toResponse(it) }
 
@@ -43,7 +43,7 @@ fun SuperkassaApiImpl.initKkmSimpleImpl(pin: String, request: KkmInitSimpleReque
             ofdSystemId = request.ofdSystemId,
             ofdToken = request.ofdToken,
             defaultVatGroup = DomainVatGroup.valueOf(request.defaultVatGroup.name),
-            okved = request.okved,
+            oked = request.oked,
             adminPin = request.adminPin
         )
         logger.info("API -> initKkmSimple SUCCESS: kkmId='{}'", result.id)

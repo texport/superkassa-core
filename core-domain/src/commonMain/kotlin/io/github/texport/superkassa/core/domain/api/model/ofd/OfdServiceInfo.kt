@@ -6,8 +6,8 @@ package io.github.texport.superkassa.core.domain.api.model.ofd
  * @property orgTitle Официальное наименование организации (налогоплательщика).
  * @property orgAddress Адрес использования ККМ на русском языке.
  * @property orgAddressKz Адрес использования ККМ на казахском языке.
- * @property orgInn БИН/ИИН организации (налогоплательщика).
- * @property orgOkved Код ОКЭД (Общий классификатор видов экономической деятельности).
+ * @property orgIinOrBin БИН/ИИН организации (налогоплательщика).
+ * @property orgOked Код ОКЭД (Общий классификатор видов экономической деятельности).
  * @property geoLatitude Географическая широта места установки ККМ (умноженная на 1 000 000 для целочисленного формата).
  * @property geoLongitude Географическая долгота места установки ККМ (умноженная на 1 000 000 для целочисленного формата).
  * @property geoSource Источник получения координат (например, GPS, MANUAL).
@@ -16,8 +16,8 @@ data class OfdServiceInfo(
     val orgTitle: String,
     val orgAddress: String,
     val orgAddressKz: String,
-    val orgInn: String,
-    val orgOkved: String,
+    val orgIinOrBin: String,
+    val orgOked: String,
     val geoLatitude: Int,
     val geoLongitude: Int,
     val geoSource: String

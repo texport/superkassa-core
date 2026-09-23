@@ -392,10 +392,10 @@ internal object CoreStringsImpl {
         en = "Document not found or receipt content unavailable"
     )
 
-    internal fun okvedRequired(): TrilingualMessage = TrilingualMessage(
-        ru = "ОКВЭД обязателен",
+    internal fun okedRequired(): TrilingualMessage = TrilingualMessage(
+        ru = "ОКЭД обязателен",
         kk = "ЭҚЖЖ міндетті",
-        en = "OKVED is required"
+        en = "OKED is required"
     )
 
     internal fun nomenclatureNotFound(barcode: String): TrilingualMessage = TrilingualMessage(

@@ -90,7 +90,7 @@ class TimeValidationTest {
                 ofdSystemId = "203534",
                 ofdToken = "12345",
                 defaultVatGroup = VatGroup.VAT_10,
-                okved = null
+                oked = null
             )
         }
         assertEquals("SYSTEM_TIME_INVALID", exception.code)

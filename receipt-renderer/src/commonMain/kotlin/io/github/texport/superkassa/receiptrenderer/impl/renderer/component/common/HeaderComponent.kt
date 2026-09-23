@@ -26,7 +26,7 @@ internal object HeaderComponent {
         val afterHeader = adapter.afterHeaderHtml
 
         val taxpayerName = kkm.ofdServiceInfo?.orgTitle ?: translateKey(DocumentConstants.DEFAULT_ORG_TITLE_KEY)
-        val taxpayerBin = kkm.ofdServiceInfo?.orgInn
+        val taxpayerBin = kkm.ofdServiceInfo?.orgIinOrBin
         val taxpayerAddress = when (lang) {
             ReceiptLanguage.RU -> kkm.ofdServiceInfo?.orgAddress
             ReceiptLanguage.KK -> kkm.ofdServiceInfo?.orgAddressKz ?: kkm.ofdServiceInfo?.orgAddress

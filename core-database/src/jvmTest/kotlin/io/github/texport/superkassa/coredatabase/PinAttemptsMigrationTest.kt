@@ -44,7 +44,7 @@ class PinAttemptsMigrationTest {
         }
     }
 
-    /** Схема, какой её оставила версия 11: без таблицы счёта пинов. */
+    /** Схема, какой её оставила версия 11: без таблицы счёта пинов и с прежними именами колонок налогоплательщика. */
     private fun downgradeToVersion11() {
         val connection = BundledSQLiteDriver().open(path)
         try {
@@ -53,6 +53,8 @@ class PinAttemptsMigrationTest {
                     "VALUES ('kkm-old', 'ACTIVE', 'REGISTRATION', 0, 0, 1, 1, 'kept')"
             )
             connection.execSQL("DROP TABLE pin_attempts")
+            connection.execSQL("ALTER TABLE kkms RENAME COLUMN orgIinOrBin TO orgInn")
+            connection.execSQL("ALTER TABLE kkms RENAME COLUMN orgOked TO orgOkved")
             connection.execSQL("PRAGMA user_version = 11")
         } finally {
             connection.close()

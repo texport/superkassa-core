@@ -14,8 +14,8 @@ class OfdResponseParserTest {
         orgTitle = "Fallback",
         orgAddress = "Addr",
         orgAddressKz = "AddrKz",
-        orgInn = "000",
-        orgOkved = "000",
+        orgIinOrBin = "000",
+        orgOked = "000",
         geoLatitude = 0,
         geoLongitude = 0,
         geoSource = "src"
@@ -94,8 +94,8 @@ class OfdResponseParserTest {
 
         val res = OfdResponseParser.extractServiceInfo(json, fallback)
         assertEquals("My Org", res.orgTitle)
-        assertEquals("12345", res.orgInn)
-        assertEquals("999", res.orgOkved)
+        assertEquals("12345", res.orgIinOrBin)
+        assertEquals("999", res.orgOked)
         assertEquals("Org Addr", res.orgAddress)
         assertEquals("Org Addr Kz", res.orgAddressKz)
         assertEquals(45, res.geoLatitude)
@@ -133,8 +133,8 @@ class OfdResponseParserTest {
         assertEquals(fallback.orgTitle, resEmpty.orgTitle)
         assertEquals(fallback.orgAddress, resEmpty.orgAddress)
         assertEquals(fallback.orgAddressKz, resEmpty.orgAddressKz)
-        assertEquals(fallback.orgInn, resEmpty.orgInn)
-        assertEquals(fallback.orgOkved, resEmpty.orgOkved)
+        assertEquals(fallback.orgIinOrBin, resEmpty.orgIinOrBin)
+        assertEquals(fallback.orgOked, resEmpty.orgOked)
         assertEquals(fallback.geoLatitude, resEmpty.geoLatitude)
         assertEquals(fallback.geoLongitude, resEmpty.geoLongitude)
 
@@ -167,13 +167,13 @@ class OfdResponseParserTest {
                 put("service", buildJsonObject {
                     put("regInfo", buildJsonObject {
                         put("kkm", buildJsonObject {
-                            put("fnsKkmId", "fns-id-123")
+                            put("fnsKkmId", "010101012345")
                         })
                     })
                 })
             })
         }
-        assertEquals("fns-id-123", OfdResponseParser.extractRegistrationNumber(json1))
+        assertEquals("010101012345", OfdResponseParser.extractRegistrationNumber(json1))
 
         // fnsKkmId blank, registrationNumber in pos present
         val json2 = buildJsonObject {

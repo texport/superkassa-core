@@ -69,7 +69,7 @@ class InitializeKkmRegistrationUseCase(
      * @property registrationNumber Регистрационный номер кассы.
      * @property factoryNumber Заводской номер кассы (опционально).
      * @property ofdTag Тег провайдера ОФД.
-     * @property okvedOverride Код ОКВЭД, переопределяющий ответ ОФД (опционально).
+     * @property okedOverride Код ОКЭД, переопределяющий ответ ОФД (опционально).
      * @property updateKkm Callback для сохранения или обновления кассы в БД.
      */
     data class KkmInitializationParams(
@@ -78,7 +78,7 @@ class InitializeKkmRegistrationUseCase(
         val registrationNumber: String,
         val factoryNumber: String?,
         val ofdTag: String,
-        val okvedOverride: String?,
+        val okedOverride: String?,
         /** Пин администратора новой кассы; `null` — прежний стандартный. */
         val adminPin: String? = null,
         val updateKkm: (KkmInfo) -> Unit
@@ -114,12 +114,12 @@ class InitializeKkmRegistrationUseCase(
         val now = clock.now()
         val rawResolvedServiceInfo = OfdResponseParser.extractServiceInfo(infoResult.responseJson, serviceInfo)
 
-        // Корректируем и валидируем ОКВЭД
-        val resolvedServiceInfo = if (params.okvedOverride != null) {
-            rawResolvedServiceInfo.copy(orgOkved = params.okvedOverride)
-        } else if (rawResolvedServiceInfo.orgOkved == "00000" || rawResolvedServiceInfo.orgOkved.isBlank()) {
-            if (serviceInfo.orgOkved.isNotBlank() && serviceInfo.orgOkved != "00000") {
-                rawResolvedServiceInfo.copy(orgOkved = serviceInfo.orgOkved)
+        // Корректируем и валидируем ОКЭД
+        val resolvedServiceInfo = if (params.okedOverride != null) {
+            rawResolvedServiceInfo.copy(orgOked = params.okedOverride)
+        } else if (rawResolvedServiceInfo.orgOked == "00000" || rawResolvedServiceInfo.orgOked.isBlank()) {
+            if (serviceInfo.orgOked.isNotBlank() && serviceInfo.orgOked != "00000") {
+                rawResolvedServiceInfo.copy(orgOked = serviceInfo.orgOked)
             } else {
                 rawResolvedServiceInfo
             }

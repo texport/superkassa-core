@@ -93,8 +93,8 @@ class ReportRequestBuilderStrategyTest {
         orgTitle = "ИП ИВАНОВ СЕРГЕЙ НИКОЛАЕВИЧ",
         orgAddress = "Алматы, Медеуский, Достык, 10",
         orgAddressKz = "Алматы, Медеу, Достық, 10",
-        orgInn = "920313351246",
-        orgOkved = "47111",
+        orgIinOrBin = "920313351246",
+        orgOked = "47111",
         geoLatitude = 432_223,
         geoLongitude = 769_580,
         geoSource = "UNKNOWN"

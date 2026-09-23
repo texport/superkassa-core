@@ -126,8 +126,8 @@ class SyncOfdCountersUseCaseTest {
                         orgTitle = "Org",
                         orgAddress = "Addr",
                         orgAddressKz = "Addr KZ",
-                        orgInn = "123456789012",
-                        orgOkved = "47301",
+                        orgIinOrBin = "123456789012",
+                        orgOked = "47301",
                         geoLatitude = 1,
                         geoLongitude = 1,
                         geoSource = "GPS"

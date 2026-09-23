@@ -55,6 +55,8 @@ class IdempotencyAndReceiptUrlMigrationTest {
             connection.execSQL("ALTER TABLE fiscal_documents DROP COLUMN receiptUrl")
             connection.execSQL("ALTER TABLE kkms DROP COLUMN brandingJson")
             connection.execSQL("DROP TABLE pin_attempts")
+            connection.execSQL("ALTER TABLE kkms RENAME COLUMN orgIinOrBin TO orgInn")
+            connection.execSQL("ALTER TABLE kkms RENAME COLUMN orgOked TO orgOkved")
             connection.execSQL("PRAGMA user_version = 9")
         } finally {
             connection.close()

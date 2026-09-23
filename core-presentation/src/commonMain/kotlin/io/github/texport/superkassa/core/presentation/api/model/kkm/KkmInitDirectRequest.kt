@@ -4,11 +4,14 @@ import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import io.github.texport.superkassa.core.presentation.api.annotations.NotBlank
 import io.github.texport.superkassa.core.presentation.api.annotations.Min
 import io.github.texport.superkassa.core.presentation.api.annotations.Max
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
 /**
  * Запрос на прямую инициализацию ККМ.
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @Schema(description = "Запрос на прямую инициализацию ККМ")
 data class KkmInitDirectRequest(
@@ -35,8 +38,9 @@ data class KkmInitDirectRequest(
     @field:Max(2100)
     val manufactureYear: Int,
     @Schema(description = "Сервисная информация ОФД") val serviceInfo: OfdServiceInfoResponse? = null,
-    @Schema(description = "Ручной ввод ОКЭД при отсутствии данных от ОФД", example = "47111")
-    val okved: String? = null,
+    @Schema(description = "Ручной ввод ОКЭД при отсутствии данных от ОФД. Прежнее имя поля okved принимается.", example = "47111")
+    @JsonNames("okved")
+    val oked: String? = null,
     @Schema(
         description = "Пин администратора новой кассы. Без него касса заводится со стандартным " +
             "пином, а войти с ним узел не даёт — открыть такую кассу будет нельзя.",

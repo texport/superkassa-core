@@ -83,8 +83,10 @@ object OfdResponseParser {
             orgAddressKz = pos?.getNestedString("addressKz")
                 ?: org?.getNestedString("addressKz")
                 ?: fallback.orgAddressKz,
-            orgInn = org?.getNestedString("inn") ?: fallback.orgInn,
-            orgOkved = org?.getNestedString("okved") ?: fallback.orgOkved,
+            // Имена полей — из схемы протокола 2.0.3 кодека: там БИН/ИИН и ОКЭД
+            // называются inn и okved.
+            orgIinOrBin = org?.getNestedString("inn") ?: fallback.orgIinOrBin,
+            orgOked = org?.getNestedString("okved") ?: fallback.orgOked,
             geoLatitude = pos?.getNestedInt("latitude") ?: fallback.geoLatitude,
             geoLongitude = pos?.getNestedInt("longitude") ?: fallback.geoLongitude,
             geoSource = fallback.geoSource

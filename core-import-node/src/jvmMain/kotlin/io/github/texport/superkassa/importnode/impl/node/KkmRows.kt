@@ -7,7 +7,9 @@ import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptBranding
 import io.github.texport.superkassa.coredatabase.api.parseBrandingJson
 import io.github.texport.superkassa.importnode.api.NodeImportException
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.json.Json
 import java.util.Base64
 
@@ -76,14 +78,20 @@ internal object KkmRows {
     private inline fun <reified T : Enum<T>> enumOr(value: String?, default: T): T =
         value?.let { name -> enumValues<T>().firstOrNull { it.name == name } } ?: default
 
-    /** Сведения ОФД так, как их пишет узел. */
+    /**
+     * Сведения ОФД так, как их пишет узел.
+     *
+     * Узел до переименования полей писал БИН/ИИН и ОКЭД под прежними
+     * именами `orgInn` и `orgOkved`; читаются и они, и нынешние.
+     */
+    @OptIn(ExperimentalSerializationApi::class)
     @Serializable
     private data class ServiceInfoJson(
         val orgTitle: String,
         val orgAddress: String,
         val orgAddressKz: String,
-        val orgInn: String,
-        val orgOkved: String,
+        @JsonNames("orgInn") val orgIinOrBin: String,
+        @JsonNames("orgOkved") val orgOked: String,
         val geoLatitude: Int,
         val geoLongitude: Int,
         val geoSource: String
@@ -92,8 +100,8 @@ internal object KkmRows {
             orgTitle,
             orgAddress,
             orgAddressKz,
-            orgInn,
-            orgOkved,
+            orgIinOrBin,
+            orgOked,
             geoLatitude,
             geoLongitude,
             geoSource

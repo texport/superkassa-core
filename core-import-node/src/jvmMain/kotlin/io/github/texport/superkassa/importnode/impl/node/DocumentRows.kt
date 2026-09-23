@@ -53,7 +53,7 @@ internal class DocumentRows(private val kkms: Map<String, KkmInfo>) {
         return copy(
             registrationNumber = kkm?.registrationNumber,
             taxpayerName = kkm?.ofdServiceInfo?.orgTitle,
-            taxpayerBin = kkm?.ofdServiceInfo?.orgInn,
+            taxpayerBin = kkm?.ofdServiceInfo?.orgIinOrBin,
             taxpayerAddress = kkm?.ofdServiceInfo?.orgAddress,
             factoryNumber = kkm?.factoryNumber,
             ofdProvider = kkm?.ofdProvider

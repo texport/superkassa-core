@@ -135,8 +135,8 @@ internal class RoomKassa(
         /** Больше интервала восстановления связи (не менее 60 с по протоколу). */
 
         private val SERVICE_INFO = OfdServiceInfo(
-            orgTitle = "ТОО Дала", orgAddress = "Алматы", orgAddressKz = "Алматы", orgInn = "123456789012",
-            orgOkved = "47111", geoLatitude = 43_250_000, geoLongitude = 76_900_000, geoSource = "MANUAL"
+            orgTitle = "ТОО Дала", orgAddress = "Алматы", orgAddressKz = "Алматы", orgIinOrBin = "123456789012",
+            orgOked = "47111", geoLatitude = 43_250_000, geoLongitude = 76_900_000, geoSource = "MANUAL"
         )
 
         /** Одна позиция на всю сумму и оплата наличными. */

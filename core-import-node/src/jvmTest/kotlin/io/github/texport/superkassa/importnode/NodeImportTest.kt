@@ -59,7 +59,7 @@ class NodeImportTest {
         val kkm = checkNotNull(storage.findKkm(KKM))
         assertEquals(NodeScenario.KGD_NUMBER, kkm.registrationNumber)
         assertEquals(Base64.getEncoder().encodeToString(NodeScenario.TOKEN), kkm.tokenEncryptedBase64)
-        assertEquals(NodeScenario.BIN, kkm.ofdServiceInfo?.orgInn)
+        assertEquals(NodeScenario.BIN, kkm.ofdServiceInfo?.orgIinOrBin)
         assertEquals(NodeScenario.OPEN_SHIFT, storage.findOpenShift(KKM)?.id)
         val sale = checkNotNull(storage.findFiscalDocumentById("d-sale"))
         assertEquals("SALE", sale.docType)

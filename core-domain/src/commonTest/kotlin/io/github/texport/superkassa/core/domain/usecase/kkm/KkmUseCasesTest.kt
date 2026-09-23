@@ -94,7 +94,7 @@ class KkmUseCasesTest {
                 factoryNumber = "fact-1",
                 manufactureYear = 2026,
                 serviceInfo = null,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -113,7 +113,7 @@ class KkmUseCasesTest {
                 factoryNumber = "fact-1",
                 manufactureYear = 2026,
                 serviceInfo = null,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -136,7 +136,7 @@ class KkmUseCasesTest {
                 factoryNumber = "fact-1",
                 manufactureYear = 2026,
                 serviceInfo = null,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -160,13 +160,13 @@ class KkmUseCasesTest {
                 factoryNumber = "fact-1",
                 manufactureYear = 2026,
                 serviceInfo = null,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
 
     @Test
-    fun testInitKkmInvalidOkved() {
+    fun testInitKkmInvalidOked() {
         every { kkmCommonHelper.ensureSystemTimeValid() } returns Unit
         every { ofdConfig.validateAndFormatTag("ofd", "prod") } returns "ofd-tag"
         every { clock.now() } returns 1000L
@@ -184,7 +184,7 @@ class KkmUseCasesTest {
                 factoryNumber = "fact-1",
                 manufactureYear = 2026,
                 serviceInfo = null,
-                okved = ""
+                oked = ""
             )
         }
 
@@ -199,7 +199,7 @@ class KkmUseCasesTest {
                 factoryNumber = "fact-1",
                 manufactureYear = 2026,
                 serviceInfo = null,
-                okved = "00000"
+                oked = "00000"
             )
         }
     }
@@ -219,8 +219,8 @@ class KkmUseCasesTest {
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "12345",
+            orgIinOrBin = "000000000000",
+            orgOked = "12345",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"
@@ -245,7 +245,7 @@ class KkmUseCasesTest {
             factoryNumber = "fact-1",
             manufactureYear = 2026,
             serviceInfo = null,
-            okved = "12345"
+            oked = "12345"
         )
 
         assertEquals("kkm-id-123", res.id)
@@ -269,8 +269,8 @@ class KkmUseCasesTest {
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "12345",
+            orgIinOrBin = "000000000000",
+            orgOked = "12345",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"
@@ -295,7 +295,7 @@ class KkmUseCasesTest {
                 factoryNumber = "fact-1",
                 manufactureYear = 2026,
                 serviceInfo = null,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -310,7 +310,7 @@ class KkmUseCasesTest {
                 ofdSystemId = "sys-1",
                 ofdToken = "token",
                 defaultVatGroup = VatGroup.VAT_10,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -328,7 +328,7 @@ class KkmUseCasesTest {
                 ofdSystemId = "sys-1",
                 ofdToken = "token",
                 defaultVatGroup = VatGroup.VAT_10,
-                okved = "12345",
+                oked = "12345",
                 adminPin = "1111"
             )
         }
@@ -345,7 +345,7 @@ class KkmUseCasesTest {
                 ofdSystemId = "",
                 ofdToken = "token",
                 defaultVatGroup = VatGroup.VAT_10,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -365,7 +365,7 @@ class KkmUseCasesTest {
                 ofdSystemId = "sys-1",
                 ofdToken = "token",
                 defaultVatGroup = VatGroup.VAT_10,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -383,8 +383,8 @@ class KkmUseCasesTest {
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "12345",
+            orgIinOrBin = "000000000000",
+            orgOked = "12345",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"
@@ -402,7 +402,7 @@ class KkmUseCasesTest {
                 ofdSystemId = "sys-1",
                 ofdToken = "token",
                 defaultVatGroup = VatGroup.VAT_10,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -420,8 +420,8 @@ class KkmUseCasesTest {
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "12345",
+            orgIinOrBin = "000000000000",
+            orgOked = "12345",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"
@@ -442,7 +442,7 @@ class KkmUseCasesTest {
                 ofdSystemId = "sys-1",
                 ofdToken = "token",
                 defaultVatGroup = VatGroup.VAT_10,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -460,8 +460,8 @@ class KkmUseCasesTest {
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "12345",
+            orgIinOrBin = "000000000000",
+            orgOked = "12345",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"
@@ -491,7 +491,7 @@ class KkmUseCasesTest {
                 ofdSystemId = "sys-1",
                 ofdToken = "token",
                 defaultVatGroup = VatGroup.VAT_10,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -511,8 +511,8 @@ class KkmUseCasesTest {
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "12345",
+            orgIinOrBin = "000000000000",
+            orgOked = "12345",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"
@@ -554,7 +554,7 @@ class KkmUseCasesTest {
             ofdSystemId = "sys-1",
             ofdToken = "token",
             defaultVatGroup = VatGroup.VAT_10,
-            okved = "12345"
+            oked = "12345"
         )
 
         assertEquals("kkm-id-123", res.id)
@@ -580,8 +580,8 @@ class KkmUseCasesTest {
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "12345",
+            orgIinOrBin = "000000000000",
+            orgOked = "12345",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"
@@ -618,7 +618,7 @@ class KkmUseCasesTest {
                 ofdSystemId = "sys-1",
                 ofdToken = "token",
                 defaultVatGroup = VatGroup.NO_VAT,
-                okved = "12345"
+                oked = "12345"
             )
         }
     }
@@ -636,7 +636,7 @@ class KkmUseCasesTest {
             registrationNumber = "reg-1",
             factoryNumber = null,
             ofdTag = "ofd-tag",
-            okvedOverride = "12345",
+            okedOverride = "12345",
             updateKkm = {}
         )
 
@@ -654,7 +654,7 @@ class KkmUseCasesTest {
             registrationNumber = "reg-1",
             factoryNumber = "fact-1",
             ofdTag = "ofd-tag",
-            okvedOverride = "12345",
+            okedOverride = "12345",
             updateKkm = { stored = true }
         )
         every { tokenCodec.parseToken("token") } returns 555L
@@ -674,7 +674,7 @@ class KkmUseCasesTest {
             registrationNumber = "reg-1",
             factoryNumber = "fact-1",
             ofdTag = "ofd-tag",
-            okvedOverride = "12345",
+            okedOverride = "12345",
             updateKkm = mockk(relaxed = true)
         )
         every { tokenCodec.parseToken("token") } returns 555L
@@ -685,8 +685,8 @@ class KkmUseCasesTest {
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "00000",
+            orgIinOrBin = "000000000000",
+            orgOked = "00000",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"
@@ -738,27 +738,27 @@ class KkmUseCasesTest {
     }
 
     @Test
-    fun testInitializeKkmRegistrationDefaultOkvedFallback() {
+    fun testInitializeKkmRegistrationDefaultOkedFallback() {
         val params = InitializeKkmRegistrationUseCase.KkmInitializationParams(
             baseInfo = kkm.copy(factoryNumber = "fact-1"),
             ofdToken = "token",
             registrationNumber = "reg-1",
             factoryNumber = "fact-1",
             ofdTag = "ofd-tag",
-            okvedOverride = null,
+            okedOverride = null,
             updateKkm = mockk(relaxed = true)
         )
         every { tokenCodec.parseToken("token") } returns 555L
         every { tokenCodec.encodeToken(777L) } returns "enc-777"
         every { clock.now() } returns 1000L
 
-        // Default info has a valid OKVED
+        // Default info has a valid OKED
         val defaultInfo = OfdServiceInfo(
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "54321",
+            orgIinOrBin = "000000000000",
+            orgOked = "54321",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"
@@ -766,7 +766,7 @@ class KkmUseCasesTest {
         every { kkmCommonHelper.defaultServiceInfo() } returns defaultInfo
 
         val systemResult = OfdCommandResult(status = OfdCommandStatus.OK, responseToken = 777L)
-        // Response JSON returns an empty OKVED
+        // Response JSON returns an empty OKED
         val responseJson = buildJsonObject {
             putJsonObject("kkmInfo") {
                 put("registrationNumber", "reg-1")
@@ -781,7 +781,7 @@ class KkmUseCasesTest {
         every { kkmCommonHelper.sendOfdCommand(any(), OfdCommandType.INFO, any(), any(), any(), any(), any(), any()) } returns infoResult
 
         val result = initializeKkmRegistration.execute(params)
-        assertEquals("54321", result.ofdServiceInfo?.orgOkved)
+        assertEquals("54321", result.ofdServiceInfo?.orgOked)
     }
 
     @Test
@@ -794,8 +794,8 @@ class KkmUseCasesTest {
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "12345",
+            orgIinOrBin = "000000000000",
+            orgOked = "12345",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"
@@ -829,8 +829,8 @@ class KkmUseCasesTest {
             orgTitle = "UNKNOWN",
             orgAddress = "UNKNOWN",
             orgAddressKz = "UNKNOWN",
-            orgInn = "000000000000",
-            orgOkved = "12345",
+            orgIinOrBin = "000000000000",
+            orgOked = "12345",
             geoLatitude = 0,
             geoLongitude = 0,
             geoSource = "UNKNOWN"

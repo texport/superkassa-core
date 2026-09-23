@@ -35,7 +35,7 @@ import io.github.texport.superkassa.coredatabase.impl.entity.ShiftEntity
         IdempotencyEntity::class,
         PinAttemptEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 @ConstructedBy(SuperkassaAppDatabaseConstructor::class)

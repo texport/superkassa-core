@@ -15,7 +15,7 @@ import io.github.texport.superkassa.core.domain.api.port.internal.OfdManagerPort
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.RegisterKkmUseCase
 import io.github.texport.superkassa.core.support.TestStoragePort
 
-class KkmInitOkvedValidationTest {
+class KkmInitOkedValidationTest {
 
     private val storage = TestStoragePort()
     private val ofdConfigPort = OfdConfigAdapter()
@@ -36,7 +36,7 @@ class KkmInitOkvedValidationTest {
         override fun generateFactoryNumber(prefix: String): String = "${prefix}26TEST12345"
     }
 
-    private var okvedValFromOfd: String? = "47301"
+    private var okedValFromOfd: String? = "47301"
 
     private val ofdManager = object : OfdManagerPort {
         override fun send(command: OfdCommandRequest): OfdCommandResult {
@@ -56,7 +56,7 @@ class KkmInitOkvedValidationTest {
                                     put("title", JsonPrimitive("Test Org"))
                                     put("address", JsonPrimitive("Test Address"))
                                     put("inn", JsonPrimitive("123456789012"))
-                                    okvedValFromOfd?.let { put("okved", JsonPrimitive(it)) }
+                                    okedValFromOfd?.let { put("okved", JsonPrimitive(it)) }
                                 })
                                 put("kkm", buildJsonObject {
                                     put("fnsKkmId", JsonPrimitive("RN-1"))
@@ -118,11 +118,11 @@ class KkmInitOkvedValidationTest {
     @BeforeTest
     fun setUp() {
         storage.clearAll()
-        okvedValFromOfd = "47301"
+        okedValFromOfd = "47301"
     }
 
     @Test
-    fun `initKkm succeeds when okved is provided in serviceInfo`() {
+    fun `initKkm succeeds when oked is provided in serviceInfo`() {
         val kkm = useCase.initKkm(
             pin = "0000",
             ofdId = "KAZAKHTELECOM",
@@ -136,19 +136,19 @@ class KkmInitOkvedValidationTest {
                 orgTitle = "Test Org",
                 orgAddress = "Test Address",
                 orgAddressKz = "Test Address KZ",
-                orgInn = "123456789012",
-                orgOkved = "47301",
+                orgIinOrBin = "123456789012",
+                orgOked = "47301",
                 geoLatitude = 1,
                 geoLongitude = 1,
                 geoSource = "TEST"
             ),
-            okved = null
+            oked = null
         )
-        assertEquals("47301", kkm.ofdServiceInfo?.orgOkved)
+        assertEquals("47301", kkm.ofdServiceInfo?.orgOked)
     }
 
     @Test
-    fun `initKkm succeeds with okved override when serviceInfo okved is 00000`() {
+    fun `initKkm succeeds with oked override when serviceInfo oked is 00000`() {
         val kkm = useCase.initKkm(
             pin = "0000",
             ofdId = "KAZAKHTELECOM",
@@ -158,24 +158,24 @@ class KkmInitOkvedValidationTest {
             kkmKgdId = "RN-2",
             factoryNumber = "FN-2",
             manufactureYear = 2024,
-            okved = "47111", // Manual override
+            oked = "47111", // Manual override
             serviceInfo = OfdServiceInfo(
                 orgTitle = "Test Org",
                 orgAddress = "Test Address",
                 orgAddressKz = "Test Address KZ",
-                orgInn = "123456789012",
-                orgOkved = "00000", // Placeholder returned by OFD
+                orgIinOrBin = "123456789012",
+                orgOked = "00000", // Placeholder returned by OFD
                 geoLatitude = 1,
                 geoLongitude = 1,
                 geoSource = "TEST"
             )
         )
-        assertEquals("47111", kkm.ofdServiceInfo?.orgOkved)
+        assertEquals("47111", kkm.ofdServiceInfo?.orgOked)
     }
 
     @Test
-    fun `initKkm throws ValidationException when okved is missing and no manual okved supplied`() {
-        okvedValFromOfd = "00000"
+    fun `initKkm throws ValidationException when oked is missing and no manual oked supplied`() {
+        okedValFromOfd = "00000"
         val ex = assertFailsWith<ValidationException> {
             useCase.initKkm(
                 pin = "0000",
@@ -186,25 +186,25 @@ class KkmInitOkvedValidationTest {
                 kkmKgdId = "RN-3",
                 factoryNumber = "FN-3",
                 manufactureYear = 2024,
-                okved = null,
+                oked = null,
                 serviceInfo = OfdServiceInfo(
                     orgTitle = "Test Org",
                     orgAddress = "Test Address",
                     orgAddressKz = "Test Address KZ",
-                    orgInn = "123456789012",
-                    orgOkved = "00000", // placeholder
+                    orgIinOrBin = "123456789012",
+                    orgOked = "00000", // placeholder
                     geoLatitude = 1,
                     geoLongitude = 1,
                     geoSource = "TEST"
                 )
             )
         }
-        assertEquals("OKVED_REQUIRED", ex.code)
+        assertEquals("OKED_REQUIRED", ex.code)
     }
 
     @Test
-    fun `initKkmSimple succeeds when OFD returns valid okved`() {
-        okvedValFromOfd = "47301"
+    fun `initKkmSimple succeeds when OFD returns valid oked`() {
+        okedValFromOfd = "47301"
         val kkm = useCase.initKkmSimple(
             pin = "0000",
             ofdId = "KAZAKHTELECOM",
@@ -212,14 +212,14 @@ class KkmInitOkvedValidationTest {
             ofdSystemId = "203534",
             ofdToken = "123454",
             defaultVatGroup = VatGroup.VAT_10,
-            okved = null
+            oked = null
         )
-        assertEquals("47301", kkm.ofdServiceInfo?.orgOkved)
+        assertEquals("47301", kkm.ofdServiceInfo?.orgOked)
     }
 
     @Test
-    fun `initKkmSimple succeeds when OFD returns 00000 but manual okved is supplied`() {
-        okvedValFromOfd = "00000"
+    fun `initKkmSimple succeeds when OFD returns 00000 but manual oked is supplied`() {
+        okedValFromOfd = "00000"
         val kkm = useCase.initKkmSimple(
             pin = "0000",
             ofdId = "KAZAKHTELECOM",
@@ -227,14 +227,14 @@ class KkmInitOkvedValidationTest {
             ofdSystemId = "203535",
             ofdToken = "123455",
             defaultVatGroup = VatGroup.VAT_10,
-            okved = "47111" // Manual override
+            oked = "47111" // Manual override
         )
-        assertEquals("47111", kkm.ofdServiceInfo?.orgOkved)
+        assertEquals("47111", kkm.ofdServiceInfo?.orgOked)
     }
 
     @Test
-    fun `initKkmSimple throws ValidationException when OFD returns missing okved and no manual okved supplied`() {
-        okvedValFromOfd = null // missing okved
+    fun `initKkmSimple throws ValidationException when OFD returns missing oked and no manual oked supplied`() {
+        okedValFromOfd = null // missing oked
         val ex = assertFailsWith<ValidationException> {
             useCase.initKkmSimple(
                 pin = "0000",
@@ -243,9 +243,9 @@ class KkmInitOkvedValidationTest {
                 ofdSystemId = "203536",
                 ofdToken = "123456",
                 defaultVatGroup = VatGroup.VAT_10,
-                okved = null
+                oked = null
             )
         }
-        assertEquals("OKVED_REQUIRED", ex.code)
+        assertEquals("OKED_REQUIRED", ex.code)
     }
 }

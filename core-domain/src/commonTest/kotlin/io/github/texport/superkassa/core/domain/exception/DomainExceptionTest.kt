@@ -280,8 +280,8 @@ class DomainExceptionTest {
         // documentNotFound
         assertEquals("Документ не найден или содержимое чека недоступно", CoreStrings.documentNotFound().ru)
 
-        // okvedRequired
-        assertEquals("ОКВЭД обязателен", CoreStrings.okvedRequired().ru)
+        // okedRequired
+        assertEquals("ОКЭД обязателен", CoreStrings.okedRequired().ru)
     }
 }
 
