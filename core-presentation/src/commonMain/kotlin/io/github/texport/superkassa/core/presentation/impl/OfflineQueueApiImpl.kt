@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.impl
 
+import io.github.texport.superkassa.core.domain.api.model.common.PageBounds
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.impl.usecase.queue.GetQueueStatusUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.queue.ListQueueItemsUseCase
@@ -39,6 +40,7 @@ internal class OfflineQueueApiImpl(
 
     @Throws(Exception::class)
     override fun processOfflineBatch(kkmId: String, limit: Int): Int {
+        PageBounds.requireLimit(limit)
         return queuePort.processOfflineBatch(kkmId, limit)
     }
 

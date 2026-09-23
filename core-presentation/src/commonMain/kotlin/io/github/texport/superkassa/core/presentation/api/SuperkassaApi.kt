@@ -437,8 +437,8 @@ interface SuperkassaApi : PrintApi {
      * Получить историю смен для ККМ с пагинацией.
      *
      * @param kkmId ID ККМ.
-     * @param limit Лимит записей.
-     * @param offset Смещение выборки.
+     * @param limit Лимит записей, 1–500; иначе ValidationException PAGE_LIMIT_OUT_OF_RANGE.
+     * @param offset Смещение выборки, не меньше 0; иначе ValidationException PAGE_OFFSET_NEGATIVE.
      * @param pin ПИН-код пользователя.
      * @return Список смен.
      */
@@ -450,8 +450,8 @@ interface SuperkassaApi : PrintApi {
      *
      * @param kkmId ID ККМ.
      * @param shiftId ID смены.
-     * @param limit Лимит записей.
-     * @param offset Смещение.
+     * @param limit Лимит записей, 1–500; иначе ValidationException PAGE_LIMIT_OUT_OF_RANGE.
+     * @param offset Смещение, не меньше 0; иначе ValidationException PAGE_OFFSET_NEGATIVE.
      * @param pin ПИН-код пользователя.
      * @return Список снимков фискальных документов.
      */
@@ -468,10 +468,10 @@ interface SuperkassaApi : PrintApi {
      * Получить фискальные документы за определенный период времени.
      *
      * @param kkmId ID ККМ.
-     * @param fromInclusive Начало периода (epoch ms).
-     * @param toExclusive Конец периода (epoch ms).
-     * @param limit Лимит записей.
-     * @param offset Смещение.
+     * @param fromInclusive Начало периода (epoch ms), не меньше 0.
+     * @param toExclusive Конец периода (epoch ms), позже начала; иначе ValidationException PERIOD_INVALID.
+     * @param limit Лимит записей, 1–500; иначе ValidationException PAGE_LIMIT_OUT_OF_RANGE.
+     * @param offset Смещение, не меньше 0; иначе ValidationException PAGE_OFFSET_NEGATIVE.
      * @param pin ПИН-код пользователя.
      * @return Список фискальных документов.
      */

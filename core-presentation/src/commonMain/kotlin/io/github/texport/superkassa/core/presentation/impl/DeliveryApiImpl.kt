@@ -7,6 +7,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.DocumentCon
 import io.github.texport.superkassa.core.domain.api.port.internal.ReceiptRenderPort
 import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.PinGuard
 import io.github.texport.superkassa.core.domain.impl.helper.ReceiptDeliveryHelper
 import io.github.texport.superkassa.core.domain.impl.usecase.receipt.RetryReceiptDeliveryUseCase
 import io.github.texport.superkassa.core.presentation.api.DeliveryApi
@@ -20,10 +21,12 @@ class DeliveryApiImpl(
     delivery: DeliveryPort,
     coreSettings: CoreSettings,
     documentConvertPort: DocumentConvertPort,
-    receiptRenderPort: ReceiptRenderPort
+    receiptRenderPort: ReceiptRenderPort,
+    /** Счёт неверных пинов; сборка ядра даёт тот же, что у фасада. */
+    pinGuard: PinGuard = PinGuard.of(storage)
 ) : DeliveryApi {
 
-    private val authorization = AuthorizeUserUseCase(storage, pinHasher)
+    private val authorization = AuthorizeUserUseCase(storage, pinHasher, pinGuard)
 
     private val receiptDeliveryHelper = ReceiptDeliveryHelper(
         storage = storage,

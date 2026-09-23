@@ -23,6 +23,7 @@ import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
 import io.github.texport.superkassa.core.presentation.impl.SuperkassaApiImpl
 import io.github.texport.superkassa.core.presentation.impl.PrintApiImpl
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.PinGuard
 import io.github.texport.superkassa.core.domain.impl.usecase.print.GetPrintHtmlUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.print.GetPrintPdfUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.print.GetReceiptHtmlUseCase
@@ -66,6 +67,13 @@ class SuperkassaCoreEngine(
     val receiptRenderer: ReceiptRenderPort = ReceiptRenderAdapter(qrCode)
 
     /**
+     * Счёт неверных пинов — один на сборку: фасад, печать и доставка
+     * пускают по пину через него, и перебор не делится между входами.
+     * Хранилище на Room держит счёт в базе, иное — в памяти процесса.
+     */
+    private val pinGuard = PinGuard.of(storage, clock::now)
+
+    /**
      * Повтор доставки чека покупателю.
      *
      * Собирается из тех же частей, что и фасад: хеш пина — тот же, которым
@@ -79,7 +87,8 @@ class SuperkassaCoreEngine(
         delivery = delivery,
         coreSettings = checkNotNull(settings.load()) { "Core settings are not created: build the API first" },
         documentConvertPort = pdfConverter,
-        receiptRenderPort = receiptRenderer
+        receiptRenderPort = receiptRenderer,
+        pinGuard = pinGuard
     )
 
     /**
@@ -147,7 +156,7 @@ class SuperkassaCoreEngine(
         val leaseLockAdapter = StorageBackedLeaseLockAdapter(storage)
         val queueStorageAdapter = StorageBackedQueueStorageAdapter(storage)
 
-        val authorization = AuthorizeUserUseCase(storage, pinHasher)
+        val authorization = AuthorizeUserUseCase(storage, pinHasher, pinGuard)
         val generateRequestNumber = GenerateRequestNumberUseCase(storage)
         val ofdRequestFactory = OfdCommandRequestFactory(ofdConfig)
         val kkmCommonHelper = KkmCommonHelper(
@@ -201,7 +210,8 @@ class SuperkassaCoreEngine(
             receiptRenderPort = receiptRenderPort,
             documentConvertPort = pdfConverter,
             timeValidator = timeValidator,
-            printApi = printApi
+            printApi = printApi,
+            pinGuard = pinGuard
         )
     }
 

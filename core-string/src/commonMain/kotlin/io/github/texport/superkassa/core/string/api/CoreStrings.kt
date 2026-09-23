@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.string.api
 
+import io.github.texport.superkassa.core.string.impl.AccessStrings
 import io.github.texport.superkassa.core.string.impl.AmountStrings
 import io.github.texport.superkassa.core.string.impl.CoreStringsImpl
 
@@ -145,4 +146,8 @@ object CoreStrings {
     fun cashOperationType(code: String): TrilingualMessage = CoreStringsImpl.cashOperationType(code)
     fun valueOutOfRange(field: String, bounds: String): TrilingualMessage = AmountStrings.valueOutOfRange(field, bounds)
     fun cashSumTooSmall(): TrilingualMessage = AmountStrings.cashSumTooSmall()
+    fun pinLocked(retryAfterSeconds: Long): TrilingualMessage = AccessStrings.pinLocked(retryAfterSeconds)
+    fun pageLimitOutOfRange(largest: Int): TrilingualMessage = AccessStrings.pageLimitOutOfRange(largest)
+    fun pageOffsetNegative(): TrilingualMessage = AccessStrings.pageOffsetNegative()
+    fun periodInvalid(): TrilingualMessage = AccessStrings.periodInvalid()
 }

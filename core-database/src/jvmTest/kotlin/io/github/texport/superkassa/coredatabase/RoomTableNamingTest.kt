@@ -6,12 +6,14 @@ import io.github.texport.superkassa.coredatabase.impl.dao.CounterDao
 import io.github.texport.superkassa.coredatabase.impl.dao.FiscalDocumentDao
 import io.github.texport.superkassa.coredatabase.impl.dao.KkmDao
 import io.github.texport.superkassa.coredatabase.impl.dao.KkmUserDao
+import io.github.texport.superkassa.coredatabase.impl.dao.PinAttemptDao
 import io.github.texport.superkassa.coredatabase.impl.dao.QueueCommandDao
 import io.github.texport.superkassa.coredatabase.impl.dao.ShiftDao
 import io.github.texport.superkassa.coredatabase.impl.entity.CounterEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.FiscalDocumentEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.KkmEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.KkmUserEntity
+import io.github.texport.superkassa.coredatabase.impl.entity.PinAttemptEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.QueueCommandEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.ShiftEntity
 import kotlin.test.Test
@@ -25,7 +27,8 @@ class RoomTableNamingTest {
         FiscalDocumentEntity::class.java,
         KkmUserEntity::class.java,
         QueueCommandEntity::class.java,
-        ShiftEntity::class.java
+        ShiftEntity::class.java,
+        PinAttemptEntity::class.java
     )
 
     private val daoClasses: List<Class<*>> = listOf(
@@ -34,7 +37,8 @@ class RoomTableNamingTest {
         FiscalDocumentDao::class.java,
         KkmUserDao::class.java,
         QueueCommandDao::class.java,
-        ShiftDao::class.java
+        ShiftDao::class.java,
+        PinAttemptDao::class.java
     )
 
     @Test

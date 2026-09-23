@@ -43,7 +43,7 @@ class IdempotencyAndReceiptUrlMigrationTest {
         }
     }
 
-    /** Схема, какой её оставила версия 9: без таблицы ключей, ссылки на чек и оформления кассы. */
+    /** Схема, какой её оставила версия 9: без таблицы ключей, ссылки на чек, оформления кассы и счёта пинов. */
     private fun downgradeToVersion9() {
         val connection = BundledSQLiteDriver().open(path)
         try {
@@ -54,6 +54,7 @@ class IdempotencyAndReceiptUrlMigrationTest {
             connection.execSQL("DROP TABLE idempotency_keys")
             connection.execSQL("ALTER TABLE fiscal_documents DROP COLUMN receiptUrl")
             connection.execSQL("ALTER TABLE kkms DROP COLUMN brandingJson")
+            connection.execSQL("DROP TABLE pin_attempts")
             connection.execSQL("PRAGMA user_version = 9")
         } finally {
             connection.close()

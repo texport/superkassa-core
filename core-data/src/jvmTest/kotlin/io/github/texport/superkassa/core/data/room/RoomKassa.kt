@@ -23,6 +23,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidat
 import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptItemRequest
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptPaymentRequest
+import io.github.texport.superkassa.coredatabase.api.RoomStorage
 import io.github.texport.superkassa.coredatabase.api.openInMemoryRoomStorage
 import io.github.texport.superkassa.delivery.impl.DefaultKtorDeliveryAdapter
 import io.github.texport.superkassa.receiptrenderer.impl.adapter.DefaultQrCodeGeneratorAdapter
@@ -32,14 +33,18 @@ import io.github.texport.superkassa.receiptrenderer.impl.adapter.DefaultQrCodeGe
  * база — Room в памяти, сеть — [FakeBfd]. Касса зарегистрирована,
  * у неё администратор и кассир. Налоговый режим и ставка кассы — те,
  * что переданы; по умолчанию касса не плательщик НДС.
+ *
+ * База и часы подменяются: файловая база переживает «перезапуск» —
+ * вторую кассу на том же файле, — а часы переводятся без ожидания.
  */
 internal class RoomKassa(
     private val taxRegime: TaxRegime = TaxRegime.NO_VAT,
     private val kassaVat: VatGroup = VatGroup.NO_VAT,
+    private val room: RoomStorage = openInMemoryRoomStorage(),
     clock: ClockPort = DefaultClockAdapter()
 ) {
     val bfd = FakeBfd()
-    val storage: StoragePort = openInMemoryRoomStorage().storagePort
+    val storage: StoragePort = room.storagePort
     val api: SuperkassaApi = SuperkassaCoreEngine(
         storage = storage,
         settings = MemorySettings(),
@@ -69,6 +74,9 @@ internal class RoomKassa(
         api.updateKkmSettings(KKM, ADMIN_PIN, autoCloseShift = autoCloseShift, autoCashout = autoCashout)
         api.exitProgramming(KKM, ADMIN_PIN)
     }
+
+    /** Закрывает базу, как при остановке приложения. */
+    fun close() = room.close()
 
     private fun register() {
         val now = System.currentTimeMillis()

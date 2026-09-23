@@ -1,6 +1,7 @@
 package io.github.texport.superkassa.coredatabase.impl.adapter
 
 import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
+import io.github.texport.superkassa.core.domain.api.model.auth.PinHashes
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.coredatabase.impl.dao.KkmDao
@@ -48,8 +49,10 @@ internal class RoomKkms(private val kkmDao: KkmDao, private val userDao: KkmUser
         true
     }
 
+    /** Пин занят другим кассиром этой кассы — отказ, как у узла с его уникальным индексом. */
     fun createUser(kkmId: String, userId: String, name: String, role: UserRole, pinHash: String, at: Long): Boolean =
         runBlocking {
+            if (pinTakenByOther(kkmId, userId, pinHash)) return@runBlocking false
             userDao.insert(KkmUserEntity(userId, kkmId, name, role.name, pinHash, at))
             true
         }
@@ -57,6 +60,7 @@ internal class RoomKkms(private val kkmDao: KkmDao, private val userDao: KkmUser
     fun updateUser(kkmId: String, userId: String, name: String?, role: UserRole?, pinHash: String?): Boolean =
         runBlocking {
             val current = userOf(kkmId, userId) ?: return@runBlocking false
+            if (pinHash != null && pinTakenByOther(kkmId, userId, pinHash)) return@runBlocking false
             val updated = current.copy(
                 name = name ?: current.name,
                 role = role?.name ?: current.role,
@@ -76,9 +80,21 @@ internal class RoomKkms(private val kkmDao: KkmDao, private val userDao: KkmUser
 
     fun userById(kkmId: String, userId: String): KkmUser? = runBlocking { userOf(kkmId, userId)?.toUser() }
 
+    /**
+     * Кассир по хешу пина: сравниваются все кассиры кассы и каждый — за
+     * постоянное время, чтобы по времени ответа не угадывалось, кто и
+     * насколько совпал.
+     */
     fun userByPin(kkmId: String, pinHash: String): KkmUser? = runBlocking {
-        userDao.listByKkm(kkmId).firstOrNull { it.pinHash == pinHash }?.toUser()
+        var found: KkmUserEntity? = null
+        for (user in userDao.listByKkm(kkmId)) {
+            if (PinHashes.same(user.pinHash, pinHash) && found == null) found = user
+        }
+        found?.toUser()
     }
+
+    private suspend fun pinTakenByOther(kkmId: String, userId: String, pinHash: String): Boolean =
+        userDao.listByKkm(kkmId).any { it.id != userId && PinHashes.same(it.pinHash, pinHash) }
 
     /** Кассир этой кассы: чужой по идентификатору не находится, как у узла. */
     private suspend fun userOf(kkmId: String, userId: String): KkmUserEntity? =

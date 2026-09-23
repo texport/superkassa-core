@@ -4,6 +4,7 @@ import io.github.texport.superkassa.coredatabase.impl.entity.CounterEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.FiscalDocumentEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.KkmEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.KkmUserEntity
+import io.github.texport.superkassa.coredatabase.impl.entity.PinAttemptEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.QueueCommandEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.ShiftEntity
 
@@ -149,5 +150,20 @@ internal class InMemoryCounterDao : CounterDao {
 
     override suspend fun deleteByPrefix(prefix: String) {
         rows.entries.removeAll { it.key.startsWith(prefix) }
+    }
+}
+
+/** Счёт неверных пинов в памяти — для хранилища без файла. */
+internal class InMemoryPinAttemptDao : PinAttemptDao {
+    private val rows = mutableMapOf<String, PinAttemptEntity>()
+
+    override suspend fun find(kkmId: String): PinAttemptEntity? = rows[kkmId]
+
+    override suspend fun save(entity: PinAttemptEntity) {
+        rows[entity.kkmId] = entity
+    }
+
+    override suspend fun delete(kkmId: String) {
+        rows.remove(kkmId)
     }
 }

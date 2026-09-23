@@ -49,9 +49,9 @@ class UpdateUserUseCase(
         userPin: String?
     ): KkmUser {
         authorizeUserUseCase.requireKkm(kkmId)
-        val callerPinHash = pinHasher.hash(pin)
-        val caller = storage.findUserByPin(kkmId, callerPinHash)
-            ?: throw ForbiddenException(CoreStrings.userNotFound(), "CALLER_NOT_FOUND")
+        // Через общий вход по пину: мимо него пин перебирался бы без блокировки.
+        // Стандартный пин допустим — сменить его можно, только войдя с ним.
+        val caller = authorizeUserUseCase.identify(kkmId, pin, allowDefaultPin = true)
 
         if (caller.role != UserRole.ADMIN) {
             if (caller.id != userId) {

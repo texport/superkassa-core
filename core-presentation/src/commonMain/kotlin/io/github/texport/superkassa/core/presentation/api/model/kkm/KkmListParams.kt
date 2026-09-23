@@ -4,6 +4,7 @@ import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import io.github.texport.superkassa.core.presentation.api.annotations.Min
 import io.github.texport.superkassa.core.presentation.api.annotations.Max
 import io.github.texport.superkassa.core.presentation.api.annotations.NotBlank
+import io.github.texport.superkassa.core.domain.api.model.common.PageBounds
 import kotlinx.serialization.Serializable
 
 /**
@@ -34,8 +35,8 @@ data class KkmListParams(
     val sortOrder: String = "DESC"
 ) {
     init {
-        require(limit in 1..1000) { "limit должен быть от 1 до 1000" }
-        require(offset >= 0) { "offset должен быть >= 0" }
+        // Отказ ядра на трёх языках, а не IllegalArgumentException с текстом по-русски.
+        PageBounds.requirePage(limit, offset, PageBounds.LARGEST_KKM_PAGE)
         require(sortOrder in listOf("ASC", "DESC")) { "sortOrder должен быть ASC или DESC" }
         require(sortBy in listOf("createdAt", "updatedAt", "state", "registrationNumber")) {
             "sortBy должен быть одним из: createdAt, updatedAt, state, registrationNumber"

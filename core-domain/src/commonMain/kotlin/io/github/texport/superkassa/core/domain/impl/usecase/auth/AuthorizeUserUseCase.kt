@@ -4,6 +4,7 @@ import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.api.exception.ForbiddenException
 import io.github.texport.superkassa.core.domain.api.exception.ValidationException
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
+import io.github.texport.superkassa.core.domain.api.exception.PinLockedException
 import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser
 import io.github.texport.superkassa.core.domain.api.model.auth.StandardPin
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
@@ -19,12 +20,17 @@ import io.github.texport.superkassa.core.domain.impl.logging.getLogger
  * Предоставляет методы для валидации ПИН-кода кассира/администратора,
  * сопоставления его с ролью пользователя и контроля уровня доступа к различным функциям ККМ.
  *
+ * Пин проверяется только на незапертой кассе: неверные пины подряд
+ * запирают её на время, см. [PinGuard].
+ *
  * @property storage Порт для доступа к хранилищу данных (пользователи, ККМ).
  * @property pinHasher Порт для безопасного хеширования ПИН-кодов перед сравнением с БД.
+ * @property pinGuard Счёт неверных пинов; один на сборку ядра.
  */
 class AuthorizeUserUseCase(
     private val storage: StoragePort,
-    private val pinHasher: PinHasherPort
+    private val pinHasher: PinHasherPort,
+    private val pinGuard: PinGuard = PinGuard.of(storage)
 ) {
     private val logger = getLogger(AuthorizeUserUseCase::class)
 
@@ -74,6 +80,7 @@ class AuthorizeUserUseCase(
      * @return Пользователь кассы [KkmUser].
      * @throws ValidationException Если ПИН-код пуст или стандартный, когда они запрещены.
      * @throws ForbiddenException Если пользователя с таким ПИН-кодом на кассе нет.
+     * @throws PinLockedException Если касса заперта после неверных пинов подряд.
      */
     fun identify(kkmId: String, pin: String, allowDefaultPin: Boolean = false): KkmUser {
         if (pin.isBlank()) {
@@ -84,7 +91,7 @@ class AuthorizeUserUseCase(
             logger.warn("AuthorizeUserUseCase.identify FAILED: default PIN used when forbidden for kkmId='{}'", kkmId)
             throw ValidationException(CoreStrings.defaultPinNotAllowed(), "DEFAULT_PIN_NOT_ALLOWED")
         }
-        val user = storage.findUserByPin(kkmId, pinHasher.hash(pin))
+        val user = pinGuard.check(kkmId) { storage.findUserByPin(kkmId, pinHasher.hash(pin)) }
         if (user == null) {
             logger.warn("AuthorizeUserUseCase.identify FAILED: no user found for kkmId='{}'", kkmId)
             throw ForbiddenException(CoreStrings.userNotFound(), "USER_NOT_FOUND")

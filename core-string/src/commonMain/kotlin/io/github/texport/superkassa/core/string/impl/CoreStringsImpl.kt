@@ -144,7 +144,7 @@ internal object CoreStringsImpl {
 
     internal fun userNotFound(): TrilingualMessage = TrilingualMessage(
         ru = "Пользователь не найден или неверный PIN",
-        kk = "Пайдаланушы табылдады немесе PIN қате",
+        kk = "Пайдаланушы табылмады немесе PIN қате",
         en = "User not found or invalid PIN"
     )
 
@@ -180,9 +180,9 @@ internal object CoreStringsImpl {
     }
 
     internal fun userPinConflict(): TrilingualMessage = TrilingualMessage(
-        ru = "PIN уже используется",
-        kk = "PIN қолданылып қойған",
-        en = "User PIN already exists"
+        ru = "Такой пин на этой кассе уже занят. Задайте другой.",
+        kk = "Бұл пин осы кассада бос емес. Басқасын енгізіңіз.",
+        en = "This PIN is already taken on this cash register. Set a different one."
     )
 
     internal fun defaultPinNotAllowed(): TrilingualMessage = TrilingualMessage(

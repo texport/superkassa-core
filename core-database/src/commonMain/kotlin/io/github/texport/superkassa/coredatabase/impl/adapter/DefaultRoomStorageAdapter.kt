@@ -10,6 +10,7 @@ import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
+import io.github.texport.superkassa.core.domain.api.port.integration.PinAttemptsPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.coredatabase.impl.dao.CounterDao
 import io.github.texport.superkassa.coredatabase.impl.dao.FiscalDocumentDao
@@ -29,7 +30,8 @@ import kotlinx.coroutines.runBlocking
  *
  * Здесь только сборка: каждый вызов порта уходит в часть, которая ведёт
  * свой сценарий, — кассы и кассиры, смены и счётчики, запись и чтение
- * документов, очередь досылки, транзакции и ключи повтора. Что хранится
+ * документов, очередь досылки, транзакции и ключи повтора, счёт неверных
+ * пинов. Что хранится
  * и что уходит в ОФД, совпадает с узлом: единицы сумм, типы, номера,
  * статусы и то, что ставится в очередь.
  */
@@ -40,8 +42,9 @@ internal class DefaultRoomStorageAdapter(
     shiftDao: ShiftDao,
     fiscalDocumentDao: FiscalDocumentDao,
     counterDao: CounterDao,
-    private val idempotencyDao: IdempotencyDao
-) : QueueStoragePort, StoragePort {
+    private val idempotencyDao: IdempotencyDao,
+    private val pinAttempts: RoomPinAttempts
+) : QueueStoragePort, StoragePort, PinAttemptsPort by pinAttempts {
 
     private val writer = RoomWriter(idempotencyDao)
     private val kkms = RoomKkms(kkmDao, userDao)
@@ -83,7 +86,6 @@ internal class DefaultRoomStorageAdapter(
     override fun renewQueueLock(cashboxId: String, ownerId: String, leaseUntil: Long, now: Long) =
         queue.renew(cashboxId, ownerId, leaseUntil, now)
     override fun releaseQueueLock(cashboxId: String, ownerId: String): Boolean = queue.release(cashboxId, ownerId)
-
     // --- Транзакции и ключи повтора ---
     override fun startTransaction() = writer.begin()
     override fun commitTransaction() = writer.commit()
@@ -94,7 +96,6 @@ internal class DefaultRoomStorageAdapter(
         writer.responseOf(kkmId, idempotencyKey)
     override fun updateIdempotencyResponse(kkmId: String, idempotencyKey: String, responseRef: String?) =
         writer.complete(kkmId, idempotencyKey, responseRef)
-
     // --- Кассы и кассиры ---
     override fun createKkm(info: KkmInfo): Boolean = kkms.save(info)
     override fun updateKkm(info: KkmInfo): Boolean = kkms.save(info)
@@ -125,16 +126,16 @@ internal class DefaultRoomStorageAdapter(
     override fun findUserById(kkmId: String, userId: String): KkmUser? = kkms.userById(kkmId, userId)
     override fun findUserByPin(kkmId: String, pinHash: String): KkmUser? = kkms.userByPin(kkmId, pinHash)
 
-    /** Касса уходит целиком, как у узла: кассиры, смены, документы, счётчики, очередь и ключи повтора. */
+    /** Касса уходит целиком: кассиры, смены, документы, счётчики, очередь, ключи повтора и счёт пинов. */
     override fun deleteKkmCompletely(kkmId: String): Boolean {
         kkms.deleteWithUsers(kkmId)
+        pinAttempts.clear(kkmId)
         shifts.deleteByKkm(kkmId)
         documents.deleteByKkm(kkmId)
         queue.deleteByCashbox(kkmId)
         runBlocking { idempotencyDao.deleteByKkm(kkmId) }
         return true
     }
-
     // --- Смены и счётчики ---
     override fun findShiftById(shiftId: String): ShiftInfo? = shifts.find(shiftId)
     override fun findOpenShift(kkmId: String): ShiftInfo? = shifts.findOpen(kkmId)
@@ -148,7 +149,6 @@ internal class DefaultRoomStorageAdapter(
     override fun listCounters(kkmId: String): List<CounterSnapshot> = shifts.listCounters(kkmId)
     override fun upsertCounter(kkmId: String, scope: String, shiftId: String?, key: String, value: Long) =
         shifts.upsertCounter(kkmId, scope, shiftId, key, value)
-
     // --- Документы ---
     override fun saveReceipt(request: ReceiptRequest, documentId: String, shiftId: String, createdAt: Long) =
         documents.saveReceipt(request, documentId, shiftId, createdAt)

@@ -213,7 +213,7 @@ class DomainExceptionTest {
         assertEquals("At least one cashier required", CoreStrings.userRoleRequired("CASHIER").en)
 
         // userPinConflict
-        assertEquals("PIN уже используется", CoreStrings.userPinConflict().ru)
+        assertEquals("Такой пин на этой кассе уже занят. Задайте другой.", CoreStrings.userPinConflict().ru)
 
         // userUpdateEmpty
         assertEquals("Нужно передать хотя бы одно поле для обновления пользователя", CoreStrings.userUpdateEmpty().ru)

@@ -36,6 +36,10 @@ class UserUseCasesTest {
         every { authorizeUserUseCase.requireRole(any(), any(), any(), any()) } answers { authorizeUserUseCase.requireRole(firstArg(), secondArg(), thirdArg()) }
         every { pinHasher.hash(any()) } answers { "hash-" + firstArg<String>() }
         every { storage.findUserByPin(any(), any()) } answers { KkmUser("admin", "Admin", UserRole.ADMIN, 0L) }
+        // Вызывающего правку узнаёт общий вход по пину; здесь он — по хешу из хранилища.
+        every { authorizeUserUseCase.identify(any(), any(), any()) } answers {
+            storage.findUserByPin(firstArg(), pinHasher.hash(secondArg())) ?: error("caller not stubbed")
+        }
     }
 
     @Test

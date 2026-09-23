@@ -68,6 +68,8 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(libs.mockk)
                 implementation(libs.ofd.kt.proto)
+                // Касса на файловой базе: проверки открывают её строителем Room.
+                implementation(libs.room.runtime)
             }
         }
     }

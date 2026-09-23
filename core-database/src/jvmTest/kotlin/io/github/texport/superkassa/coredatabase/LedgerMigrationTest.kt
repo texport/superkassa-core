@@ -57,6 +57,7 @@ class LedgerMigrationTest {
                     "VALUES ('kkm-old', 'ACTIVE', 'REGISTRATION', 0, 0, 1, 1)"
             )
             connection.execSQL("ALTER TABLE kkms DROP COLUMN brandingJson")
+            connection.execSQL("DROP TABLE pin_attempts")
             connection.execSQL("PRAGMA user_version = 10")
         }
 
@@ -89,11 +90,12 @@ class LedgerMigrationTest {
     private fun payload(tiyn: Long): String =
         Json.encodeToString(ReceiptStoredPayload.serializer(), receipt("kkm-1", ReceiptOperationType.SELL, tiyn, "k-1"))
 
-    /** Схема девятой версии: без ключей повтора, ссылки на чек и оформления. */
+    /** Схема девятой версии: без ключей повтора, ссылки на чек, оформления и счёта пинов. */
     private fun downgrade(connection: SQLiteConnection, version: Int) {
         connection.execSQL("DROP TABLE idempotency_keys")
         connection.execSQL("ALTER TABLE fiscal_documents DROP COLUMN receiptUrl")
         connection.execSQL("ALTER TABLE kkms DROP COLUMN brandingJson")
+        connection.execSQL("DROP TABLE pin_attempts")
         connection.execSQL("PRAGMA user_version = $version")
     }
 }

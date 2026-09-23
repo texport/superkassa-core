@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.impl
 
+import io.github.texport.superkassa.core.domain.api.model.common.PageBounds
 import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
 import io.github.texport.superkassa.core.presentation.impl.mapper.toView
 import io.github.texport.superkassa.core.presentation.impl.mapper.ReceiptMapper
@@ -89,9 +90,10 @@ fun SuperkassaApiImpl.listShiftsImpl(
     pin: String
 ): List<ShiftResponse> {
     logger.debug("API -> listShifts: kkmId='$kkmId', limit=$limit, offset=$offset")
+    PageBounds.requirePage(limit, offset)
     authorization.requireKkm(kkmId)
     authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
-    return storage.listShifts(kkmId, limit.coerceIn(1, 500), offset).map { shiftResponse(it) }
+    return storage.listShifts(kkmId, limit, offset).map { shiftResponse(it) }
 }
 
 fun SuperkassaApiImpl.listShiftDocumentsImpl(
@@ -102,9 +104,10 @@ fun SuperkassaApiImpl.listShiftDocumentsImpl(
     pin: String
 ): List<FiscalDocumentResponse> {
     logger.debug("API -> listShiftDocuments: kkmId='$kkmId', shiftId='$shiftId'")
+    PageBounds.requirePage(limit, offset)
     authorization.requireKkm(kkmId)
     authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
-    return storage.listFiscalDocumentsByShift(kkmId, shiftId, limit.coerceIn(1, 500), offset).map {
+    return storage.listFiscalDocumentsByShift(kkmId, shiftId, limit, offset).map {
         KkmMapper.toResponse(it)
     }
 }
@@ -118,13 +121,15 @@ fun SuperkassaApiImpl.listFiscalDocumentsByPeriodImpl(
     pin: String
 ): List<FiscalDocumentResponse> {
     logger.debug("API -> listFiscalDocumentsByPeriod: kkmId='$kkmId', from=$fromInclusive, to=$toExclusive")
+    PageBounds.requirePeriod(fromInclusive, toExclusive)
+    PageBounds.requirePage(limit, offset)
     authorization.requireKkm(kkmId)
     authorization.requireRole(kkmId, pin, setOf(UserRole.ADMIN, UserRole.CASHIER))
     return storage.listFiscalDocumentsByPeriod(
         kkmId,
         fromInclusive,
         toExclusive,
-        limit.coerceIn(1, 500),
+        limit,
         offset
     ).map { KkmMapper.toResponse(it) }
 }

@@ -9,6 +9,7 @@ import io.github.texport.superkassa.coredatabase.impl.dao.FiscalDocumentDao
 import io.github.texport.superkassa.coredatabase.impl.dao.IdempotencyDao
 import io.github.texport.superkassa.coredatabase.impl.dao.KkmDao
 import io.github.texport.superkassa.coredatabase.impl.dao.KkmUserDao
+import io.github.texport.superkassa.coredatabase.impl.dao.PinAttemptDao
 import io.github.texport.superkassa.coredatabase.impl.dao.QueueCommandDao
 import io.github.texport.superkassa.coredatabase.impl.dao.ShiftDao
 import io.github.texport.superkassa.coredatabase.impl.entity.CounterEntity
@@ -16,6 +17,7 @@ import io.github.texport.superkassa.coredatabase.impl.entity.FiscalDocumentEntit
 import io.github.texport.superkassa.coredatabase.impl.entity.IdempotencyEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.KkmEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.KkmUserEntity
+import io.github.texport.superkassa.coredatabase.impl.entity.PinAttemptEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.QueueCommandEntity
 import io.github.texport.superkassa.coredatabase.impl.entity.ShiftEntity
 
@@ -30,9 +32,10 @@ import io.github.texport.superkassa.coredatabase.impl.entity.ShiftEntity
         ShiftEntity::class,
         FiscalDocumentEntity::class,
         CounterEntity::class,
-        IdempotencyEntity::class
+        IdempotencyEntity::class,
+        PinAttemptEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 @ConstructedBy(SuperkassaAppDatabaseConstructor::class)
@@ -45,6 +48,7 @@ abstract class SuperkassaAppDatabase : RoomDatabase() {
     abstract fun fiscalDocumentDao(): FiscalDocumentDao
     abstract fun counterDao(): CounterDao
     abstract fun idempotencyDao(): IdempotencyDao
+    abstract fun pinAttemptDao(): PinAttemptDao
 }
 
 /**

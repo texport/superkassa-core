@@ -29,6 +29,7 @@ import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
 import io.github.texport.superkassa.core.domain.impl.helper.ofd.OfdCommandRequestFactory
 import io.github.texport.superkassa.core.domain.impl.helper.ReceiptDeliveryHelper
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.auth.PinGuard
 import io.github.texport.superkassa.core.domain.impl.helper.common.IdempotentOperationExecutor
 import io.github.texport.superkassa.core.domain.impl.usecase.counter.UpdateCountersUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.*
@@ -89,11 +90,13 @@ class SuperkassaApiImpl(
     internal val receiptRenderPort: ReceiptRenderPort,
     internal val documentConvertPort: DocumentConvertPort,
     internal val timeValidator: TimeValidatorPort,
-    private val printApi: PrintApi
+    private val printApi: PrintApi,
+    /** Счёт неверных пинов; сборка ядра даёт один на все входы по пину. */
+    pinGuard: PinGuard = PinGuard.of(storage, clock::now)
 ) : SuperkassaApi, PrintApi by printApi {
 
     internal val logger = getLogger(SuperkassaApiImpl::class)
-    internal val authorization = AuthorizeUserUseCase(storage, pinHasher)
+    internal val authorization = AuthorizeUserUseCase(storage, pinHasher, pinGuard)
 
     /**
      * Виды оплаты, которые принимает действующая версия протокола узла.

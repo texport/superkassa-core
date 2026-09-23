@@ -3,11 +3,13 @@ package io.github.texport.superkassa.coredatabase.api
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 import io.github.texport.superkassa.coredatabase.impl.adapter.DefaultRoomStorageAdapter
+import io.github.texport.superkassa.coredatabase.impl.adapter.RoomPinAttempts
 import io.github.texport.superkassa.coredatabase.impl.dao.InMemoryCounterDao
 import io.github.texport.superkassa.coredatabase.impl.dao.InMemoryFiscalDocumentDao
 import io.github.texport.superkassa.coredatabase.impl.dao.InMemoryIdempotencyDao
 import io.github.texport.superkassa.coredatabase.impl.dao.InMemoryKkmDao
 import io.github.texport.superkassa.coredatabase.impl.dao.InMemoryKkmUserDao
+import io.github.texport.superkassa.coredatabase.impl.dao.InMemoryPinAttemptDao
 import io.github.texport.superkassa.coredatabase.impl.dao.InMemoryQueueCommandDao
 import io.github.texport.superkassa.coredatabase.impl.dao.InMemoryShiftDao
 import io.github.texport.superkassa.offlinequeue.api.port.QueueStoragePort
@@ -53,7 +55,8 @@ object RoomStorageFactory {
             shiftDao = InMemoryShiftDao(),
             fiscalDocumentDao = InMemoryFiscalDocumentDao(),
             counterDao = InMemoryCounterDao(),
-            idempotencyDao = InMemoryIdempotencyDao()
+            idempotencyDao = InMemoryIdempotencyDao(),
+            pinAttempts = RoomPinAttempts(InMemoryPinAttemptDao())
         )
         return RoomStoragePair(adapter, adapter)
     }
