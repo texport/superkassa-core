@@ -48,7 +48,7 @@ class DeliverReceiptUseCase(
         receiptUrl: String?,
         responseBin: ByteArray?
     ) {
-        val tasks = plan.tasksFor(kkmId, documentId, hasLink = receiptUrl != null, now = clock.now())
+        val tasks = plan.tasksFor(kkmId, documentId, receiptUrl != null, clock.now(), receipt.customerContact)
         val failure = runCatching { storage.addDeliveryTasks(tasks) }.exceptionOrNull() ?: return
         if (failure is UnsupportedOperationException) {
             helper.deliverReceipt(kkmId, documentId, receipt, docSnapshot, receiptUrl, responseBin)

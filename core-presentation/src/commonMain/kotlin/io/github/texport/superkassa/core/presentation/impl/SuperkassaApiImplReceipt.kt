@@ -33,6 +33,7 @@ fun SuperkassaApiImpl.createSellReceiptImpl(kkmId: String, pin: String, request:
             taken = request.taken,
             vatGroup = request.vatGroup,
             customerBin = request.customerBin,
+            customerContact = request.customerContact,
             domain = request.domain
         )
         val result = processReceiptUseCase.execute(command).let { ReceiptMapper.toResponse(it) }
@@ -62,6 +63,7 @@ fun SuperkassaApiImpl.createSellReturnReceiptImpl(kkmId: String, pin: String, re
             parentTicket = request.parentTicket,
             vatGroup = request.vatGroup,
             customerBin = request.customerBin,
+            customerContact = request.customerContact,
             domain = request.domain
         )
         val result = processReceiptUseCase.execute(command).let { ReceiptMapper.toResponse(it) }
@@ -90,6 +92,7 @@ fun SuperkassaApiImpl.createBuyReceiptImpl(kkmId: String, pin: String, request: 
             taken = request.taken,
             vatGroup = request.vatGroup,
             customerBin = request.customerBin,
+            customerContact = request.customerContact,
             domain = request.domain
         )
         val result = processReceiptUseCase.execute(command).let { ReceiptMapper.toResponse(it) }
@@ -119,6 +122,7 @@ fun SuperkassaApiImpl.createBuyReturnReceiptImpl(kkmId: String, pin: String, req
             parentTicket = request.parentTicket,
             vatGroup = request.vatGroup,
             customerBin = request.customerBin,
+            customerContact = request.customerContact,
             domain = request.domain
         )
         val result = processReceiptUseCase.execute(command).let { ReceiptMapper.toResponse(it) }

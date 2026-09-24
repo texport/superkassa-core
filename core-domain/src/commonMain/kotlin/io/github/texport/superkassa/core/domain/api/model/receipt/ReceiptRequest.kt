@@ -24,6 +24,7 @@ import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
  * @property discount Сумма скидки на весь чек.
  * @property markup Сумма наценки на весь чек.
  * @property customerBin БИН/ИИН покупателя (если требуется указание).
+ * @property customerContact контакт покупателя: по нему ему уходит чек.
  * @property ticketTaxes Рассчитанные строки распределения налогов по чеку (заполняются во внутреннем Use Case).
  */
 data class ReceiptRequest(
@@ -45,6 +46,7 @@ data class ReceiptRequest(
     val discount: Money? = null,
     val markup: Money? = null,
     val customerBin: String? = null,
+    val customerContact: CustomerContact? = null,
     val ticketTaxes: List<TaxLine>? = null,
     /**
      * Кто оформил чек.

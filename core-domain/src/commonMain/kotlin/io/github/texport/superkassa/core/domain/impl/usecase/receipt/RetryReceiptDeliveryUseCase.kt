@@ -43,7 +43,7 @@ class RetryReceiptDeliveryUseCase(
      */
     fun execute(kkmId: String, documentId: String, pin: String): List<Pair<String, Boolean>> {
         val (snapshot, receipt) = fiscalDocument(kkmId, documentId, pin)
-        val tasks = runCatching { resendTasks(snapshot) }
+        val tasks = runCatching { resendTasks(snapshot, receipt) }
         if (tasks.exceptionOrNull() is UnsupportedOperationException) {
             return helper.retryDelivery(kkmId, documentId, receipt, snapshot).ifEmpty { throw notConfigured() }
         }
@@ -58,11 +58,12 @@ class RetryReceiptDeliveryUseCase(
      * @throws UnsupportedOperationException если хранилище задач не держит.
      */
     fun resend(kkmId: String, documentId: String, pin: String): List<DeliveryTask> =
-        resendTasks(fiscalDocument(kkmId, documentId, pin).first)
+        fiscalDocument(kkmId, documentId, pin).let { (snapshot, receipt) -> resendTasks(snapshot, receipt) }
 
-    private fun resendTasks(snapshot: FiscalDocumentSnapshot): List<DeliveryTask> {
+    private fun resendTasks(snapshot: FiscalDocumentSnapshot, receipt: ReceiptRequest): List<DeliveryTask> {
         val now = clock.now()
-        storage.addDeliveryTasks(plan.tasksFor(snapshot.cashboxId, snapshot.id, snapshot.receiptUrl != null, now))
+        val hasLink = snapshot.receiptUrl != null
+        storage.addDeliveryTasks(plan.tasksFor(snapshot.cashboxId, snapshot.id, hasLink, now, receipt.customerContact))
         storage.deliveryTasksOf(snapshot.id)
             .filter { it.status == DeliveryTaskStatus.FAILED }
             .forEach {

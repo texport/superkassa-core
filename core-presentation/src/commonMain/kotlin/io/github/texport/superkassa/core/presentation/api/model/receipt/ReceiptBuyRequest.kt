@@ -53,7 +53,9 @@ data class ReceiptBuyRequest(
     @Schema(description = "Получено от покупателя (в тенге, опционально)", example = "2000.00")
     val taken: Decimal? = null,
     @Schema(description = "БИН/ИИН покупателя (по требованию)", example = "123456789012")
-    val customerBin: String? = null
+    val customerBin: String? = null,
+    @Schema(description = "Контакт покупателя: по нему ему уходит чек в подходящий включённый канал доставки")
+    val customerContact: CustomerContactRequest? = null
 ) {
     init {
         require(discountPercent == null || discountSum == null) {

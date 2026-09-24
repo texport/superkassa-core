@@ -1,6 +1,7 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.delivery
 
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryTask
+import io.github.texport.superkassa.core.domain.api.model.receipt.CustomerContact
 import io.github.texport.superkassa.core.domain.api.model.settings.DeliveryChannelSettings
 import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
 
@@ -9,10 +10,12 @@ import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySetti
  * из настроек доставки.
  *
  * Печать ставится, если у принтера есть адрес в сети: иначе чек печатает
- * само приложение. Цифровой канал ставится и без получателя — такая
- * задача сразу отказывает причиной «не указан получатель», и владелец
- * видит её в журнале, а не гадает, почему покупателю ничего не пришло.
- * Ссылка ставится только тогда, когда БФД её дал.
+ * само приложение. Цифровой канал ставится на контакт покупателя из чека
+ * того вида, что канал понимает: телефон — SMS и WhatsApp, почта — почта,
+ * Telegram — Telegram. Нет такого контакта — нет и задачи: покупатель
+ * не просил чек в этот канал, и «не удалось» в журнале было бы неправдой.
+ * Прежде получатель брался из настроек канала — один номер на все чеки,
+ * и чек уходил не покупателю. Ссылка ставится только тогда, когда БФД её дал.
  *
  * @param settings текущие настройки доставки; `null` — доставлять некуда. Читаются
  * при каждой постановке: включённый канал действует без перезапуска кассы.
@@ -23,10 +26,17 @@ class ReceiptDeliveryPlan(private val settings: () -> DeliverySettings?) {
      * Задачи документа [documentId] кассы [kkmId], поставленные в [now].
      *
      * @param hasLink дал ли БФД ссылку на чек.
+     * @param contact контакт покупателя из чека.
      */
-    fun tasksFor(kkmId: String, documentId: String, hasLink: Boolean, now: Long): List<DeliveryTask> {
+    fun tasksFor(
+        kkmId: String,
+        documentId: String,
+        hasLink: Boolean,
+        now: Long,
+        contact: CustomerContact?
+    ): List<DeliveryTask> {
         val delivery = settings() ?: return emptyList()
-        val routes = printRoutes(delivery) + delivery.channels.filter { it.enabled }.flatMap { routes(it, hasLink) }
+        val routes = printRoutes(delivery) + delivery.channels.filter { it.enabled }.flatMap { routes(it, hasLink, contact) }
         return routes.map { route ->
             DeliveryTask(
                 id = DeliveryTask.idOf(documentId, route.channel, route.payloadType),
@@ -48,9 +58,10 @@ class ReceiptDeliveryPlan(private val settings: () -> DeliverySettings?) {
         return listOf(Route(PRINT, null, ESC_POS))
     }
 
-    private fun routes(settings: DeliveryChannelSettings, hasLink: Boolean): List<Route> {
-        val link = Route(settings.channel, settings.destination, LINK).takeIf { hasLink }
-        val document = Route(settings.channel, settings.destination, settings.documentFormat.uppercase())
+    private fun routes(settings: DeliveryChannelSettings, hasLink: Boolean, contact: CustomerContact?): List<Route> {
+        val destination = contact?.destinationFor(settings.channel) ?: return emptyList()
+        val link = Route(settings.channel, destination, LINK).takeIf { hasLink }
+        val document = Route(settings.channel, destination, settings.documentFormat.uppercase())
         return when (settings.payloadType.uppercase()) {
             LINK -> listOfNotNull(link)
             DOCUMENT -> listOf(document)

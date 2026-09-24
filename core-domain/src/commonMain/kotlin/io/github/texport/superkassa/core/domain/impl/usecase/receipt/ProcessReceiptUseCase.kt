@@ -160,6 +160,7 @@ class ProcessReceiptUseCase(
             discount = receiptDiscount,
             markup = receiptMarkup,
             customerBin = command.customerBin,
+            customerContact = command.customerContact,
             domain = command.domain,
             // Имя оформившего сохраняется вместе с чеком: пин на диск
             // не пишется, а разбор отказа ОФД без имени упирается

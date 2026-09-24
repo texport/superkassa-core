@@ -11,6 +11,7 @@ import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySetti
 import io.github.texport.superkassa.core.presentation.api.model.kkm.CashOperationRequest
 import io.github.texport.superkassa.core.presentation.api.model.ofd.DeliveryStatus
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptResponse
+import io.github.texport.superkassa.core.presentation.api.model.receipt.CustomerContactRequest
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptSellRequest
 import io.github.texport.superkassa.testing.api.clock.MovableClock
 import kz.kazakhtelecom.proto.v203.DateTime
@@ -104,7 +105,10 @@ class OfflineDocumentsTest {
 
     private fun sell(total: String, key: String): ReceiptResponse = kassa.api.createSellReceipt(
         KKM, CASHIER_PIN,
-        ReceiptSellRequest(idempotencyKey = key, items = listOf(item(total)), payments = listOf(cash(total)))
+        ReceiptSellRequest(
+            idempotencyKey = key, items = listOf(item(total)), payments = listOf(cash(total)),
+            customerContact = CustomerContactRequest(phone = "+77010000000")
+        )
     )
 
     /** Время документа в Алматы с точностью до секунды — так его несёт запрос. */
@@ -118,7 +122,7 @@ class OfflineDocumentsTest {
     private companion object {
         /** Чек покупателю по SMS страницей: рисовать PDF этой кассе нечем. */
         val SMS_RECEIPT = DeliverySettings(
-            channels = listOf(DeliveryChannelSettings("SMS", documentFormat = "HTML", destination = "+77010000000"))
+            channels = listOf(DeliveryChannelSettings("SMS", documentFormat = "HTML"))
         )
         const val HOUR_MILLIS = 3_600_000L
         const val DAY_MILLIS = 24 * HOUR_MILLIS

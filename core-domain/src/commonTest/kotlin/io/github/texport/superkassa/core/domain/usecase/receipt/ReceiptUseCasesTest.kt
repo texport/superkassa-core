@@ -238,7 +238,7 @@ class ReceiptUseCasesTest {
         processOfdDocumentResult.execute(
             kkm, "doc-refused-counters", kkm.id,
             OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 16),
-            OfdCommandType.TICKET, 100L, Pair(mockk<ReceiptRequest>(), "shift-1")
+            OfdCommandType.TICKET, 100L, Pair(mockk<ReceiptRequest>(relaxed = true), "shift-1")
         )
 
         verify(exactly = 0) { updateCountersUseCase.execute(any(), any(), any(), any()) }
@@ -333,7 +333,7 @@ class ReceiptUseCasesTest {
             ofdErrorCode = 16,
             deliveredAt = null
         )
-        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (refused to mockk<ReceiptRequest>())
+        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (refused to mockk<ReceiptRequest>(relaxed = true))
 
         val error = assertFailsWith<ConflictException> {
             retryReceiptDelivery.execute("kkm-1", "doc-1", "1234")
@@ -1434,7 +1434,7 @@ class ReceiptUseCasesTest {
             ofdStatus = "DELIVERED",
             deliveredAt = 1000L
         )
-        val receiptReq = mockk<ReceiptRequest>()
+        val receiptReq = mockk<ReceiptRequest>(relaxed = true)
         deliverReceipt.execute("kkm-1", "doc-1", receiptReq, snapshot, "http://ofd/receipt", null)
         verify {
             receiptDeliveryHelper.deliverReceipt("kkm-1", "doc-1", receiptReq, snapshot, "http://ofd/receipt", null)
@@ -1463,7 +1463,7 @@ class ReceiptUseCasesTest {
             ofdStatus = "DELIVERED",
             deliveredAt = 1000L
         )
-        val receiptReq = mockk<ReceiptRequest>()
+        val receiptReq = mockk<ReceiptRequest>(relaxed = true)
         every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (snapshot to receiptReq)
         every { receiptDeliveryHelper.retryDelivery("kkm-1", "doc-1", receiptReq, snapshot) } returns listOf("SMS" to true)
 
@@ -1504,7 +1504,7 @@ class ReceiptUseCasesTest {
             ofdStatus = "DELIVERED",
             deliveredAt = 1000L
         )
-        val receiptReq = mockk<ReceiptRequest>()
+        val receiptReq = mockk<ReceiptRequest>(relaxed = true)
         every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (snapshot to receiptReq)
 
         assertFailsWith<NotFoundException> {
@@ -1517,7 +1517,7 @@ class ReceiptUseCasesTest {
     @Test
     fun testProcessOfdDocumentResultSuccess() {
         val ofdResult = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0, receiptUrl = "http://ofd/receipt", responseBin = byteArrayOf(2))
-        val receiptReq = mockk<ReceiptRequest>()
+        val receiptReq = mockk<ReceiptRequest>(relaxed = true)
         val shiftId = "shift-1"
         val doc = FiscalDocumentSnapshot(
             id = "doc-3",
@@ -1557,7 +1557,7 @@ class ReceiptUseCasesTest {
     @Test
     fun testProcessOfdDocumentResultSuccessDocNull() {
         val ofdResult = OfdCommandResult(status = OfdCommandStatus.OK, resultCode = 0, receiptUrl = "http://ofd/receipt", responseBin = byteArrayOf(2))
-        val receiptReq = mockk<ReceiptRequest>()
+        val receiptReq = mockk<ReceiptRequest>(relaxed = true)
         val shiftId = "shift-1"
         every { storage.findFiscalDocumentById("doc-3") } returns null
 
@@ -1601,7 +1601,7 @@ class ReceiptUseCasesTest {
             responseBin = byteArrayOf(2),
             responseJson = responseJson
         )
-        val receiptReq = mockk<ReceiptRequest>()
+        val receiptReq = mockk<ReceiptRequest>(relaxed = true)
         val shiftId = "shift-1"
         
         every { storage.findKkmForUpdate("kkm-1") } returns kkm
@@ -1648,7 +1648,7 @@ class ReceiptUseCasesTest {
     @Test
     fun testProcessOfdDocumentResultTimeoutAndOffline() {
         val ofdResult = OfdCommandResult(status = OfdCommandStatus.TIMEOUT, resultCode = null)
-        val receiptReq = mockk<ReceiptRequest>()
+        val receiptReq = mockk<ReceiptRequest>(relaxed = true)
         val shiftId = "shift-1"
         every { clock.now() } returns 1300L
 

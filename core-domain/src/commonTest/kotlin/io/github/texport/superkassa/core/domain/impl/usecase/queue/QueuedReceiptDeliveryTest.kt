@@ -5,6 +5,9 @@ import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.queue.QueueDispatchStatus
 import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
+import io.github.texport.superkassa.core.domain.api.model.common.Money
+import io.github.texport.superkassa.core.domain.api.model.receipt.CustomerContact
+import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.settings.DeliveryChannelSettings
 import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
@@ -26,7 +29,7 @@ class QueuedReceiptDeliveryTest {
     private val clock = mockk<ClockPort> { every { now() } returns 50L }
     private val send = mockk<SendFiscalCommandUseCase>()
     private val plan = ReceiptDeliveryPlan {
-        DeliverySettings(channels = listOf(DeliveryChannelSettings("SMS", payloadType = "BOTH", destination = "+7701")))
+        DeliverySettings(channels = listOf(DeliveryChannelSettings("SMS", payloadType = "BOTH")))
     }
     private val deliver = DeliverReceiptUseCase(mockk<ReceiptDeliveryHelper>(), storage, plan, clock)
     private val process = ProcessQueueCommandUseCase(send, storage, clock, deliver)
@@ -37,7 +40,7 @@ class QueuedReceiptDeliveryTest {
     )
 
     init {
-        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (document to mockk<ReceiptRequest>())
+        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (document to ReceiptRequest("kkm-1", "", ReceiptOperationType.SELL, emptyList(), emptyList(), Money.fromTiyn(0), idempotencyKey = "k", customerContact = CustomerContact(phone = "+7701")))
         every { storage.findFiscalDocumentById("doc-1") } returns document
     }
 

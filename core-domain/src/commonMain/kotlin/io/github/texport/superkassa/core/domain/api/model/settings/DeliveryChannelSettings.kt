@@ -9,7 +9,9 @@ import kotlinx.serialization.Serializable
  * @property enabled Флаг активности данного канала доставки.
  * @property payloadType Тип передаваемых данных (по умолчанию "DOCUMENT").
  * @property documentFormat Формат документа для отправки (например, "PDF", "HTML").
- * @property destination Адрес назначения (номер телефона, email и т.д.).
+ * @property destination прежний постоянный получатель канала. Доставкой не
+ *   используется: чек уходит по контакту покупателя из самого чека, а не на
+ *   один номер для всех чеков. Поле читается из сохранённых настроек.
  */
 @Serializable
 data class DeliveryChannelSettings(

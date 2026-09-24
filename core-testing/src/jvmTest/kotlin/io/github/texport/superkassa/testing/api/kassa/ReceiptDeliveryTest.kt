@@ -34,7 +34,7 @@ class ReceiptDeliveryTest {
 
         val sale = try {
             // Прежде чек ждал провайдера в потоке пробития: здесь это был бы срыв срока ожидания.
-            CompletableFuture.supplyAsync { kassa.sell() }.get(WAIT.inWholeSeconds, TimeUnit.SECONDS).also {
+            CompletableFuture.supplyAsync { kassa.sell(buyer = BUYER) }.get(WAIT.inWholeSeconds, TimeUnit.SECONDS).also {
                 assertEquals(true, sms.entered.await(WAIT.inWholeSeconds, TimeUnit.SECONDS), "background did not start sending")
                 assertEquals(ReceiptDeliveryState.PENDING, kassa.deliveries(it).sms().state)
             }
@@ -51,7 +51,7 @@ class ReceiptDeliveryTest {
         val sms = RecordingSms()
         val kassa = open(listOf(sms), background = true)
 
-        val sale = kassa.sell()
+        val sale = kassa.sell(buyer = BUYER)
 
         eventually { kassa.deliveries(sale).sms().state == ReceiptDeliveryState.DELIVERED }
         assertEquals(listOf(sale.documentId to "+77017654321"), sms.sent.map { it.documentId to it.destination })
@@ -63,7 +63,7 @@ class ReceiptDeliveryTest {
         val provider = CountDownLatch(1)
         val sms = RecordingSms(gate = provider)
         val kassa = open(listOf(sms), background = true)
-        val sale = kassa.sell()
+        val sale = kassa.sell(buyer = BUYER)
 
         try {
             sms.entered.await(WAIT.inWholeSeconds, TimeUnit.SECONDS)
@@ -80,7 +80,7 @@ class ReceiptDeliveryTest {
     fun `повтор кассиром доставленный чек второй раз не отправляет`() {
         val sms = RecordingSms()
         val kassa = open(listOf(sms), background = false)
-        val request = Receipts.sale("500.00", "1")
+        val request = Receipts.sale("500.00", "1").copy(customerContact = BUYER)
         val sale = kassa.sell(request)
         kassa.deliverReceipts()
 
@@ -97,7 +97,7 @@ class ReceiptDeliveryTest {
     fun `после перезапуска кассы недосланный чек уходит`() {
         val before = RecordingSms()
         val kassa = open(listOf(before), background = false)
-        val sale = kassa.sell()
+        val sale = kassa.sell(buyer = BUYER)
         assertEquals(0, before.sent.size, "delivery must not run while the receipt is being issued")
 
         val after = RecordingSms()
@@ -112,7 +112,7 @@ class ReceiptDeliveryTest {
     fun `автономный чек уходит покупателю, когда БФД принял его из очереди, и один раз`() {
         val sms = RecordingSms()
         val kassa = open(listOf(sms), background = false)
-        val sale = kassa.offlineSale()
+        val sale = kassa.offlineSale(buyer = BUYER)
         assertEquals(0, kassa.deliverReceipts(), "BFD has not accepted the receipt yet")
 
         kassa.resendQueue()
@@ -130,7 +130,7 @@ class ReceiptDeliveryTest {
         val kassa = DeliveryStand(directory, DeliverySettings(), listOf(sms)).also { stand = it }.kassa
 
         checkNotNull(stand).bench.superkassa.settings.run { updateSettings(getSettings().copy(delivery = smsReceipt())) }
-        val sale = kassa.sell()
+        val sale = kassa.sell(buyer = BUYER)
         kassa.deliverReceipts()
 
         assertEquals(ReceiptDeliveryState.DELIVERED, kassa.deliveries(sale).sms().state)

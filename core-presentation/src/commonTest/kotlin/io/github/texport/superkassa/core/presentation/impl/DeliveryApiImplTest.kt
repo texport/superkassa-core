@@ -67,7 +67,7 @@ class DeliveryApiImplTest {
             ofdStatus = "DELIVERED",
             deliveredAt = 1000L
         )
-        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (mockSnapshot to mockk<ReceiptRequest>())
+        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (mockSnapshot to mockk<ReceiptRequest>(relaxed = true))
         every { delivery.deliver(any()) } returns true
 
         // Каналов доставки не настроено: отправлять чек некуда. Прежде
@@ -108,7 +108,7 @@ class DeliveryApiImplTest {
             ofdErrorCode = 13,
             deliveredAt = null
         )
-        every { storage.findFiscalDocumentWithReceiptPayload("doc-2") } returns (rejected to mockk<ReceiptRequest>())
+        every { storage.findFiscalDocumentWithReceiptPayload("doc-2") } returns (rejected to mockk<ReceiptRequest>(relaxed = true))
 
         val error = assertFailsWith<ConflictException> {
             deliveryApi.retryReceiptDelivery("kkm-1", "doc-2", "1234")

@@ -5,6 +5,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
+import io.github.texport.superkassa.core.domain.api.model.receipt.CustomerContact
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.settings.*
 import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryPort
@@ -115,7 +116,7 @@ class ReceiptDeliveryHelperTest {
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
         every { documentConvertPort.htmlToPdf("<html></html>") } returns byteArrayOf(9, 9)
 
-        val receipt = mockk<ReceiptRequest>()
+        val receipt = buyerOf(coreSettings)
         val snapshot = mockk<FiscalDocumentSnapshot>()
 
         helper.deliverReceipt(
@@ -214,7 +215,7 @@ class ReceiptDeliveryHelperTest {
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
         every { documentConvertPort.htmlToImage("<html></html>") } returns byteArrayOf(10, 10)
 
-        val receipt = mockk<ReceiptRequest>()
+        val receipt = buyerOf(coreSettings)
         val snapshot = mockk<FiscalDocumentSnapshot>()
 
         helper.deliverReceipt("kkm-1", "doc-1", receipt, snapshot, "http://receipt.url", null)
@@ -271,16 +272,16 @@ class ReceiptDeliveryHelperTest {
         every { delivery.deliver(match { it.channel == "PRINT" }) } returns true
         every { delivery.deliver(match { it.channel == "TELEGRAM" }) } returns true
 
-        val receipt = mockk<ReceiptRequest>()
+        val receipt = buyerOf(coreSettings)
         val snapshot = mockk<FiscalDocumentSnapshot>()
 
         val results = helper.retryDelivery("kkm-1", "doc-1", receipt, snapshot)
 
-        assertEquals(4, results.size)
+        // Телефона покупатель не оставил: в SMS повторять нечего, и канала в ответе нет.
+        assertEquals(3, results.size)
         assertEquals("PRINT" to true, results[0])
         assertEquals("TELEGRAM" to true, results[1])
         assertEquals("EMAIL" to false, results[2]) // LINK payload returns false
-        assertEquals("SMS" to false, results[3]) // null destination returns false
     }
 
     @Test
@@ -340,7 +341,7 @@ class ReceiptDeliveryHelperTest {
         every { storage.findKkm("kkm-1") } returns KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
 
-        val receipt = mockk<ReceiptRequest>()
+        val receipt = buyerOf(coreSettings)
         val snapshot = mockk<FiscalDocumentSnapshot>()
 
         helper.deliverReceipt("kkm-1", "doc-1", receipt, snapshot, "http://receipt.url", null)
@@ -371,5 +372,12 @@ class ReceiptDeliveryHelperTest {
 
         val results = helper.retryDelivery("kkm-missing", "doc-1", receipt, snapshot)
         assertTrue(results.isEmpty())
+    }
+
+    /** Чек, покупатель которого оставил те контакты, что указаны получателями каналов настроек. */
+    private fun buyerOf(settings: CoreSettings): ReceiptRequest {
+        val to = settings.delivery?.channels.orEmpty().associate { it.channel to it.destination }
+        val contact = CustomerContact(phone = to["SMS"] ?: to["WHATSAPP"], email = to["EMAIL"], telegram = to["TELEGRAM"])
+        return mockk { every { customerContact } returns contact }
     }
 }

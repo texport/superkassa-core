@@ -3,6 +3,7 @@ package io.github.texport.superkassa.testing.api.kassa
 import io.github.texport.superkassa.core.domain.api.model.settings.DeliveryChannelSettings
 import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
 import io.github.texport.superkassa.core.presentation.api.model.delivery.ReceiptDeliveryResponse
+import io.github.texport.superkassa.core.presentation.api.model.receipt.CustomerContactRequest
 import io.github.texport.superkassa.delivery.api.model.DeliveryChannel
 import io.github.texport.superkassa.delivery.api.model.DeliveryRequest
 import io.github.texport.superkassa.delivery.api.model.DeliveryResult
@@ -17,23 +18,26 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-/** Телефон покупателя в настройках доставки: в журнал он попадать не должен. */
+/** Телефон покупателя в чеке: в журнал он попадать не должен. */
 internal const val BUYER_PHONE = "+77017654321"
+
+/** Покупатель, оставивший телефон: чек ему уходит по SMS. */
+internal val BUYER = CustomerContactRequest(phone = BUYER_PHONE)
 
 /** Чек покупателю по SMS страницей: рисовать её быстрее, чем PDF. */
 internal fun smsReceipt(extra: DeliverySettings = DeliverySettings()) = extra.copy(
-    channels = listOf(DeliveryChannelSettings("SMS", documentFormat = "HTML", destination = BUYER_PHONE)) + extra.channels
+    channels = listOf(DeliveryChannelSettings("SMS", documentFormat = "HTML")) + extra.channels
 )
 
 /**
- * Подменный SMS: запоминает отправленное и отвечает [answer].
+ * Подменный канал — по умолчанию SMS: запоминает отправленное и отвечает [answer].
  * Пока [gate] закрыт, отправка ждёт — так ведёт себя медленный провайдер.
  */
 internal class RecordingSms(
     private val gate: CountDownLatch = CountDownLatch(0),
-    @Volatile var answer: DeliveryResult = DeliveryResult(ok = true)
-) : DeliveryPort {
+    @Volatile var answer: DeliveryResult = DeliveryResult(ok = true),
     override val channel: DeliveryChannel = DeliveryChannel.SMS
+) : DeliveryPort {
     val sent: MutableList<DeliveryRequest> = CopyOnWriteArrayList()
     val entered = CountDownLatch(1)
 

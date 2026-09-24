@@ -7,6 +7,7 @@ import io.github.texport.superkassa.core.presentation.api.model.kkm.CashOperatio
 import io.github.texport.superkassa.core.presentation.api.model.kkm.CashOperationResponse
 import io.github.texport.superkassa.core.presentation.api.model.kkm.KkmResponse
 import io.github.texport.superkassa.core.presentation.api.model.kkm.VatGroup
+import io.github.texport.superkassa.core.presentation.api.model.receipt.CustomerContactRequest
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptResponse
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptSellRequest
 import io.github.texport.superkassa.core.presentation.api.model.shift.ReportResponse
@@ -59,8 +60,13 @@ class ReadyKassa internal constructor(
     /** Чек продажи [request] под кассиром: повтор того же запроса проверяет идемпотентность. */
     fun sell(request: ReceiptSellRequest): ReceiptResponse = api.createSellReceipt(kkmId, cashierPin, request)
 
-    /** Продажа одной позиции [price] × [quantity], наличными без сдачи. */
-    fun sell(price: String = "500.00", quantity: String = "3"): ReceiptResponse = sell(Receipts.sale(price, quantity))
+    /**
+     * Продажа одной позиции [price] × [quantity], наличными без сдачи.
+     *
+     * @param buyer контакт покупателя: по нему ему уходит чек; без него чек покупателю не отправляется.
+     */
+    fun sell(price: String = "500.00", quantity: String = "3", buyer: CustomerContactRequest? = null): ReceiptResponse =
+        sell(Receipts.sale(price, quantity).copy(customerContact = buyer))
 
     /** Продажа позиции на [price] со скидкой на чек [discount] в тенге. */
     fun sellWithDiscount(price: String = "1000.00", discount: String = "100.00"): ReceiptResponse =
@@ -89,9 +95,9 @@ class ReadyKassa internal constructor(
         api.cashOut(kkmId, cashierPin, CashOperationRequest(Decimal.parse(amount), Receipts.key("cash-out")))
 
     /** Продажа, до БФД не дошедшая: документ оформлен автономно и ждёт в очереди досылки. */
-    fun offlineSale(price: String = "700.00"): ReceiptResponse {
+    fun offlineSale(price: String = "700.00", buyer: CustomerContactRequest? = null): ReceiptResponse {
         bfd.unreachableOnce()
-        return sell(price, "1")
+        return sell(price, "1", buyer)
     }
 
     /** Продажа, которой БФД отказал кодом [code]: документ отклонён и виден кассиру с кодом. */

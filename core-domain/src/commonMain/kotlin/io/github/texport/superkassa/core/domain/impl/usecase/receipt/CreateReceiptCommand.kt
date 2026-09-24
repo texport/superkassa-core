@@ -2,6 +2,7 @@ package io.github.texport.superkassa.core.domain.impl.usecase.receipt
 
 import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
+import io.github.texport.superkassa.core.domain.api.model.receipt.CustomerContact
 import io.github.texport.superkassa.core.domain.api.model.receipt.ParentTicket
 
 /**
@@ -25,7 +26,9 @@ data class CreateReceiptCommand(
     val domain: io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDomain? = null,
     /** НДС на весь чек; `null` — НДС по позициям. Взаимоисключающе со ставками позиций. */
     val vatGroup: String? = null,
-    val customerBin: String? = null
+    val customerBin: String? = null,
+    /** Контакт покупателя: по нему ему уходит чек. */
+    val customerContact: CustomerContact? = null
 ) {
     /**
      * Сырые входные данные товарной позиции чека.

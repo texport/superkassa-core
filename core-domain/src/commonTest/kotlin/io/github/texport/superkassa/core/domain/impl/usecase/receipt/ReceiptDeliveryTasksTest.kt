@@ -5,6 +5,7 @@ import io.github.texport.superkassa.core.domain.api.exception.NotFoundException
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryFailure
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryTaskStatus
 import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
+import io.github.texport.superkassa.core.domain.api.model.receipt.CustomerContact
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.settings.DeliveryChannelSettings
 import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
@@ -33,13 +34,13 @@ class ReceiptDeliveryTasksTest {
         every { sendDocument(any()) } answers { tasks.rows.filter { it.documentId == firstArg<String>() } }
     }
     private val auth = mockk<AuthorizeUserUseCase>(relaxed = true)
-    private val plan = ReceiptDeliveryPlan { DeliverySettings(channels = listOf(DeliveryChannelSettings("SMS", destination = "+7701"))) }
+    private val plan = ReceiptDeliveryPlan { DeliverySettings(channels = listOf(DeliveryChannelSettings("SMS"))) }
     private val document = FiscalDocumentSnapshot(
         id = "doc-1", cashboxId = "kkm-1", shiftId = "shift-1", docType = "CHECK", docNo = 1L, shiftNo = 1L,
         createdAt = 1L, totalAmount = 100L, currency = "KZT", fiscalSign = "fs", autonomousSign = null,
         isAutonomous = false, ofdStatus = "SENT", deliveredAt = 1L
     )
-    private val receipt = mockk<ReceiptRequest>()
+    private val receipt = mockk<ReceiptRequest> { every { customerContact } returns CustomerContact(phone = "+7701") }
 
     init {
         every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (document to receipt)

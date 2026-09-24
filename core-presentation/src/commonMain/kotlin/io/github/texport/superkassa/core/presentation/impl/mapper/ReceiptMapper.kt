@@ -5,6 +5,7 @@ import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptD
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDomainType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDomain as DomainAttributes
 import io.github.texport.superkassa.core.domain.api.model.common.Money
+import io.github.texport.superkassa.core.domain.api.model.receipt.CustomerContact
 import io.github.texport.superkassa.core.domain.api.model.receipt.ParentTicket
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem as DomainReceiptItem
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperationType
@@ -93,6 +94,7 @@ object ReceiptMapper {
         parentTicket: ParentTicketRequest? = null,
         vatGroup: String? = null,
         customerBin: String? = null,
+        customerContact: CustomerContactRequest? = null,
         domain: ReceiptDomainRequest? = null
     ): CreateReceiptCommand {
         return CreateReceiptCommand(
@@ -110,6 +112,7 @@ object ReceiptMapper {
             parentTicket = toParentTicket(parentTicket),
             vatGroup = vatGroup,
             customerBin = customerBin,
+            customerContact = toDomain(customerContact),
             domain = toDomainAttributes(domain)
         )
     }
@@ -143,6 +146,7 @@ object ReceiptMapper {
             parentTicket = toParentTicket(dto.parentTicket),
             vatGroup = dto.vatGroup,
             customerBin = dto.customerBin,
+            customerContact = toDomain(dto.customerContact),
             domain = toDomainAttributes(dto.domain)
         )
 
@@ -151,6 +155,10 @@ object ReceiptMapper {
 
     fun toDomain(type: PrintDocumentType): io.github.texport.superkassa.core.domain.api.model.report.PrintDocumentType =
         io.github.texport.superkassa.core.domain.api.model.report.PrintDocumentType.valueOf(type.name)
+
+    /** Контакт покупателя; пустое поле — как не указанное (см. [CustomerContact.destinationFor]). */
+    private fun toDomain(dto: CustomerContactRequest?): CustomerContact? =
+        dto?.let { CustomerContact(it.phone?.trim(), it.email?.trim(), it.telegram?.trim()) }
 
     /** Переводит отраслевые реквизиты внешнего запроса в доменную модель. */
     private fun toDomainAttributes(dto: ReceiptDomainRequest?): DomainAttributes? {

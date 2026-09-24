@@ -55,7 +55,9 @@ data class ReceiptBuyReturnRequest(
     /** Отраслевые реквизиты чека. */
     val domain: ReceiptDomainRequest? = null,
     @Schema(description = "БИН/ИИН покупателя (по требованию)", example = "123456789012")
-    val customerBin: String? = null
+    val customerBin: String? = null,
+    @Schema(description = "Контакт покупателя: по нему ему уходит чек в подходящий включённый канал доставки")
+    val customerContact: CustomerContactRequest? = null
 ) {
     init {
         require(discountPercent == null || discountSum == null) {

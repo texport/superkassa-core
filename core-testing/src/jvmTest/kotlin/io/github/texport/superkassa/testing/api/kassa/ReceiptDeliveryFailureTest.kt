@@ -9,6 +9,7 @@ import io.github.texport.superkassa.core.domain.api.model.settings.DeliveryChann
 import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
 import io.github.texport.superkassa.core.domain.api.model.settings.SmsProviderSettings
 import io.github.texport.superkassa.core.presentation.api.model.delivery.ReceiptDeliveryState
+import io.github.texport.superkassa.core.presentation.api.model.receipt.CustomerContactRequest
 import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import io.github.texport.superkassa.delivery.api.model.DeliveryResult
 import org.slf4j.LoggerFactory
@@ -44,7 +45,7 @@ class ReceiptDeliveryFailureTest {
     fun `отказ провайдера - ждёт повтора с кодом и причиной, после предела попыток - не удалось`() {
         val sms = RecordingSms(answer = DeliveryResult(false, REJECTED.compact(), "DELIVERY_PROVIDER_REJECTED"))
         val kassa = open(smsReceipt(), listOf(sms))
-        val sale = kassa.sell()
+        val sale = kassa.sell(buyer = BUYER)
 
         kassa.deliverReceipts()
         val waiting = kassa.deliveries(sale).sms()
@@ -60,9 +61,9 @@ class ReceiptDeliveryFailureTest {
 
     @Test
     fun `ненастроенный канал - сразу не удалось, без повторов`() {
-        val telegram = DeliveryChannelSettings("TELEGRAM", documentFormat = "HTML", destination = "-1001234567")
+        val telegram = DeliveryChannelSettings("TELEGRAM", documentFormat = "HTML")
         val kassa = open(DeliverySettings(channels = listOf(telegram)), emptyList())
-        val sale = kassa.sell()
+        val sale = kassa.sell(buyer = CustomerContactRequest(telegram = "-1001234567"))
 
         kassa.deliverReceipts()
         passPause(kassa)
@@ -77,7 +78,7 @@ class ReceiptDeliveryFailureTest {
     fun `повтор кассиром после окончательного отказа отправляет чек заново один раз`() {
         val sms = RecordingSms(answer = DeliveryResult(false, REJECTED.compact(), "DELIVERY_PROVIDER_REJECTED"))
         val kassa = open(smsReceipt(), listOf(sms))
-        val sale = kassa.sell()
+        val sale = kassa.sell(buyer = BUYER)
         kassa.deliverReceipts()
         repeat(ATTEMPTS) { passPause(kassa) }
 
@@ -98,7 +99,7 @@ class ReceiptDeliveryFailureTest {
         try {
             val url = "http://127.0.0.1:${gateway.address.port}/send?to={phone}&text={text}"
             val kassa = open(smsReceipt(DeliverySettings(sms = SmsProviderSettings(url, SMS_KEY))), emptyList())
-            val sale = kassa.sell()
+            val sale = kassa.sell(buyer = BUYER)
             kassa.deliverReceipts()
 
             assertEquals("DELIVERY_PROVIDER_REJECTED", kassa.deliveries(sale).sms().failureCode)

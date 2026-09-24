@@ -24,6 +24,7 @@ import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
  * @property discount Сумма общей скидки на чек.
  * @property markup Сумма общей наценки на чек.
  * @property customerBin БИН/ИИН покупателя.
+ * @property customerContact контакт покупателя: по нему чек уходит и после досылки из очереди.
  * @property ticketTaxes Строки распределения налогов по чеку.
  */
 @Serializable
@@ -45,6 +46,7 @@ data class ReceiptStoredPayload(
     val discount: Money? = null,
     val markup: Money? = null,
     val customerBin: String? = null,
+    val customerContact: CustomerContact? = null,
     val ticketTaxes: List<TaxLine>? = null,
     /** Кто оформил чек: имя, а не пин — пин на диск не пишется. */
     val operatorName: String? = null
@@ -71,6 +73,7 @@ data class ReceiptStoredPayload(
         discount = discount,
         markup = markup,
         customerBin = customerBin,
+        customerContact = customerContact,
         ticketTaxes = ticketTaxes
     )
 
@@ -96,6 +99,7 @@ data class ReceiptStoredPayload(
             discount = request.discount,
             markup = request.markup,
             customerBin = request.customerBin,
+            customerContact = request.customerContact,
             ticketTaxes = request.ticketTaxes
         )
     }

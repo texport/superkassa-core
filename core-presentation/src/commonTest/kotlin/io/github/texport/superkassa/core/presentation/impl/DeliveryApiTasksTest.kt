@@ -43,7 +43,7 @@ class DeliveryApiTasksTest {
     init {
         every { storage.findUserByPin("kkm-1", "hash-1") } returns KkmUser("user-1", "Нурлан", UserRole.CASHIER, createdAt = 1L)
         every { storage.findFiscalDocumentById("doc-1") } returns document
-        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (document to mockk<ReceiptRequest>())
+        every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (document to mockk<ReceiptRequest>(relaxed = true))
     }
 
     @Test

@@ -129,7 +129,7 @@ class ReceiptDeliveryHelper(
         }
 
         del.channels.filter { it.enabled }.forEach { ch ->
-            val dest = ch.destination ?: return@forEach
+            val dest = receipt.customerContact?.destinationFor(ch.channel) ?: return@forEach
             deliverToChannel(kkmId, documentId, html, receiptUrl, ch, dest)
         }
     }
@@ -263,10 +263,8 @@ class ReceiptDeliveryHelper(
         }
 
         del.channels.filter { it.enabled }.forEach { ch ->
-            val dest = ch.destination ?: run {
-                results.add(ch.channel to false)
-                return@forEach
-            }
+            // Покупатель не оставил контакта для этого канала — и повторять туда нечего.
+            val dest = receipt.customerContact?.destinationFor(ch.channel) ?: return@forEach
             if (ch.payloadType.uppercase() == "LINK") {
                 results.add(ch.channel to false)
             } else {
