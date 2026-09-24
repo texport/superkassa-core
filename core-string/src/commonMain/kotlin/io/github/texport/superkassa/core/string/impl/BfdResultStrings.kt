@@ -30,6 +30,16 @@ internal object BfdResultStrings {
             "if that does not help, contact the service desk."
     )
 
+    /** БФД ответил на сверку, но без отчёта со счётчиками кассы. */
+    fun noCounters(): TrilingualMessage = TrilingualMessage(
+        ru = "БФД ответил без отчёта со счётчиками кассы, сверить их не с чем. Повторите сверку позже; " +
+            "если отказ повторится, обратитесь в БФД.",
+        kk = "БФД касса есептегіштері бар есепсіз жауап берді, салыстыратын ештеңе жоқ. Салыстыруды кейінірек " +
+            "қайталаңыз; бас тарту қайталанса, БФД-ға хабарласыңыз.",
+        en = "The BFD answered without a report of the register counters, so there is nothing to reconcile. " +
+            "Try again later; if it is refused again, contact the BFD."
+    )
+
     private fun unknownRefusal() = TrilingualMessage(
         ru = "БФД отказал по причине, которую касса не знает. Обратитесь в сервисную службу.",
         kk = "БФД кассаға белгісіз себеппен бас тартты. Сервистік қызметке хабарласыңыз.",

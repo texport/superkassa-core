@@ -34,6 +34,7 @@ import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePo
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.EnforceAutonomousLimitsUseCase
 import io.github.texport.superkassa.core.support.TestStoragePort
+import io.github.texport.superkassa.core.string.api.CoreStrings
 
 class SyncOfdCountersUseCaseTest {
 
@@ -82,6 +83,17 @@ class SyncOfdCountersUseCaseTest {
         assertNotNull(shiftAfter)
         assertEquals(ShiftStatus.OPEN, shiftAfter.status)
         assertNull(shiftAfter.closedAt)
+    }
+
+    /** БФД ответил без отчёта: кассир получает причину словами и код, а не «не удалось». */
+    @Test
+    fun `syncOfdCounters without a report in the BFD answer refuses with a code and words`() {
+        val fixture = Fixture(Json.parseToJsonElement("""{"payload": {"report": {}}}""").jsonObject)
+
+        val failure = assertFailsWith<ConflictException> { fixture.useCase.execute(fixture.kkm.id, "1234") }
+
+        assertEquals("KKM_SYNC_REPORT_MISSING", failure.code)
+        assertEquals(CoreStrings.kkmSyncReportMissing(), failure.trilingualMessage)
     }
 
     private class Fixture(initialResponse: JsonObject) {

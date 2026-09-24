@@ -18,6 +18,7 @@ import io.github.texport.superkassa.core.domain.api.exception.ValidationExceptio
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
 import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.impl.helper.OfdInfoCountersSnapshotParser
+import kotlinx.serialization.json.JsonObject
 import io.github.texport.superkassa.core.domain.impl.helper.OfdResponseParser
 
 /**
@@ -72,8 +73,7 @@ class SyncOfdCountersUseCase(
         // Если ответ от ОФД успешно получен, обновляем локальную базу данных
         if (result.status == OfdCommandStatus.OK && result.responseJson != null) {
             storage.inTransaction {
-                // Парсим полученный JSON ответа ОФД
-                val snapshot = OfdInfoCountersSnapshotParser.parse(result.responseJson)
+                val snapshot = snapshotOf(result.responseJson)
                 val now = clock.now()
 
                 // Обновляем локальные глобальные счетчики
@@ -140,5 +140,17 @@ class SyncOfdCountersUseCase(
             }
         }
         return result
+    }
+
+    /**
+     * Счётчики из ответа БФД.
+     *
+     * Ответ без отчёта — отказ сверки с кодом и словами: прежде исключение
+     * разбора уходило кассиру голым «не удалось», без причины.
+     */
+    private fun snapshotOf(response: JsonObject): OfdInfoCountersSnapshotParser.Snapshot = try {
+        OfdInfoCountersSnapshotParser.parse(response)
+    } catch (_: IllegalArgumentException) {
+        throw ConflictException(CoreStrings.kkmSyncReportMissing(), "KKM_SYNC_REPORT_MISSING")
     }
 }

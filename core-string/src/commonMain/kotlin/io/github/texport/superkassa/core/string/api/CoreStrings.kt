@@ -59,6 +59,7 @@ object CoreStrings {
     fun kkmDeleteAutonomousNotAllowed(): TrilingualMessage = CoreStringsImpl.kkmDeleteAutonomousNotAllowed()
     fun kkmSyncShiftOpen(): TrilingualMessage = CoreStringsImpl.kkmSyncShiftOpen()
     fun kkmSyncQueueNotEmpty(): TrilingualMessage = CoreStringsImpl.kkmSyncQueueNotEmpty()
+    fun kkmSyncReportMissing(): TrilingualMessage = BfdResultStrings.noCounters()
     fun kkmSyncShiftDiverged(shiftNo: Long): TrilingualMessage =
         CoreStringsImpl.kkmSyncShiftDiverged(shiftNo)
     fun kkmAutonomousTooLong(): TrilingualMessage = CoreStringsImpl.kkmAutonomousTooLong()

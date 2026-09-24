@@ -18,9 +18,10 @@ class BfdResultStringsTest {
     }
 
     @Test
-    fun `нет ответа и неотправленный запрос тоже сказаны словами`() {
+    fun `нет ответа, неотправленный запрос и ответ без счётчиков тоже сказаны словами`() {
         assertCashierText(CoreStrings.bfdNoAnswer(), "no answer")
         assertCashierText(CoreStrings.bfdRequestNotSent(), "not sent")
+        assertCashierText(CoreStrings.kkmSyncReportMissing(), "no counters")
     }
 
     @Test
