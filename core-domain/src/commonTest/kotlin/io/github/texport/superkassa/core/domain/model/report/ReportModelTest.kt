@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.api.model.report
 
+import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,7 +34,7 @@ class ReportModelTest {
         val resultSame = ReportResult("doc-123", DeliveryStatus.ONLINE_OK, null, payload2)
         val resultDiffDoc = result1.copy(documentId = "doc-456")
         val resultDiffStatus = result1.copy(deliveryStatus = DeliveryStatus.OFFLINE_QUEUED)
-        val resultDiffError = result1.copy(deliveryError = "Some error")
+        val resultDiffError = result1.copy(deliveryError = TrilingualMessage.mono("Some error"))
         val resultDiffPayload = result1.copy(deliveryPayload = payload3)
         val resultNullPayload = result1.copy(deliveryPayload = null)
 

@@ -2,6 +2,7 @@ package io.github.texport.superkassa.core.presentation.api.model.kkm
 
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import io.github.texport.superkassa.core.presentation.api.model.ofd.DeliveryStatus
+import io.github.texport.superkassa.core.presentation.api.model.reference.TrilingualMessageResponse
 import kotlinx.serialization.Serializable
 
 /**
@@ -19,7 +20,10 @@ data class CashOperationResponse(
         example = "ONLINE_OK"
     ) val deliveryStatus: DeliveryStatus = DeliveryStatus.NOT_SENT,
     @Schema(
-        description = "Текст ошибки доставки, если отправка в ОФД не удалась",
-        example = "Network failure"
-    ) val deliveryError: String? = null
+        description = "Почему БФД не принял документ и что делать — на каждом языке свой текст"
+    ) val deliveryError: TrilingualMessageResponse? = null,
+    @Schema(
+        description = "Код отказа БФД (ResultTypeEnum CPCR); пусто, если БФД не ответил или принял",
+        example = "13"
+    ) val bfdResultCode: Int? = null
 )

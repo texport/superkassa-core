@@ -569,7 +569,14 @@ private class InMemoryStoragePort : StoragePort {
     override fun enqueueQueueTask(dto: QueueTask): Boolean = true
     override fun listQueueTasksByCashbox(cashboxId: String, lane: String, limit: Int, offset: Int): List<QueueTask> = emptyList()
     override fun getQueueTasksByStatus(cashboxId: String, lane: String, statuses: Set<String>): List<QueueTask> = emptyList()
-    override fun updateQueueTaskStatus(id: String, status: String, attempt: Int, lastError: String?, nextAttemptAt: Long?): Boolean = true
+    override fun updateQueueTaskStatus(
+        id: String,
+        status: String,
+        attempt: Int,
+        lastError: String?,
+        nextAttemptAt: Long?,
+        lastErrorCode: Int?
+    ): Boolean = true
     override fun markQueueTaskInProgress(id: String, now: Long): Boolean = true
     override fun deleteQueueTasksByCashbox(cashboxId: String): Boolean = true
     override fun tryAcquireQueueLock(cashboxId: String, ownerId: String, leaseUntil: Long, acquiredAt: Long): Boolean = true

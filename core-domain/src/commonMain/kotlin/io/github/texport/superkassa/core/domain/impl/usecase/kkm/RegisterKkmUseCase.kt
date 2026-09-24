@@ -19,6 +19,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.inTransacti
 import io.github.texport.superkassa.core.domain.api.port.internal.TokenCodecPort
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
 import io.github.texport.superkassa.core.domain.impl.helper.OfdResponseParser
+import io.github.texport.superkassa.core.domain.impl.helper.ofd.describeFailure
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.ChosenPin
 import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 

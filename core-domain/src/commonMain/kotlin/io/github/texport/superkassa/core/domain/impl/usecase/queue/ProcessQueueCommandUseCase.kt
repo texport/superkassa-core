@@ -53,7 +53,7 @@ class ProcessQueueCommandUseCase(
             // Нет ответа, 254 или 255: по спецификации (п. 5.2) документ досылается
             // снова через интервал восстановления связи, сколько бы это ни длилось.
             result.status == OfdCommandStatus.TIMEOUT || code == SERVICE_TEMPORARILY_UNAVAILABLE || code == UNKNOWN_ERROR ->
-                retry(CoreStrings.ofdTimeout(), "BFD timeout", after = true)
+                resendLater(code)
             code == RESULT_OK -> {
                 document.accepted(command, result, isReceipt = ofdType == OfdCommandType.TICKET)
                 QueueDispatchResult(QueueDispatchStatus.SENT)
@@ -86,23 +86,36 @@ class ProcessQueueCommandUseCase(
             errorMessage = "BFD returned code $code",
             errorRu = error.ru,
             errorKk = error.kk,
-            errorEn = error.en
+            errorEn = error.en,
+            bfdResultCode = code
         )
+    }
+
+    /** Без ответа или с кодом 254 и 255: повтор через паузу; код БФД назван словами из таблицы. */
+    private fun resendLater(code: Int?): QueueDispatchResult {
+        val busy = code?.takeIf { it == SERVICE_TEMPORARILY_UNAVAILABLE || it == UNKNOWN_ERROR }
+        val words = busy?.let(CoreStrings::bfdRefusal) ?: CoreStrings.ofdTimeout()
+        return retry(words, "BFD timeout", after = true, code = busy)
     }
 
     /** Сетевая ошибка по-английски: трёхъязычную строку обмена журналу не нужно. */
     private fun technical(errorMessage: String?): String =
         errorMessage?.let { TrilingualMessage.ofCompact(it)?.en ?: it } ?: "BFD command failed"
 
-    /** Повтор: без ответа — через паузу, при сбое самой кассы — по расписанию очереди. */
-    private fun retry(error: TrilingualMessage, message: String, after: Boolean = false) = QueueDispatchResult(
-        status = QueueDispatchStatus.FAILED,
-        errorMessage = message,
-        retryAt = if (after) clock.now() + RETRY_DELAY_MILLIS else null,
-        errorRu = error.ru,
-        errorKk = error.kk,
-        errorEn = error.en
-    )
+    /**
+     * Повтор: без ответа — через паузу, при сбое самой кассы — по расписанию очереди.
+     * Код 254 и 255 задача хранит: по нему журнал отличает занятость БФД от обрыва связи.
+     */
+    private fun retry(error: TrilingualMessage, message: String, after: Boolean = false, code: Int? = null) =
+        QueueDispatchResult(
+            status = QueueDispatchStatus.FAILED,
+            errorMessage = message,
+            retryAt = if (after) clock.now() + RETRY_DELAY_MILLIS else null,
+            errorRu = error.ru,
+            errorKk = error.kk,
+            errorEn = error.en,
+            bfdResultCode = code
+        )
 
     /**
      * Преобразует строковый тип команды очереди в тип фискальной команды ОФД [OfdCommandType].

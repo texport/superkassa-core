@@ -4,6 +4,7 @@ import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDocumen
 import io.github.texport.superkassa.core.domain.impl.helper.common.assignPrintedDocumentNumber
 import io.github.texport.superkassa.core.domain.api.model.auth.UserRole
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryStatus
+import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.model.queue.OfflineQueueCommandRequest
@@ -12,6 +13,7 @@ import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPor
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.api.port.integration.inTransaction
+import io.github.texport.superkassa.core.domain.impl.helper.ofd.BfdDeliveryFailure
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.RequireOperationalUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
@@ -49,17 +51,17 @@ class ProcessReportUseCase(
             val hasQueue = !queue.canSendDirectly(kkmId)
             val now = clock.now()
             val documentId = saveReport(kkmId, now)
-            if (hasQueue) return@inTransaction queued(kkmId, documentId, error = null)
+            if (hasQueue) return@inTransaction queued(kkmId, documentId, answer = null)
 
             val result = sendFiscalCommandUseCase.execute(kkmId, OfdCommandType.REPORT, documentId)
             when (result.status) {
-                OfdCommandStatus.OK -> answered(documentId, "SENT", deliveredAt = now, DeliveryStatus.ONLINE_OK, null)
+                OfdCommandStatus.OK -> answered(documentId, "SENT", deliveredAt = now, DeliveryStatus.ONLINE_OK, result)
                 // Без ответа отчёт досылается, как любой документ: раньше он
                 // оставался «ожидает отправки» вне очереди, а ответ кассиру
                 // говорил «в очереди».
-                OfdCommandStatus.TIMEOUT -> queued(kkmId, documentId, result.errorMessage)
+                OfdCommandStatus.TIMEOUT -> queued(kkmId, documentId, result)
                 OfdCommandStatus.FAILED ->
-                    answered(documentId, "FAILED", deliveredAt = null, DeliveryStatus.ONLINE_ERROR, result.errorMessage)
+                    answered(documentId, "FAILED", deliveredAt = null, DeliveryStatus.ONLINE_ERROR, result)
             }
         }
     }
@@ -79,7 +81,7 @@ class ProcessReportUseCase(
     }
 
     /** Отчёт встаёт в очередь досылки и помечается снятым без связи. */
-    private fun queued(kkmId: String, documentId: String, error: String?): ReportResult {
+    private fun queued(kkmId: String, documentId: String, answer: OfdCommandResult?): ReportResult {
         queue.enqueueOffline(OfflineQueueCommandRequest(kkmId, OfdCommandType.REPORT.value, documentId))
         storage.updateReceiptStatus(
             documentId = documentId,
@@ -89,11 +91,7 @@ class ProcessReportUseCase(
             deliveredAt = null,
             isAutonomous = true
         )
-        return ReportResult(
-            documentId = documentId,
-            deliveryStatus = DeliveryStatus.OFFLINE_QUEUED,
-            deliveryError = error
-        )
+        return reportResult(documentId, DeliveryStatus.OFFLINE_QUEUED, answer)
     }
 
     private fun answered(
@@ -101,7 +99,7 @@ class ProcessReportUseCase(
         ofdStatus: String,
         deliveredAt: Long?,
         status: DeliveryStatus,
-        error: String?
+        answer: OfdCommandResult
     ): ReportResult {
         storage.updateReceiptStatus(
             documentId = documentId,
@@ -111,6 +109,14 @@ class ProcessReportUseCase(
             deliveredAt = deliveredAt,
             isAutonomous = false
         )
-        return ReportResult(documentId = documentId, deliveryStatus = status, deliveryError = error)
+        return reportResult(documentId, status, answer)
     }
+
+    /** Ответ кассиру: отказ БФД словами и кодом; до попытки обмена отказа нет. */
+    private fun reportResult(documentId: String, status: DeliveryStatus, answer: OfdCommandResult?) = ReportResult(
+        documentId = documentId,
+        deliveryStatus = status,
+        deliveryError = answer?.let(BfdDeliveryFailure::reason),
+        bfdResultCode = answer?.let(BfdDeliveryFailure::code)
+    )
 }

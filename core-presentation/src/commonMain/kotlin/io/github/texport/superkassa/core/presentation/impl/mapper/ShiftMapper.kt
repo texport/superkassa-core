@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.impl.mapper
 
+import io.github.texport.superkassa.core.presentation.api.model.reference.TrilingualMessageResponse
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftDayLimitState
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
 import io.github.texport.superkassa.core.domain.api.model.report.ReportResult
@@ -25,7 +26,8 @@ object ShiftMapper {
     fun toResponse(report: ReportResult): ReportResponse = ReportResponse(
         documentId = report.documentId,
         deliveryStatus = DeliveryStatus.valueOf(report.deliveryStatus.name),
-        deliveryError = report.deliveryError,
+        deliveryError = report.deliveryError?.let(TrilingualMessageResponse::from),
+        bfdResultCode = report.bfdResultCode,
         deliveryPayload = report.deliveryPayload
     )
 }

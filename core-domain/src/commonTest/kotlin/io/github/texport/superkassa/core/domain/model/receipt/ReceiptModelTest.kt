@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.api.model.receipt
 
+import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
@@ -266,15 +267,15 @@ class ReceiptModelTest {
         val payload2 = byteArrayOf(1, 2, 3)
         val payload3 = byteArrayOf(4, 5, 6)
 
-        val res1 = ReceiptResult("doc-1", "fs1", "as1", payload1, DeliveryStatus.ONLINE_OK, "error1")
+        val res1 = ReceiptResult("doc-1", "fs1", "as1", payload1, DeliveryStatus.ONLINE_OK, TrilingualMessage.mono("error1"))
         val res1Copy = res1.copy()
-        val resSame = ReceiptResult("doc-1", "fs1", "as1", payload2, DeliveryStatus.ONLINE_OK, "error1")
+        val resSame = ReceiptResult("doc-1", "fs1", "as1", payload2, DeliveryStatus.ONLINE_OK, TrilingualMessage.mono("error1"))
         val resDiffDoc = res1.copy(documentId = "doc-2")
         val resDiffFs = res1.copy(fiscalSign = "fs2")
         val resDiffAs = res1.copy(autonomousSign = "as2")
         val resDiffPayload = res1.copy(deliveryPayload = payload3)
         val resDiffStatus = res1.copy(deliveryStatus = DeliveryStatus.OFFLINE_QUEUED)
-        val resDiffError = res1.copy(deliveryError = "error2")
+        val resDiffError = res1.copy(deliveryError = TrilingualMessage.mono("error2"))
         val resNullPayload = res1.copy(deliveryPayload = null)
 
         assertEquals(res1, res1)

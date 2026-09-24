@@ -60,8 +60,14 @@ internal class DefaultRoomStorageAdapter(
     override fun enqueue(command: QueueCommand): Boolean = queue.enqueue(command)
     override fun getCommandsByStatus(cashboxId: String, lane: QueueLane, statuses: Set<QueueStatus>) =
         queue.byStatus(cashboxId, lane, statuses)
-    override fun updateStatus(id: String, status: QueueStatus, attempt: Int, lastError: String?, nextAttemptAt: Long?) =
-        queue.updateStatus(id, status, attempt, lastError, nextAttemptAt)
+    override fun updateStatus(
+        id: String,
+        status: QueueStatus,
+        attempt: Int,
+        lastError: String?,
+        nextAttemptAt: Long?,
+        lastErrorCode: Int?
+    ) = queue.updateStatus(id, status, attempt, QueueError(lastError, lastErrorCode), nextAttemptAt)
     override fun markInProgress(id: String, now: Long): Boolean = queue.markInProgress(id, now)
     override fun listByCashbox(cashboxId: String, lane: QueueLane, limit: Int, offset: Int) =
         queue.list(cashboxId, lane, limit, offset)
@@ -78,9 +84,15 @@ internal class DefaultRoomStorageAdapter(
         status: String,
         attempt: Int,
         lastError: String?,
-        nextAttemptAt: Long?
-    ) =
-        queue.updateStatus(id, QueueStatus.valueOf(status), attempt, lastError, nextAttemptAt)
+        nextAttemptAt: Long?,
+        lastErrorCode: Int?
+    ) = queue.updateStatus(
+        id = id,
+        status = QueueStatus.valueOf(status),
+        attempt = attempt,
+        error = QueueError(lastError, lastErrorCode),
+        nextAttemptAt = nextAttemptAt
+    )
     override fun markQueueTaskInProgress(id: String, now: Long): Boolean = queue.markInProgress(id, now)
     override fun deleteQueueTasksByCashbox(cashboxId: String): Boolean = queue.deleteByCashbox(cashboxId)
     override fun countOfflineQueue(): Long = 0L

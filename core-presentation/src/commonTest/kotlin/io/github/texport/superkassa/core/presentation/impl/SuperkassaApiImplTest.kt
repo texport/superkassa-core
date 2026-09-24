@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.impl
 
+import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.MemoryPinAttempts
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.PinGuard
 import io.github.texport.superkassa.core.domain.api.model.auth.KkmUser as DomainKkmUser
@@ -1199,13 +1200,13 @@ class SuperkassaApiImplTest {
         every { ofd.send(any()) } returns OfdCommandResult(status = DomainOfdCommandStatus.TIMEOUT, errorMessage = "Timeout")
         val resTimeout = api.createReport("kkm-1", "1234")
         assertEquals(DeliveryStatus.OFFLINE_QUEUED, resTimeout.deliveryStatus)
-        assertEquals("Timeout", resTimeout.deliveryError)
+        assertEquals(CoreStrings.bfdNoAnswer().en, resTimeout.deliveryError?.en)
 
         // Failed check
         every { ofd.send(any()) } returns OfdCommandResult(status = DomainOfdCommandStatus.FAILED, errorMessage = "Failed")
         val resFailed = api.createReport("kkm-1", "1234")
         assertEquals(DeliveryStatus.ONLINE_ERROR, resFailed.deliveryStatus)
-        assertEquals("Failed", resFailed.deliveryError)
+        assertEquals(CoreStrings.bfdRequestNotSent().en, resFailed.deliveryError?.en)
     }
 
     @Test

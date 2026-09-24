@@ -1,6 +1,7 @@
 package io.github.texport.superkassa.core.domain.api.model.receipt
 
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryStatus
+import io.github.texport.superkassa.core.string.api.TrilingualMessage
 
 /**
  * Результат успешной обработки и регистрации чека.
@@ -10,7 +11,9 @@ import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryStatu
  * @property autonomousSign Автономный фискальный признак чека (при офлайн-оформлении).
  * @property deliveryPayload Сгенерированная печатная форма чека (например, в формате ESC_POS/PDF).
  * @property deliveryStatus Текущий статус отправки чека в ОФД/клиенту.
- * @property deliveryError Текст возникшей ошибки при попытке отправки/печати чека.
+ * @property deliveryError Почему БФД не принял чек и что делать — на каждом языке свой текст;
+ *   `null`, если отказа не было.
+ * @property bfdResultCode Код отказа БФД (ResultTypeEnum CPCR); `null`, если БФД не ответил или принял.
  */
 data class ReceiptResult(
     val documentId: String,
@@ -18,7 +21,8 @@ data class ReceiptResult(
     val autonomousSign: String? = null,
     val deliveryPayload: ByteArray? = null,
     val deliveryStatus: DeliveryStatus = DeliveryStatus.NOT_SENT,
-    val deliveryError: String? = null
+    val deliveryError: TrilingualMessage? = null,
+    val bfdResultCode: Int? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -33,6 +37,7 @@ data class ReceiptResult(
         } else if (other.deliveryPayload != null) return false
         if (deliveryStatus != other.deliveryStatus) return false
         if (deliveryError != other.deliveryError) return false
+        if (bfdResultCode != other.bfdResultCode) return false
 
         return true
     }
@@ -44,6 +49,7 @@ data class ReceiptResult(
         result = 31 * result + (deliveryPayload?.contentHashCode() ?: 0)
         result = 31 * result + deliveryStatus.hashCode()
         result = 31 * result + (deliveryError?.hashCode() ?: 0)
+        result = 31 * result + (bfdResultCode ?: 0)
         return result
     }
 }

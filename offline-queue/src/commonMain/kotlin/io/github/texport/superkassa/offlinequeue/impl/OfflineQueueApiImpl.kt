@@ -215,7 +215,8 @@ internal class OfflineQueueApiImpl(
                     QueueStatus.FAILED,
                     attempt,
                     result.error?.compact(),
-                    retryAt
+                    retryAt,
+                    result.errorCode
                 )
                     .also { if (it) logger.warn("Queue command failed. id={}, retryAt={}", command.id, retryAt) }
             }
@@ -226,7 +227,8 @@ internal class OfflineQueueApiImpl(
                     QueueStatus.REJECTED,
                     attempt,
                     result.error?.compact(),
-                    null
+                    null,
+                    result.errorCode
                 )
                     .also { if (it) logger.warn("Queue command rejected for good. id={}", command.id) }
             }

@@ -16,6 +16,7 @@ import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePo
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.helper.common.IdempotentOperationExecutor
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
+import io.github.texport.superkassa.core.domain.impl.helper.ofd.BfdDeliveryFailure
 import io.github.texport.superkassa.core.domain.impl.usecase.shift.RecalculateShiftCountersUseCase
 
 /**
@@ -144,7 +145,8 @@ class CreateCashOperationUseCase(
                 CashOperationResult(
                     documentId = documentId,
                     deliveryStatus = deliveryStatus,
-                    deliveryError = ofdResult.errorMessage
+                    deliveryError = BfdDeliveryFailure.reason(ofdResult),
+                    bfdResultCode = BfdDeliveryFailure.code(ofdResult)
                 )
             }
         )

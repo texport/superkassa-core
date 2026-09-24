@@ -34,7 +34,7 @@ class ReadyKassaTest {
 
         val sale = kassa.sell()
 
-        assertEquals(DeliveryStatus.ONLINE_OK, sale.deliveryStatus, sale.deliveryError)
+        assertEquals(DeliveryStatus.ONLINE_OK, sale.deliveryStatus, sale.deliveryError?.en)
         assertEquals(1, bench.bfd.countedTickets().size)
         val document = kassa.api.getDocumentDetails(kassa.kkmId, sale.documentId, ADMIN_PIN).document
         assertEquals(9001L, document.docNo)
@@ -48,7 +48,7 @@ class ReadyKassaTest {
 
         val z = kassa.closeShift()
 
-        assertEquals(DeliveryStatus.ONLINE_OK, z.deliveryStatus, z.deliveryError)
+        assertEquals(DeliveryStatus.ONLINE_OK, z.deliveryStatus, z.deliveryError?.en)
         assertEquals(1, bench.bfd.closeShifts().size)
         assertEquals(1, bench.bfd.xReports().size)
         assertEquals(false, kassa.info().isShiftOpen)

@@ -25,9 +25,22 @@ internal class InMemoryQueueCommandDao : QueueCommandDao {
     override suspend fun listByCashbox(cashboxId: String, lane: String, limit: Int, offset: Int): List<QueueCommandEntity> =
         rows.values.filter { it.cashboxId == cashboxId && it.lane == lane }.drop(offset).take(limit)
 
-    override suspend fun updateStatus(id: String, status: String, attempt: Int, lastError: String?, nextAttemptAt: Long?): Int {
+    override suspend fun updateStatus(
+        id: String,
+        status: String,
+        attempt: Int,
+        lastError: String?,
+        lastErrorCode: Int?,
+        nextAttemptAt: Long?
+    ): Int {
         val current = rows[id] ?: return 0
-        rows[id] = current.copy(status = status, attempt = attempt, lastError = lastError, nextAttemptAt = nextAttemptAt)
+        rows[id] = current.copy(
+            status = status,
+            attempt = attempt,
+            lastError = lastError,
+            lastErrorCode = lastErrorCode,
+            nextAttemptAt = nextAttemptAt
+        )
         return 1
     }
 

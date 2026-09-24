@@ -26,6 +26,7 @@ enum class QueueDispatchStatus {
  * @property errorRu Текст ошибки на русском языке.
  * @property errorKk Текст ошибки на казахском языке.
  * @property errorEn Текст ошибки на английском языке.
+ * @property bfdResultCode Код отказа БФД; хранится в задаче рядом с текстом.
  */
 data class QueueDispatchResult(
     val status: QueueDispatchStatus,
@@ -33,5 +34,6 @@ data class QueueDispatchResult(
     val retryAt: Long? = null,
     val errorRu: String? = null,
     val errorKk: String? = null,
-    val errorEn: String? = null
+    val errorEn: String? = null,
+    val bfdResultCode: Int? = null
 )

@@ -21,7 +21,8 @@ data class QueueCommandEntity(
     val attempt: Int,
     val lastError: String?,
     val nextAttemptAt: Long?,
-    val createdAt: Long
+    val createdAt: Long,
+    val lastErrorCode: Int? = null
 ) {
     fun toDomain(): QueueCommand {
         return QueueCommand(
@@ -34,7 +35,8 @@ data class QueueCommandEntity(
             status = QueueStatus.valueOf(status),
             attempt = attempt,
             nextAttemptAt = nextAttemptAt,
-            lastError = lastError
+            lastError = lastError,
+            lastErrorCode = lastErrorCode
         )
     }
 
@@ -50,7 +52,8 @@ data class QueueCommandEntity(
                 attempt = domain.attempt,
                 lastError = domain.lastError,
                 nextAttemptAt = domain.nextAttemptAt,
-                createdAt = domain.createdAt
+                createdAt = domain.createdAt,
+                lastErrorCode = domain.lastErrorCode
             )
         }
     }

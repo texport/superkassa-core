@@ -27,6 +27,7 @@ class ListQueueItemsUseCase(
      * @property attempt Количество совершенных попыток отправки.
      * @property nextAttemptAt Время следующей запланированной попытки отправки в миллисекундах (timestamp).
      * @property lastError Текст последней ошибки, возникшей при попытке отправки.
+     * @property bfdResultCode Код отказа БФД при последней попытке.
      */
     data class QueueItemView(
         val id: String,
@@ -38,7 +39,8 @@ class ListQueueItemsUseCase(
         val lastError: String?,
         val errorRu: String? = null,
         val errorKk: String? = null,
-        val errorEn: String? = null
+        val errorEn: String? = null,
+        val bfdResultCode: Int? = null
     )
 
     private fun parseCompactError(compactError: String?): Triple<String?, String?, String?> {
@@ -81,7 +83,8 @@ class ListQueueItemsUseCase(
                 lastError = it.lastError,
                 errorRu = ru,
                 errorKk = kk,
-                errorEn = en
+                errorEn = en,
+                bfdResultCode = it.lastErrorCode
             )
         }
     }

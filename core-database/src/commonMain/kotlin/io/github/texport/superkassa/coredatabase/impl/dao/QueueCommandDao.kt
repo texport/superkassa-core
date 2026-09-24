@@ -32,13 +32,15 @@ interface QueueCommandDao {
     suspend fun listByCashbox(cashboxId: String, lane: String, limit: Int, offset: Int): List<QueueCommandEntity>
 
     @Query(
-        "UPDATE queue_commands SET status = :status, attempt = :attempt, lastError = :lastError, nextAttemptAt = :nextAttemptAt WHERE id = :id"
+        "UPDATE queue_commands SET status = :status, attempt = :attempt, lastError = :lastError, " +
+            "lastErrorCode = :lastErrorCode, nextAttemptAt = :nextAttemptAt WHERE id = :id"
     )
     suspend fun updateStatus(
         id: String,
         status: String,
         attempt: Int,
         lastError: String?,
+        lastErrorCode: Int?,
         nextAttemptAt: Long?
     ): Int
 

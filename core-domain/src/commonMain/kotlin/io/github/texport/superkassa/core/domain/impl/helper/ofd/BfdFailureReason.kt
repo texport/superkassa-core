@@ -23,3 +23,22 @@ internal fun bfdFailureReason(result: OfdCommandResult): TrilingualMessage {
         else -> CoreStrings.bfdRequestNotSent()
     }
 }
+
+/**
+ * Складывает описание отказа ОФД из того, что он действительно прислал.
+ *
+ * Сетевое поле errorMessage пусто, когда ОФД ответил и отказал по существу:
+ * причина тогда лежит в коде и тексте результата. Раньше в журнал и
+ * оператору уходило пустое место, и отличить отказ стенда от обрыва связи
+ * было нельзя. Сетевая ошибка берётся по-английски: журнал ведётся
+ * на английском, а трёхъязычная строка раздувала его втрое.
+ */
+internal fun describeFailure(result: OfdCommandResult): String {
+    val parts = listOfNotNull(
+        result.status.name,
+        result.resultCode?.let { "code=$it" },
+        result.resultText?.takeIf { it.isNotBlank() },
+        result.errorMessage?.takeIf { it.isNotBlank() }?.let { TrilingualMessage.ofCompact(it)?.en ?: it }
+    )
+    return parts.joinToString(", ")
+}
