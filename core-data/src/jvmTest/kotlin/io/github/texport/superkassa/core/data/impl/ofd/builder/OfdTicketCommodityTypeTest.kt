@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.data.impl.ofd.builder
 
+import io.github.texport.superkassa.core.domain.api.model.receipt.CustomerContact
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.receipt.PaymentType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptItem
@@ -59,6 +60,20 @@ class OfdTicketCommodityTypeTest {
             "920313351246",
             ticket["extensionOptions"]!!.jsonObject["customerIinOrBin"]!!.jsonPrimitive.content
         )
+    }
+
+    @Test
+    fun `пустой телефон покупателя в БФД не уходит, почта уходит`() {
+        val ticket = OfdTicketRequestBuilder.buildTicketRequest(
+            ofdId = "bfd",
+            protocolVersion = "204",
+            deviceId = 11L,
+            token = 22L,
+            reqNum = 33,
+            request = sale(NTIN).copy(customerContact = CustomerContact(phone = " ", email = "buyer@mail.kz"))
+        )["payload"]!!.jsonObject["ticket"]!!.jsonObject
+
+        assertEquals(setOf("customerEmail"), ticket["extensionOptions"]!!.jsonObject.keys)
     }
 
     @Test
