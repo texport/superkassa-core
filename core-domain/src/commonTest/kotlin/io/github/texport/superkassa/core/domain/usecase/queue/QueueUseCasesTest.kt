@@ -19,6 +19,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.inTransacti
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.queue.GetQueueStatusUseCase
+import io.github.texport.superkassa.core.string.api.CoreStrings
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -180,6 +181,8 @@ class QueueUseCasesTest {
         assertEquals(QueueDispatchStatus.REJECTED, res.status)
         assertEquals("FAILED", status)
         assertEquals(16, recordedCode)
+        assertEquals("BFD returned code 16", res.errorMessage)
+        assertEquals(CoreStrings.bfdRefusal(16).ru, res.errorRu)
     }
 
     @Test
@@ -230,9 +233,8 @@ class QueueUseCasesTest {
         // молча. Повтор ограничен числом попыток.
         assertEquals(QueueDispatchStatus.FAILED, res.status)
         assertEquals("Server error", res.errorMessage)
-        assertEquals("Ошибка отправки в БФД: Server error", res.errorRu)
-        assertEquals("БФД-ға жіберу қатесі: Server error", res.errorKk)
-        assertEquals("BFD delivery failure: Server error", res.errorEn)
+        val notSent = CoreStrings.bfdRequestNotSent()
+        assertEquals(Triple(notSent.ru, notSent.kk, notSent.en), Triple(res.errorRu, res.errorKk, res.errorEn))
     }
 
     @Test

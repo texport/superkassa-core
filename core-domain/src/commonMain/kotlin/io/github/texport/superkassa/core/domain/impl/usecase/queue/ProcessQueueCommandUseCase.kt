@@ -9,6 +9,7 @@ import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
+import io.github.texport.superkassa.core.domain.impl.logging.getLogger
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.receipt.DeliverReceiptUseCase
 
@@ -30,6 +31,7 @@ class ProcessQueueCommandUseCase(
     deliverReceipt: DeliverReceiptUseCase
 ) {
     private val document = QueuedDocumentOutcome(storage, clock, deliverReceipt)
+    private val logger = getLogger(ProcessQueueCommandUseCase::class)
 
     /**
      * Выполняет обработку команды из очереди.
@@ -59,7 +61,7 @@ class ProcessQueueCommandUseCase(
             code != null -> rejected(command, code, result.resultText)
             // Обмена не было: запрос не удалось ни собрать, ни отправить.
             // Это состояние кассы, а не негодный документ, поэтому повтор.
-            else -> (result.errorMessage ?: "BFD command failed").let { retry(CoreStrings.ofdDeliveryFailure(it), it) }
+            else -> retry(CoreStrings.bfdRequestNotSent(), technical(result.errorMessage))
         }
     }
 
@@ -70,10 +72,15 @@ class ProcessQueueCommandUseCase(
      * и 255, означает негодный документ, а не временную помеху. Раньше
      * такой ответ приходил сюда как сбой отправки и повторялся без конца —
      * документ вставал в голове очереди, и за ним стояли все следующие.
+     *
+     * Кассиру — причина кода словами и что делать; сам код остаётся
+     * журналу и технической ошибке задачи. Прежде кассир читал
+     * «Ошибка отправки в БФД: BFD returned code 13».
      */
     private fun rejected(command: QueueTask, code: Int, reason: String?): QueueDispatchResult {
         document.rejected(command, code, reason)
-        val error = CoreStrings.ofdDeliveryFailure("BFD returned code $code")
+        logger.warn("BFD rejected a queued document: taskId={}, code={}", command.id, code)
+        val error = CoreStrings.bfdRefusal(code)
         return QueueDispatchResult(
             status = QueueDispatchStatus.REJECTED,
             errorMessage = "BFD returned code $code",
@@ -82,6 +89,10 @@ class ProcessQueueCommandUseCase(
             errorEn = error.en
         )
     }
+
+    /** Сетевая ошибка по-английски: трёхъязычную строку обмена журналу не нужно. */
+    private fun technical(errorMessage: String?): String =
+        errorMessage?.let { TrilingualMessage.ofCompact(it)?.en ?: it } ?: "BFD command failed"
 
     /** Повтор: без ответа — через паузу, при сбое самой кассы — по расписанию очереди. */
     private fun retry(error: TrilingualMessage, message: String, after: Boolean = false) = QueueDispatchResult(

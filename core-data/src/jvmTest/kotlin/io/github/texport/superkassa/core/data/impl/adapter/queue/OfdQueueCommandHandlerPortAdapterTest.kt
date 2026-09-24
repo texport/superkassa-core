@@ -14,6 +14,7 @@ import io.github.texport.superkassa.offlinequeue.api.model.QueueCommand
 import io.github.texport.superkassa.offlinequeue.api.model.QueueCommandType
 import io.github.texport.superkassa.offlinequeue.api.model.QueueLane
 import io.github.texport.superkassa.offlinequeue.api.model.QueueStatus
+import io.github.texport.superkassa.core.string.api.CoreStrings
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -99,8 +100,6 @@ class OfdQueueCommandHandlerPortAdapterTest {
         assertEquals("Server error", result.errorMessage)
         val err = result.error
         assertNotNull(err)
-        assertEquals("Ошибка отправки в БФД: Server error", err.ru)
-        assertEquals("БФД-ға жіберу қатесі: Server error", err.kk)
-        assertEquals("BFD delivery failure: Server error", err.en)
+        assertEquals(CoreStrings.bfdRequestNotSent(), err)
     }
 }

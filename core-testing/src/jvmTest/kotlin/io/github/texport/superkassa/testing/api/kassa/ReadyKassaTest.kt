@@ -2,6 +2,8 @@ package io.github.texport.superkassa.testing.api.kassa
 
 import io.github.texport.superkassa.core.presentation.api.model.kkm.VatGroup
 import io.github.texport.superkassa.core.presentation.api.model.ofd.DeliveryStatus
+import io.github.texport.superkassa.core.string.api.CoreStrings
+import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import io.github.texport.superkassa.testing.api.kassa.BenchDirectory.Companion.ADMIN_PIN
 import io.github.texport.superkassa.testing.api.kassa.BenchDirectory.Companion.CASHIER_PIN
 import io.github.texport.superkassa.testing.api.kassa.BenchDirectory.Companion.NOT_PAYER
@@ -117,9 +119,27 @@ class ReadyKassaTest {
     }
 
     @Test
+    fun `отказ БФД досланному документу назван в очереди словами на языке кассира`() {
+        val kassa = bench.registerKassa(NOT_PAYER).also { it.openShift() }
+        kassa.offlineSale()
+        bench.bfd.refuseNext(INCORRECT_REQUEST_DATA)
+
+        kassa.resendQueue()
+
+        val item = bench.superkassa.queue.listQueue(kassa.kkmId, ADMIN_PIN).single()
+        assertEquals("REJECTED", item.status)
+        assertEquals(CoreStrings.bfdRefusal(INCORRECT_REQUEST_DATA), TrilingualMessage(item.errorRu!!, item.errorKk!!, item.errorEn!!))
+    }
+
+    @Test
     fun `кассир входит своим пином`() {
         val kassa = bench.registerKassa(NOT_PAYER)
 
         assertEquals("CASHIER", kassa.api.currentUser(kassa.kkmId, CASHIER_PIN).role.name)
+    }
+
+    private companion object {
+        /** RESULT_TYPE_INCORRECT_REQUEST_DATA: БФД не принял данные документа. */
+        const val INCORRECT_REQUEST_DATA = 13
     }
 }

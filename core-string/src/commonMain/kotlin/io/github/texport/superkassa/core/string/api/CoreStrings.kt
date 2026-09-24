@@ -112,7 +112,6 @@ object CoreStrings {
     // --- Сообщения очереди (Queue Messages) ---
     fun handlerException(reason: String): TrilingualMessage = CoreStringsImpl.handlerException(reason)
     fun invalidDispatchStatus(status: String): TrilingualMessage = CoreStringsImpl.invalidDispatchStatus(status)
-    fun ofdDeliveryFailure(errorMsg: String): TrilingualMessage = CoreStringsImpl.ofdDeliveryFailure(errorMsg)
     fun ofdTimeout(): TrilingualMessage = CoreStringsImpl.ofdTimeout()
     fun ofdSyncError(): TrilingualMessage = CoreStringsImpl.ofdSyncError()
     fun ofdUnansweredDocument(): String = CoreStringsImpl.ofdUnansweredDocument()

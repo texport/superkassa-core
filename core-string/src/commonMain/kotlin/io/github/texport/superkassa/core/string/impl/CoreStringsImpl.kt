@@ -506,22 +506,6 @@ internal object CoreStringsImpl {
         en = "Internal system error: received invalid queue processing status ($status). Please contact support."
     )
 
-    /**
-     * Причина, по которой документ не ушёл в ОФД.
-     *
-     * Причина вставляется через [TrilingualMessage.wrapping]: если она уже
-     * трёхъязычная, каждый язык получает свою часть, а не все три сразу.
-     */
-    internal fun ofdDeliveryFailure(errorMsg: String): TrilingualMessage =
-        // Причина, уже сказанная на трёх языках, берётся как есть: обёртка
-        // над ней давала «Ошибка отправки в ОФД: Ошибка запроса к ОФД: …» —
-        // две строки об одном и том же перед единственным полезным словом.
-        TrilingualMessage.ofCompact(errorMsg) ?: TrilingualMessage(
-            ru = "Ошибка отправки в БФД: {}",
-            kk = "БФД-ға жіберу қатесі: {}",
-            en = "BFD delivery failure: {}"
-        ).wrapping(errorMsg)
-
     internal fun ofdTimeout(): TrilingualMessage = TrilingualMessage(
         ru = "Тайм-аут ожидания ответа от БФД",
         kk = "БФД жауабын күту уақыты бітті",
