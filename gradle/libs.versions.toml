@@ -32,6 +32,8 @@ zxing = "3.5.4"
 ktor = "3.5.2"
 angusMail = "2.0.5"
 greenmail = "2.1.14"
+androidxTestRunner = "1.7.0"
+androidxTestJunit = "1.3.0"
 
 [libraries]
 # Logging
@@ -69,6 +71,9 @@ jakarta-validation = { group = "jakarta.validation", name = "jakarta.validation-
 swagger-annotations = { group = "io.swagger.core.v3", name = "swagger-annotations-jakarta", version.ref = "swagger" }
 
 # Testing
+# Проверки на устройстве: Android-адаптеры, которые без настоящей ОС не проверить (WebView).
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
 ofd-kt-proto = { group = "io.github.texport", name = "ofd-kt-proto", version.ref = "ofdKtProto" }

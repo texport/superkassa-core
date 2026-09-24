@@ -11,6 +11,13 @@ kotlin {
         namespace = "io.github.texport.superkassa.embedded"
         compileSdk = libs.versions.androidCompileSdk.get().toInt()
         minSdk = libs.versions.androidMinSdk.get().toInt()
+        // Печатные формы на Android рисует системный WebView: проверяются они
+        // только на устройстве или эмуляторе (connectedAndroidDeviceTest).
+        withDeviceTestBuilder { sourceSetTreeName = "test" }.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+            // Почта и активация Jakarta кладут одинаковые файлы лицензий в META-INF.
+            packaging.resources.excludes += listOf("META-INF/NOTICE.md", "META-INF/LICENSE.md")
+        }
     }
     iosArm64()
     iosX64()
@@ -61,6 +68,11 @@ kotlin {
         }
         jvmTest.dependencies {
             implementation(kotlin("test"))
+        }
+        getByName("androidDeviceTest").dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.androidx.test.runner)
+            implementation(libs.androidx.test.junit)
         }
     }
 
