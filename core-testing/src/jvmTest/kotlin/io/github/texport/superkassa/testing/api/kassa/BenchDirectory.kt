@@ -1,7 +1,9 @@
 package io.github.texport.superkassa.testing.api.kassa
 
+import io.github.texport.superkassa.embedded.api.SuperkassaConfig
 import io.github.texport.superkassa.embedded.api.SuperkassaPlatform
 import io.github.texport.superkassa.testing.api.bfd.FakeBfd
+import io.github.texport.superkassa.testing.api.clock.MovableClock
 import java.io.File
 import kotlin.io.path.createTempDirectory
 
@@ -15,6 +17,10 @@ internal class BenchDirectory : AutoCloseable {
 
     /** Стенд заново на том же каталоге и с тем же БФД, что до перезапуска. */
     fun reopen(bfd: FakeBfd): TestBench = TestBench.open(platform, bfd)
+
+    /** Стенд на том же каталоге с тем же БФД и часами, но с другими настройками кассы. */
+    fun reopen(bfd: FakeBfd, clock: MovableClock, config: SuperkassaConfig): TestBench =
+        TestBench.open(platform, bfd, clock, config)
 
     override fun close() {
         dir.deleteRecursively()

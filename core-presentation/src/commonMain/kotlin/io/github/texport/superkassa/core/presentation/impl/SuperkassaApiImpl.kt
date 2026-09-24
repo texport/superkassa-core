@@ -52,6 +52,7 @@ import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SyncOfdServiceI
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.UpdateOfdTokenUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.receipt.CreateCashOperationUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.receipt.DeliverReceiptUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.delivery.ReceiptDeliveryPlan
 import io.github.texport.superkassa.core.domain.impl.usecase.receipt.ProcessOfdDocumentResultUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.receipt.ProcessReceiptUseCase
 import io.github.texport.superkassa.core.presentation.api.model.receipt.CreateReceiptCommand
@@ -256,7 +257,12 @@ class SuperkassaApiImpl(
     internal val autoCloseShiftUseCase = AutoCloseShiftUseCase(storage, shiftDayLimit, closeShiftUseCase)
 
     // Document Processor Use Cases
-    internal val deliverReceiptUseCase = DeliverReceiptUseCase(receiptDeliveryHelper)
+    internal val deliverReceiptUseCase = DeliverReceiptUseCase(
+        helper = receiptDeliveryHelper,
+        storage = storage,
+        plan = ReceiptDeliveryPlan(coreSettings.delivery),
+        clock = clock
+    )
     internal val processOfdDocumentResultUseCase = ProcessOfdDocumentResultUseCase(
         storage = storage,
         queue = queuePort,

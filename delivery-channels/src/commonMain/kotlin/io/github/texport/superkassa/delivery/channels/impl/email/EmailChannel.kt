@@ -52,7 +52,7 @@ internal class EmailChannel(
 
     private fun refused(request: DeliveryRequest, code: String, message: TrilingualMessage): DeliveryResult {
         journal.warn("$TITLE refused: documentId=${request.documentId}, code=$code")
-        return refusal(code, message)
+        return refusal(code, message, retryable = false)
     }
 
     private fun bodyOf(request: DeliveryRequest): String? {

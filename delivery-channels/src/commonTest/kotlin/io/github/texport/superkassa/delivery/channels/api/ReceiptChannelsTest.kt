@@ -50,6 +50,7 @@ class ReceiptChannelsTest {
 
         assertFalse(result.ok)
         assertEquals("DELIVERY_${channel.channel.name}_NOT_CONFIGURED", result.code)
+        assertEquals(false, result.retryable)
         val message = result.message.orEmpty()
         assertTrue(message.contains("не настроен"), message)
         assertTrue(message.contains("бапталмаған"), message)

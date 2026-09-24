@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.embedded.api
 
+import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryRetryPolicy
 import io.github.texport.superkassa.delivery.api.port.DeliveryPort
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -19,6 +20,11 @@ import kotlin.time.Duration.Companion.seconds
  * @property queueBatchSize сколько документов одной кассы досылается за заход.
  * @property shiftCheckInterval пауза между проверками автозакрытия смены:
  *   у касс с настройкой «автозакрытие» смена закрывается до предела в сутки.
+ * @property deliveryInterval пауза между заходами доставки чеков покупателям.
+ * @property deliveryAttempts сколько раз чек отправляется по каналу, прежде
+ *   чем доставка станет окончательным отказом.
+ * @property deliveryRetryPause пауза перед первым повтором доставки; дальше она
+ *   удваивается до получаса.
  * @property channels каналы доставки чека покупателю вместо собранных
  *   из настроек. По умолчанию SMS, Telegram, WhatsApp и почта собираются
  *   из `CoreSettings.delivery`, и приложению их знать не нужно; канал
@@ -32,11 +38,26 @@ class SuperkassaConfig(
     val queueInterval: Duration = 5.seconds,
     val queueBatchSize: Int = 5,
     val shiftCheckInterval: Duration = 1.minutes,
+    val deliveryInterval: Duration = 3.seconds,
+    val deliveryAttempts: Int = DeliveryRetryPolicy().attempts,
+    val deliveryRetryPause: Duration = DeliveryRetryPolicy().firstPause,
     val channels: List<DeliveryPort> = emptyList()
 ) {
     init {
         require(queueBatchSize > 0) { "queueBatchSize must be positive" }
         require(queueInterval.isPositive()) { "queueInterval must be positive" }
         require(shiftCheckInterval.isPositive()) { "shiftCheckInterval must be positive" }
+        require(deliveryInterval.isPositive()) { "deliveryInterval must be positive" }
     }
+
+    /**
+     * Повторы доставки чека: попытки и первая пауза — отсюда, предел паузы
+     * и срок занятости — ядра. Заводится сразу: негодное число попыток
+     * отказывает здесь, а не при открытии кассы.
+     */
+    internal val deliveryPolicy: DeliveryRetryPolicy = DeliveryRetryPolicy(
+        attempts = deliveryAttempts,
+        firstPause = deliveryRetryPause,
+        longestPause = maxOf(DeliveryRetryPolicy().longestPause, deliveryRetryPause)
+    )
 }

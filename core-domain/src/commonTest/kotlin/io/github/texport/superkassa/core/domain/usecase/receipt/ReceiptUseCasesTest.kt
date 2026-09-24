@@ -39,6 +39,8 @@ import io.github.texport.superkassa.core.domain.impl.helper.common.IdempotentOpe
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.kkm.RequireOperationalUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.counter.UpdateCountersUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.delivery.ReceiptDeliveryPlan
+import io.github.texport.superkassa.core.domain.impl.usecase.delivery.SendDeliveryTasksUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.shift.RecalculateShiftCountersUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -58,7 +60,12 @@ class ReceiptUseCasesTest {
     private val receiptDeliveryHelper = mockk<ReceiptDeliveryHelper>(relaxed = true)
     private val updateCountersUseCase = mockk<UpdateCountersUseCase>(relaxed = true)
 
-    private val deliverReceipt = DeliverReceiptUseCase(receiptDeliveryHelper)
+    private val deliverReceipt = DeliverReceiptUseCase(
+        receiptDeliveryHelper,
+        storage,
+        ReceiptDeliveryPlan(null),
+        clock
+    )
     private val processOfdDocumentResult = ProcessOfdDocumentResultUseCase(
         storage, queue, clock, updateCountersUseCase, deliverReceipt
     )
@@ -82,11 +89,22 @@ class ReceiptUseCasesTest {
         // Как в сборке: поставленное в очередь — не доставленное.
         ofdResultQueuedOffline = { OfdCommandResult(status = OfdCommandStatus.TIMEOUT) }
     )
-    private val retryReceiptDelivery = RetryReceiptDeliveryUseCase(storage, authorizeUserUseCase, receiptDeliveryHelper)
+    private val retryReceiptDelivery = RetryReceiptDeliveryUseCase(
+        storage,
+        authorizeUserUseCase,
+        receiptDeliveryHelper,
+        ReceiptDeliveryPlan(null),
+        mockk<SendDeliveryTasksUseCase>(),
+        clock
+    )
 
     private val kkm = KkmInfo(id = "kkm-1", createdAt = 0, updatedAt = 0, mode = "ACTIVE", state = KkmState.ACTIVE.name)
 
     init {
+        // Хранилище задач доставки не держит — как у узла: чек доставляется
+        // сразу, помощником. Доставку задачами проверяют свои проверки.
+        every { storage.addDeliveryTasks(any()) } throws UnsupportedOperationException("no delivery tasks")
+        every { clock.now() } returns 0L
         // Кассы в хранилище нет: сценарии работают с той, что им передана.
         every { storage.findKkm(any()) } returns null
         every { storage.findKkmForUpdate(any()) } answers { storage.findKkm(firstArg()) }

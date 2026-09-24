@@ -54,6 +54,7 @@ class SmsChannelTest {
 
         assertFalse(result.ok)
         assertEquals(DeliveryCodes.PROVIDER_REJECTED, result.code)
+        assertEquals(true, result.retryable)
         val message = result.message.orEmpty()
         assertTrue(message.contains("кодом 403"), message)
         assertTrue(message.contains("status 403"), message)
@@ -105,6 +106,7 @@ class SmsChannelTest {
 
         assertFalse(result.ok)
         assertEquals("DELIVERY_SMS_DESTINATION_REQUIRED", result.code)
+        assertEquals(false, result.retryable)
         assertTrue(provider.requests.isEmpty())
     }
 

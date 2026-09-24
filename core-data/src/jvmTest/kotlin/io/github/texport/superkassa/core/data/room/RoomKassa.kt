@@ -15,10 +15,12 @@ import io.github.texport.superkassa.core.domain.api.model.kkm.KkmMode
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmState
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdServiceInfo
 import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
+import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.CoreSettingsRepositoryPort
 import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
 import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidatorPort
+import io.github.texport.superkassa.core.presentation.api.DeliveryApi
 import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptItemRequest
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptPaymentRequest
@@ -40,22 +42,28 @@ internal class RoomKassa(
     private val taxRegime: TaxRegime = TaxRegime.NO_VAT,
     private val kassaVat: VatGroup = VatGroup.NO_VAT,
     private val room: RoomStorage = openInMemoryRoomStorage(),
-    clock: ClockPort = DefaultClockAdapter()
+    clock: ClockPort = DefaultClockAdapter(),
+    /** Доставка чека покупателю; по умолчанию не настроена. */
+    receiptDelivery: DeliverySettings? = null
 ) {
     val bfd = FakeBfd(TOKEN)
     val deliveries = DeliveryLog()
     val storage = CountingStorage(room.storagePort)
-    val api: SuperkassaApi = SuperkassaCoreEngine(
+    private val engine = SuperkassaCoreEngine(
         storage = storage,
         pinAttempts = room.pinAttempts,
-        settings = MemorySettings(),
+        settings = MemorySettings(receiptDelivery),
         delivery = deliveries,
         clock = clock,
         timeValidator = TrustedClock,
         qrCode = DefaultQrCodeGeneratorAdapter(),
         pdfConverter = NoDocuments,
         ofdTransport = bfd
-    ).buildApi()
+    )
+    val api: SuperkassaApi = engine.buildApi()
+
+    /** Доставка чека покупателю: досылка задач и их состояние. */
+    val delivery: DeliveryApi = engine.buildDeliveryApi()
 
     init {
         register()
@@ -106,14 +114,15 @@ internal class RoomKassa(
         storage.createUser(KKM, "cashier-1", "Нурлан", UserRole.CASHIER, pins.hash(CASHIER_PIN), now)
     }
 
-    private class MemorySettings : CoreSettingsRepositoryPort {
+    private class MemorySettings(private val delivery: DeliverySettings?) : CoreSettingsRepositoryPort {
         private var current: CoreSettings? = null
         override fun load(): CoreSettings? = current
         override fun save(settings: CoreSettings): Boolean {
             current = settings
             return true
         }
-        override fun loadOrCreate(defaults: CoreSettings): CoreSettings = current ?: defaults.also { current = it }
+        override fun loadOrCreate(defaults: CoreSettings): CoreSettings =
+            current ?: defaults.copy(delivery = delivery).also { current = it }
     }
 
     private object TrustedClock : TimeValidatorPort {

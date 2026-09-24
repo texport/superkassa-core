@@ -19,6 +19,6 @@ internal class NotConfiguredChannel(
     override fun send(request: DeliveryRequest): DeliveryResult {
         val code = DeliveryCodes.notConfigured(channel)
         journal.warn("${channel.title} refused: documentId=${request.documentId}, code=$code")
-        return refusal(code, CoreStrings.deliveryChannelNotConfigured(channel.title))
+        return refusal(code, CoreStrings.deliveryChannelNotConfigured(channel.title), retryable = false)
     }
 }

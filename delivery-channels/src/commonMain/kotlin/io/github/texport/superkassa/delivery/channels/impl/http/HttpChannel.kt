@@ -80,7 +80,7 @@ internal abstract class HttpChannel(
 
     private fun refused(request: DeliveryRequest, code: String): DeliveryResult {
         journal.warn("${channel.title} refused: documentId=${request.documentId}, code=$code")
-        return refusal(code, CoreStrings.deliveryRecipientRequired(channel.title))
+        return refusal(code, CoreStrings.deliveryRecipientRequired(channel.title), retryable = false)
     }
 
     private class Reply(val success: Boolean, val status: Int, val body: String)

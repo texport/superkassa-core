@@ -20,9 +20,9 @@ internal class DeliveryServiceApiImpl(
         val adapter = adapterByChannel[request.channel]
             ?: return DeliveryResult(
                 false,
-                message = CoreStrings.noAdapterForChannel(request.channel.name).let {
-                    "[EN] ${it.en} / [RU] ${it.ru} / [KK] ${it.kk}"
-                }
+                message = CoreStrings.noAdapterForChannel(request.channel.name).compact(),
+                code = "DELIVERY_${request.channel.name}_NOT_CONFIGURED",
+                retryable = false
             )
         logger.info("Delivery start. channel={}, documentId={}", request.channel, request.documentId)
         val result = adapter.send(request)

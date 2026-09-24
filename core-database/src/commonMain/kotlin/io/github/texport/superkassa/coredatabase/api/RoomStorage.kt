@@ -5,6 +5,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import io.github.texport.superkassa.core.domain.api.port.integration.PinAttemptsPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.coredatabase.impl.adapter.DefaultRoomStorageAdapter
+import io.github.texport.superkassa.coredatabase.impl.adapter.RoomDeliveryTasks
 import io.github.texport.superkassa.coredatabase.impl.adapter.RoomPinAttempts
 import io.github.texport.superkassa.coredatabase.impl.db.ALL_MIGRATIONS
 import io.github.texport.superkassa.coredatabase.impl.db.SuperkassaAppDatabase
@@ -67,7 +68,8 @@ fun openRoomStorage(builder: RoomDatabase.Builder<SuperkassaAppDatabase>): RoomS
         fiscalDocumentDao = database.fiscalDocumentDao(),
         counterDao = database.counterDao(),
         idempotencyDao = database.idempotencyDao(),
-        pinAttempts = pinAttempts
+        pinAttempts = pinAttempts,
+        deliveryTasks = RoomDeliveryTasks(database.deliveryTaskDao())
     )
     return RoomStorage(database, adapter, pinAttempts)
 }

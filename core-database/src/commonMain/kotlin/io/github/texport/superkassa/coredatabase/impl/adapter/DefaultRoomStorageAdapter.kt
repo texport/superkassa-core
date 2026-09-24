@@ -10,6 +10,7 @@ import io.github.texport.superkassa.core.domain.api.model.queue.QueueTask
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
+import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryTaskStore
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.coredatabase.impl.dao.CounterDao
 import io.github.texport.superkassa.coredatabase.impl.dao.FiscalDocumentDao
@@ -43,8 +44,10 @@ internal class DefaultRoomStorageAdapter(
     counterDao: CounterDao,
     private val idempotencyDao: IdempotencyDao,
     /** Счёт неверных пинов: ядру он передаётся отдельно, здесь — только чтобы уйти вместе с кассой. */
-    private val pinAttempts: RoomPinAttempts
-) : QueueStoragePort, StoragePort {
+    private val pinAttempts: RoomPinAttempts,
+    /** Задачи доставки чека покупателю: порт хранилища отдаёт их этой части целиком. */
+    private val deliveryTasks: RoomDeliveryTasks
+) : QueueStoragePort, StoragePort, DeliveryTaskStore by deliveryTasks {
 
     private val writer = RoomWriter(idempotencyDao)
     private val kkms = RoomKkms(kkmDao, userDao)
@@ -128,10 +131,11 @@ internal class DefaultRoomStorageAdapter(
     override fun findUserById(kkmId: String, userId: String): KkmUser? = kkms.userById(kkmId, userId)
     override fun findUserByPin(kkmId: String, pinHash: String): KkmUser? = kkms.userByPin(kkmId, pinHash)
 
-    /** Касса уходит целиком: кассиры, смены, документы, счётчики, очередь, ключи повтора и счёт пинов. */
+    /** Касса уходит целиком: кассиры, смены, документы, счётчики, очередь, ключи повтора, счёт пинов и доставка. */
     override fun deleteKkmCompletely(kkmId: String): Boolean {
         kkms.deleteWithUsers(kkmId)
         pinAttempts.clear(kkmId)
+        deliveryTasks.deleteByKkm(kkmId)
         shifts.deleteByKkm(kkmId)
         documents.deleteByKkm(kkmId)
         queue.deleteByCashbox(kkmId)

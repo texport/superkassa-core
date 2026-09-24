@@ -7,6 +7,6 @@
     <ID>TooGenericExceptionCaught:KkmEntity.kt$KkmEntity$e: Exception</ID>
     <ID>TooGenericExceptionCaught:RoomStorage.kt$e: Exception</ID>
     <ID>TooGenericExceptionCaught:RoomStorageFactory.kt$RoomStorageFactory$e: Exception</ID>
-    <ID>TooManyFunctions:DefaultRoomStorageAdapter.kt$DefaultRoomStorageAdapter : QueueStoragePortStoragePort</ID>
+    <ID>TooManyFunctions:DefaultRoomStorageAdapter.kt$DefaultRoomStorageAdapter : QueueStoragePortStoragePortDeliveryTaskStore</ID>
   </CurrentIssues>
 </SmellBaseline>

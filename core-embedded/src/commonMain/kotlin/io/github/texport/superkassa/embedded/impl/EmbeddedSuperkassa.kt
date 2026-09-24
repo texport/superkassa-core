@@ -17,6 +17,7 @@ import io.github.texport.superkassa.embedded.api.DocumentPrinter
 import io.github.texport.superkassa.embedded.api.Superkassa
 import io.github.texport.superkassa.embedded.api.SuperkassaConfig
 import io.github.texport.superkassa.embedded.api.SuperkassaPlatform
+import io.github.texport.superkassa.embedded.impl.delivery.DeliverySender
 import io.github.texport.superkassa.embedded.impl.delivery.EmbeddedDelivery
 import io.github.texport.superkassa.embedded.impl.queue.QueueSender
 import io.github.texport.superkassa.embedded.impl.queue.queueDispatcher
@@ -31,13 +32,14 @@ import kz.mybrain.network.OfdNetworkClient
  * Сборка кассы в процессе приложения — единственная точка входа модуля.
  *
  * Порядок открытия: замок каталога, проверка «настройки есть — база есть»,
- * база, проверка часов, ядро, досылка очереди и автозакрытие смен. Любой отказ по дороге
+ * база, проверка часов, ядро, досылка очереди, доставка чеков и автозакрытие смен. Любой отказ по дороге
  * закрывает уже открытое и уходит наружу с причиной.
  */
 internal class EmbeddedSuperkassa private constructor(
     private val lock: AutoCloseable,
     private val database: RoomStorage,
     private val sender: QueueSender,
+    private val deliverySender: DeliverySender,
     private val shiftCloser: ShiftAutoCloser,
     override val api: SuperkassaApi,
     override val delivery: DeliveryApi,
@@ -52,6 +54,8 @@ internal class EmbeddedSuperkassa private constructor(
 
     override fun sendQueueNow(): Int = sender.sendOnce()
 
+    override fun sendDeliveriesNow(): Int = deliverySender.sendOnce()
+
     override fun closeDueShiftsNow(): Int = shiftCloser.closeDueOnce()
 
     private var closed = false
@@ -61,6 +65,7 @@ internal class EmbeddedSuperkassa private constructor(
         closed = true
         try {
             shiftCloser.stop()
+            deliverySender.stop()
             sender.stop()
             database.close()
         } finally {
@@ -113,19 +118,28 @@ internal class EmbeddedSuperkassa private constructor(
             val storage = parts.database.storagePort
             val sender = QueueSender(storage, api.queue, config.queueInterval, config.queueBatchSize, queueDispatcher)
             val shiftCloser = ShiftAutoCloser(storage, api, config.shiftCheckInterval, queueDispatcher)
+            val delivery = engine.buildDeliveryApi(config.deliveryPolicy)
+            val deliverySender = DeliverySender(
+                delivery,
+                config.deliveryInterval,
+                config.queueBatchSize,
+                queueDispatcher
+            )
             val kassa =
                 EmbeddedSuperkassa(
                     parts.lock,
                     parts.database,
                     sender,
+                    deliverySender,
                     shiftCloser,
                     api,
-                    engine.buildDeliveryApi(),
+                    delivery,
                     engine.buildSettingsApi(config.ofdProviderId, config.ofdProtocolVersion),
                     platform.printer()
                 )
-            // Досылка и автозакрытие запускаются последними: до этого сборка ещё может сорваться.
+            // Досылка, доставка и автозакрытие запускаются последними: до этого сборка ещё может сорваться.
             sender.start()
+            deliverySender.start()
             shiftCloser.start()
             return kassa
         }

@@ -34,6 +34,8 @@ kotlin {
         }
         jvmTest.dependencies {
             implementation(kotlin("test"))
+            // Журнал читается проверкой: в него не должны попадать адрес покупателя и ключи каналов.
+            implementation(libs.logback.classic)
         }
     }
 }

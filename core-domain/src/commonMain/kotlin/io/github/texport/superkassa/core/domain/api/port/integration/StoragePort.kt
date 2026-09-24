@@ -16,8 +16,9 @@ import io.github.texport.superkassa.core.domain.api.model.shift.ShiftStatus
  *
  * Реализация находится на инфраструктурном уровне (модуль storage) и инкапсулирует
  * все операции с базой данных, транзакциями, хранением документов, ККМ, пользователей и очередей.
+ * Задачи доставки чека покупателю — в [DeliveryTaskStore]; держать их хранилище не обязано.
  */
-interface StoragePort {
+interface StoragePort : DeliveryTaskStore {
     /**
      * Начало транзакции.
      */

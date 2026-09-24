@@ -50,6 +50,8 @@ class DeliveryServiceApiImplTest {
         val result = service.deliver(request)
         assertFalse(result.ok)
         assertTrue(result.message!!.contains("No adapter for channel SMS"))
+        // Канала нет — повтор ничего не изменит: код «не настроен» и без повторов.
+        assertEquals("DELIVERY_SMS_NOT_CONFIGURED" to false, result.code to result.retryable)
     }
 
     @Test

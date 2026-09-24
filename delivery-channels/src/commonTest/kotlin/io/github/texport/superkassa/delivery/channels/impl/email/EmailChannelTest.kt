@@ -63,6 +63,7 @@ class EmailChannelTest {
         assertFalse(empty.ok)
         assertEquals(DeliveryCodes.EMAIL_PAYLOAD_MISSING, empty.code)
         assertEquals(DeliveryCodes.EMAIL_PAYLOAD_MISSING, none.code)
+        assertEquals(false, none.retryable)
         assertTrue(letters.isEmpty())
     }
 
@@ -84,6 +85,7 @@ class EmailChannelTest {
 
         assertFalse(result.ok)
         assertEquals(DeliveryCodes.EMAIL_SEND_FAILED, result.code)
+        assertEquals(true, result.retryable)
         val message = result.message.orEmpty()
         assertTrue(message.contains("535 bad credentials"), message)
         assertFalse(message.contains(PASSWORD), message)
@@ -97,6 +99,7 @@ class EmailChannelTest {
 
         assertFalse(result.ok)
         assertEquals(DeliveryCodes.EMAIL_UNSUPPORTED, result.code)
+        assertEquals(false, result.retryable)
         assertTrue(result.message.orEmpty().contains("не поддерживается"))
     }
 

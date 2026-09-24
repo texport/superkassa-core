@@ -3,6 +3,7 @@ package io.github.texport.superkassa.testing.api.kassa
 import io.github.texport.superkassa.core.domain.api.model.common.TimeValidationResult
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.TimeValidatorPort
+import io.github.texport.superkassa.delivery.api.port.DeliveryPort
 import io.github.texport.superkassa.embedded.api.Externals
 import io.github.texport.superkassa.embedded.api.ReplacedExternals
 import io.github.texport.superkassa.embedded.api.Superkassa
@@ -18,16 +19,22 @@ import kotlin.time.Duration.Companion.hours
  * Настройки кассы для проверок: провайдер `KAZAKHTELECOM`, протокол 2.0.3 —
  * тот, на котором говорит [FakeBfd].
  *
- * Досылка очереди и автозакрытие смены в фоне заходят раз при открытии и
- * потом раз в час: проверка ведёт их сама ([ReadyKassa.resendQueue],
- * `SuperkassaApi.autoCloseShift`), и фон не вмешивается в её шаги.
+ * Досылка очереди, доставка чеков и автозакрытие смены в фоне заходят раз
+ * при открытии и потом раз в час: проверка ведёт их сама ([ReadyKassa.resendQueue],
+ * [ReadyKassa.deliverReceipts], `SuperkassaApi.autoCloseShift`), и фон
+ * не вмешивается в её шаги.
+ *
+ * @param channels каналы доставки чека вместо одноимённых из настроек — например,
+ *   подменный SMS, который запоминает отправленное.
  */
-fun testSuperkassaConfig(): SuperkassaConfig = SuperkassaConfig(
+fun testSuperkassaConfig(channels: List<DeliveryPort> = emptyList()): SuperkassaConfig = SuperkassaConfig(
     ofdProviderId = "KAZAKHTELECOM",
     ofdProtocolVersion = "203",
     ownerId = "testing",
     queueInterval = 1.hours,
-    shiftCheckInterval = 1.hours
+    shiftCheckInterval = 1.hours,
+    deliveryInterval = 1.hours,
+    channels = channels
 )
 
 /**

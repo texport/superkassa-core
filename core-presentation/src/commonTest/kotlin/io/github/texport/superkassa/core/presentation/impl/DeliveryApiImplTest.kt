@@ -36,7 +36,8 @@ class DeliveryApiImplTest {
         coreSettings = coreSettings,
         documentConvertPort = documentConvertPort,
         receiptRenderPort = receiptRenderPort,
-        pinGuard = PinGuard(MemoryPinAttempts())
+        pinGuard = PinGuard(MemoryPinAttempts()),
+        clock = mockk(relaxed = true)
     )
 
     @Test

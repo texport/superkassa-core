@@ -6,6 +6,8 @@ import io.github.texport.superkassa.core.data.room.RoomKassa.Companion.KKM
 import io.github.texport.superkassa.core.data.room.RoomKassa.Companion.cash
 import io.github.texport.superkassa.core.data.room.RoomKassa.Companion.item
 import io.github.texport.superkassa.core.domain.api.model.common.Decimal
+import io.github.texport.superkassa.core.domain.api.model.settings.DeliveryChannelSettings
+import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
 import io.github.texport.superkassa.core.presentation.api.model.kkm.CashOperationRequest
 import io.github.texport.superkassa.core.presentation.api.model.ofd.DeliveryStatus
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptResponse
@@ -23,13 +25,15 @@ import kotlin.test.assertEquals
  */
 class OfflineDocumentsTest {
     private val clock = MovableClock()
-    private val kassa = RoomKassa(clock = clock)
+    private val kassa = RoomKassa(clock = clock, receiptDelivery = SMS_RECEIPT)
 
     @Test
     fun `чек, принятый онлайн, доставляется покупателю один раз`() {
         kassa.api.openShift(KKM, ADMIN_PIN)
 
         val sale = sell("100.00", "sale-1").documentId
+        sell("100.00", "sale-1")
+        repeat(2) { kassa.delivery.sendDueDeliveries(limit = 10) }
 
         assertEquals(1, kassa.deliveries.of(sale).size)
     }
@@ -112,6 +116,10 @@ class OfflineDocumentsTest {
         listOf(value.date.year, value.date.month, value.date.day, value.time.hour, value.time.minute, value.time.second)
 
     private companion object {
+        /** Чек покупателю по SMS страницей: рисовать PDF этой кассе нечем. */
+        val SMS_RECEIPT = DeliverySettings(
+            channels = listOf(DeliveryChannelSettings("SMS", documentFormat = "HTML", destination = "+77010000000"))
+        )
         const val HOUR_MILLIS = 3_600_000L
         const val DAY_MILLIS = 24 * HOUR_MILLIS
     }

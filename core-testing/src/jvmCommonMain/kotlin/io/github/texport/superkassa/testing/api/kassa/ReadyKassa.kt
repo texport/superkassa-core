@@ -2,6 +2,7 @@ package io.github.texport.superkassa.testing.api.kassa
 
 import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
+import io.github.texport.superkassa.core.presentation.api.model.delivery.ReceiptDeliveryResponse
 import io.github.texport.superkassa.core.presentation.api.model.kkm.CashOperationRequest
 import io.github.texport.superkassa.core.presentation.api.model.kkm.CashOperationResponse
 import io.github.texport.superkassa.core.presentation.api.model.kkm.KkmResponse
@@ -111,6 +112,22 @@ class ReadyKassa internal constructor(
         clock.move(RECONNECT_PAUSE)
         return bench.superkassa.sendQueueNow()
     }
+
+    /**
+     * Доставляет чеки покупателям одним заходом, как это сделал бы фон:
+     * всё, чей срок наступил по часам кассы.
+     *
+     * @return сколько задач доставки отправлено, с успехом или отказом.
+     */
+    fun deliverReceipts(): Int = bench.superkassa.sendDeliveriesNow()
+
+    /** Доставка чека [receipt] по каналам, как её видит журнал кассира. */
+    fun deliveries(receipt: ReceiptResponse): List<ReceiptDeliveryResponse> =
+        bench.superkassa.delivery.receiptDeliveries(kkmId, receipt.documentId, cashierPin)
+
+    /** Повтор доставки чека [receipt] кассиром из журнала. */
+    fun resendReceipt(receipt: ReceiptResponse): List<ReceiptDeliveryResponse> =
+        bench.superkassa.delivery.resendReceipt(kkmId, receipt.documentId, cashierPin)
 
     private companion object {
         /** RESULT_TYPE_INCORRECT_REQUEST_DATA: БФД не принял данные документа. */

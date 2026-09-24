@@ -4,6 +4,7 @@ import io.github.texport.superkassa.core.string.impl.AccessStrings
 import io.github.texport.superkassa.core.string.impl.AmountStrings
 import io.github.texport.superkassa.core.string.impl.CoreStringsImpl
 import io.github.texport.superkassa.core.string.impl.DeliveryStrings
+import io.github.texport.superkassa.core.string.impl.DeliveryTaskStrings
 import io.github.texport.superkassa.core.string.impl.PrintAndSettingsStrings
 
 /**
@@ -124,6 +125,15 @@ object CoreStrings {
     fun emailPayloadMissing(): TrilingualMessage = DeliveryStrings.emailPayloadMissing()
     fun emailSendFailed(reason: String): TrilingualMessage = DeliveryStrings.emailSendFailed(reason)
     fun emailUnsupportedOnPlatform(): TrilingualMessage = DeliveryStrings.emailUnsupportedOnPlatform()
+    fun deliveryFailedWithoutReason(channel: String): TrilingualMessage =
+        DeliveryTaskStrings.failedWithoutReason(channel)
+    fun deliveryDocumentMissing(): TrilingualMessage = DeliveryTaskStrings.documentMissing()
+    fun deliveryLinkMissing(): TrilingualMessage = DeliveryTaskStrings.linkMissing()
+    fun deliveryPreparationFailed(channel: String): TrilingualMessage = DeliveryTaskStrings.preparationFailed(channel)
+    fun deliveryChannelUnknown(channel: String): TrilingualMessage = DeliveryTaskStrings.channelUnknown(channel)
+    fun printerNeedsEscPos(): TrilingualMessage = DeliveryTaskStrings.printerNeedsEscPos()
+    fun printerUnreachable(): TrilingualMessage = DeliveryTaskStrings.printerUnreachable()
+    fun printPayloadMissing(): TrilingualMessage = DeliveryTaskStrings.printPayloadMissing()
 
     // --- Тексты чека покупателю: сообщение мессенджера и письмо ---
     fun receiptLinkText(url: String): TrilingualMessage = DeliveryStrings.receiptLinkText(url)

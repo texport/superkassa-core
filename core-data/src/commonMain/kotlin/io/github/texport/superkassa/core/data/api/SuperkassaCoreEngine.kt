@@ -17,6 +17,7 @@ import io.github.texport.superkassa.core.data.impl.ofd.OfdConfig as ImplOfdConfi
 import io.github.texport.superkassa.core.data.impl.ofd.OfdProtocolCodec
 import io.github.texport.superkassa.core.data.impl.ofd.strategy.*
 import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
+import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryRetryPolicy
 import io.github.texport.superkassa.core.domain.api.model.settings.CoreMode
 import io.github.texport.superkassa.core.domain.api.model.settings.StorageSettings
 import io.github.texport.superkassa.core.presentation.api.SuperkassaApi
@@ -93,16 +94,22 @@ class SuperkassaCoreEngine(
      * Собирается из тех же частей, что и фасад: хеш пина — тот же, которым
      * фасад пускает кассира, а не своя копия у вызывающего.
      *
+     * Задачи доставки, которые ставит фасад, досылает [DeliveryApi.sendDueDeliveries]:
+     * его зовёт тот, кто ведёт фон, — встраиваемая сборка сама, узел по расписанию.
+     *
+     * @param policy повторы доставки после отказа канала.
      * @throws IllegalStateException если настройки ядра ещё не заведены: сначала [buildApi].
      */
-    fun buildDeliveryApi(): DeliveryApi = DeliveryApiImpl(
+    fun buildDeliveryApi(policy: DeliveryRetryPolicy = DeliveryRetryPolicy()): DeliveryApi = DeliveryApiImpl(
         storage = storage,
         pinHasher = Sha256PinHasherAdapter(),
         delivery = delivery,
         coreSettings = checkNotNull(settings.load()) { "Core settings are not created: build the API first" },
         documentConvertPort = pdfConverter,
         receiptRenderPort = receiptRenderer,
-        pinGuard = pinGuard
+        pinGuard = pinGuard,
+        clock = clock,
+        policy = policy
     )
 
     /**

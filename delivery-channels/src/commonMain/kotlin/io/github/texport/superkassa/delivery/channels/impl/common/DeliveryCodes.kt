@@ -17,9 +17,14 @@ internal object DeliveryCodes {
     fun recipientRequired(channel: DeliveryChannel): String = "DELIVERY_${channel.name}_DESTINATION_REQUIRED"
 }
 
-/** Отказ с кодом и трёхъязычным текстом в виде [TrilingualMessage.compact]. */
-internal fun refusal(code: String, message: TrilingualMessage): DeliveryResult =
-    DeliveryResult(ok = false, message = message.compact(), code = code)
+/**
+ * Отказ с кодом и трёхъязычным текстом в виде [TrilingualMessage.compact].
+ *
+ * @param retryable `false` — повтор даст тот же ответ: канал не настроен,
+ *   нет получателя, платформа не умеет.
+ */
+internal fun refusal(code: String, message: TrilingualMessage, retryable: Boolean = true): DeliveryResult =
+    DeliveryResult(ok = false, message = message.compact(), code = code, retryable = retryable)
 
 /** Имя канала в сообщениях кассиру и в журнале. */
 internal val DeliveryChannel.title: String
