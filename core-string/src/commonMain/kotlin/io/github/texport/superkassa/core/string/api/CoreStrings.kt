@@ -2,6 +2,7 @@ package io.github.texport.superkassa.core.string.api
 
 import io.github.texport.superkassa.core.string.impl.AccessStrings
 import io.github.texport.superkassa.core.string.impl.AmountStrings
+import io.github.texport.superkassa.core.string.impl.BfdResultStrings
 import io.github.texport.superkassa.core.string.impl.CoreStringsImpl
 import io.github.texport.superkassa.core.string.impl.DeliveryStrings
 import io.github.texport.superkassa.core.string.impl.DeliveryTaskStrings
@@ -71,9 +72,11 @@ object CoreStrings {
     fun kkmSettingsRequiresProgramming(): TrilingualMessage = CoreStringsImpl.kkmSettingsRequiresProgramming()
     fun kkmInProgramming(): TrilingualMessage = CoreStringsImpl.kkmInProgramming()
     fun unauthorized(): TrilingualMessage = CoreStringsImpl.unauthorized()
-    fun ofdRequestFailed(details: String?): TrilingualMessage = CoreStringsImpl.ofdRequestFailed(details)
 
-    // --- OFD Code Handling (CPCR 2.0.3) ---
+    /** Отказ БФД кодом ResultTypeEnum CPCR [code]: что случилось и что сделать, без номера кода. */
+    fun bfdRefusal(code: Int): TrilingualMessage = BfdResultStrings.refusal(code)
+    fun bfdNoAnswer(): TrilingualMessage = BfdResultStrings.noAnswer()
+    fun bfdRequestNotSent(): TrilingualMessage = BfdResultStrings.notSent()
     fun blockReason(code: Int): TrilingualMessage = CoreStringsImpl.blockReason(code)
     fun documentFailedReason(ofdErrorCode: Int): TrilingualMessage = CoreStringsImpl.documentFailedReason(ofdErrorCode)
     fun measureUnitCodeInvalid(code: String): TrilingualMessage = CoreStringsImpl.measureUnitCodeInvalid(code)

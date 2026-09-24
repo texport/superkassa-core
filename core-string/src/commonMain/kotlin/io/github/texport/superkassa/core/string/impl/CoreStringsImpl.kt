@@ -349,12 +349,6 @@ internal object CoreStringsImpl {
         en = "Unauthorized"
     )
 
-    internal fun ofdRequestFailed(details: String?): TrilingualMessage = TrilingualMessage(
-        ru = if (details.isNullOrBlank()) "Ошибка БФД" else "Ошибка БФД: $details",
-        kk = if (details.isNullOrBlank()) "БФД қатесі" else "БФД қатесі: $details",
-        en = if (details.isNullOrBlank()) "BFD request failed" else "BFD request failed: $details"
-    )
-
     internal fun measureUnitCodeInvalid(code: String): TrilingualMessage = TrilingualMessage(
         ru = "Неверный код единицы измерения: $code",
         kk = "Өлшем бірлігінің қате коды: $code",
@@ -921,26 +915,7 @@ internal object CoreStringsImpl {
             kk = "Чек БФД хаттамасына сәйкес келмейді. Мәліметтерді тексеріп қайта соғыңыз.",
             en = "Receipt does not conform to the BFD protocol. Fix and resend."
         )
-        13 -> TrilingualMessage(
-            ru = "Неверные данные чека. Проверьте данные и пробейте заново.",
-            kk = "Чектің қате мәліметтері. Түзетіп қайта соғыңыз.",
-            en = "Invalid receipt data. Fix and resend."
-        )
-        14 -> TrilingualMessage(
-            ru = "Недостаточно наличных в кассе для операции.",
-            kk = "Кассада операция үшін қолма-қол ақша жеткіліксіз.",
-            en = "Not enough cash in the register."
-        )
-        17 -> TrilingualMessage(
-            ru = "ИИН/БИН покупателя совпадает с продавцом.",
-            kk = "Сатып алушының ЖСН/БСН сатушымен сәйкес келеді.",
-            en = "Taxpayer and customer ID match."
-        )
-        else -> TrilingualMessage(
-            ru = "Ошибка отправки в БФД (Код $ofdErrorCode)",
-            kk = "БФД жүйесіне жіберу қатесі (Код $ofdErrorCode)",
-            en = "Error sending to BFD (Code $ofdErrorCode)"
-        )
+        else -> BfdResultStrings.refusal(ofdErrorCode)
     }
 }
 

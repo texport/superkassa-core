@@ -255,20 +255,6 @@ class DomainExceptionTest {
         // unauthorized
         assertEquals("Не авторизован", CoreStrings.unauthorized().ru)
 
-        // ofdRequestFailed
-        val ofdFailedWithDetails = CoreStrings.ofdRequestFailed("connection timeout")
-        assertTrue(ofdFailedWithDetails.ru.contains("connection timeout"))
-        assertTrue(ofdFailedWithDetails.kk.contains("connection timeout"))
-        assertTrue(ofdFailedWithDetails.en.contains("connection timeout"))
-
-        val ofdFailedNoDetails = CoreStrings.ofdRequestFailed(null)
-        assertEquals("Ошибка БФД", ofdFailedNoDetails.ru)
-        assertEquals("БФД қатесі", ofdFailedNoDetails.kk)
-        assertEquals("BFD request failed", ofdFailedNoDetails.en)
-
-        val ofdFailedBlankDetails = CoreStrings.ofdRequestFailed("   ")
-        assertEquals("Ошибка БФД", ofdFailedBlankDetails.ru)
-
         // measureUnitCodeInvalid
         val measureInvalid = CoreStrings.measureUnitCodeInvalid("M1")
         assertTrue(measureInvalid.ru.contains("M1"))

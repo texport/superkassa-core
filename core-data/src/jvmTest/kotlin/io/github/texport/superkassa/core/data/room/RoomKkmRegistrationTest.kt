@@ -3,11 +3,14 @@ package io.github.texport.superkassa.core.data.room
 import io.github.texport.superkassa.core.domain.api.exception.SuperkassaException
 import io.github.texport.superkassa.core.presentation.api.model.kkm.KkmInitDirectRequest
 import io.github.texport.superkassa.core.presentation.api.model.user.UserRole
+import io.github.texport.superkassa.core.string.api.CoreStrings
+import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import kz.kazakhtelecom.proto.v203.CommandTypeEnum
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Касса заводится только с ответом БФД.
@@ -26,17 +29,20 @@ class RoomKkmRegistrationTest {
         val refusal = assertFailsWith<SuperkassaException> { kassa.api.initKkm(request()) }
 
         assertEquals("OFD_COMMAND_FAILED", refusal.code)
+        assertEquals(CoreStrings.bfdNoAnswer(), refusal.trilingualMessage)
+        assertOneLanguageEach(refusal.trilingualMessage)
         assertNull(kassa.storage.findKkmBySystemId(SYSTEM_ID))
     }
 
     @Test
-    fun `БФД отказал в сведениях о кассе - отказ с кодом БФД, касса не записана`() {
+    fun `БФД отказал в сведениях о кассе - причина кода словами, касса не записана`() {
         kassa.bfd.reject(CommandTypeEnum.COMMAND_INFO, BFD_REFUSAL)
 
         val refusal = assertFailsWith<SuperkassaException> { kassa.api.initKkm(request()) }
 
         assertEquals("OFD_COMMAND_FAILED", refusal.code)
-        assertEquals(true, "code=$BFD_REFUSAL" in refusal.trilingualMessage.ru, refusal.trilingualMessage.ru)
+        assertEquals(CoreStrings.bfdRefusal(BFD_REFUSAL), refusal.trilingualMessage)
+        assertOneLanguageEach(refusal.trilingualMessage)
         assertNull(kassa.storage.findKkmBySystemId(SYSTEM_ID))
     }
 
@@ -66,6 +72,14 @@ class RoomKkmRegistrationTest {
         assertEquals("KKM_ADMIN_PIN_REQUIRED", refusal.code)
         assertEquals(asked, kassa.bfd.requests.size)
         assertNull(kassa.storage.findKkmBySystemId(SYSTEM_ID))
+    }
+
+    /** Кассир читает отказ на своём языке: ни других языков, ни английского текста обмена. */
+    private fun assertOneLanguageEach(message: TrilingualMessage) {
+        assertTrue(message.ru.none { it in 'A'..'z' }, message.ru)
+        assertTrue(message.kk.none { it in 'A'..'z' }, message.kk)
+        assertTrue(message.en.none { it in 'А'..'я' }, message.en)
+        assertTrue(listOf(message.ru, message.kk, message.en).none { "RU:" in it || "timeout" in it }, message.en)
     }
 
     private fun request() = KkmInitDirectRequest(
