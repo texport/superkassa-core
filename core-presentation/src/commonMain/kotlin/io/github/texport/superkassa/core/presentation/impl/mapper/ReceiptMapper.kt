@@ -142,7 +142,8 @@ object ReceiptMapper {
             taken = dto.taken,
             parentTicket = toParentTicket(dto.parentTicket),
             vatGroup = dto.vatGroup,
-            customerBin = dto.customerBin
+            customerBin = dto.customerBin,
+            domain = toDomainAttributes(dto.domain)
         )
 
     fun toDomain(layout: ReceiptLayoutType): io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptLayoutType =
