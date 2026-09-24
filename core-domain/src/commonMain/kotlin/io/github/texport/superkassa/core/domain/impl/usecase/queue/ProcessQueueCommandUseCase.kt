@@ -1,6 +1,5 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.queue
 
-import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandResult
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandStatus
 import io.github.texport.superkassa.core.domain.api.model.ofd.OfdCommandType
 import io.github.texport.superkassa.core.domain.api.model.queue.QueueDispatchResult
@@ -11,6 +10,7 @@ import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.receipt.DeliverReceiptUseCase
 
 /**
  * Сценарий (Use Case) обработки офлайн-команды из очереди для отправки в ОФД.
@@ -21,12 +21,16 @@ import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalComma
  * @property sendFiscalCommand Сценарий отправки фискальных команд в ОФД.
  * @property storage Порт для доступа к локальному хранилищу данных ККМ и документов.
  * @property clock Порт для работы с системным временем.
+ * @param deliverReceipt Доставка чека покупателю, когда БФД принял его из очереди.
  */
 class ProcessQueueCommandUseCase(
     private val sendFiscalCommand: SendFiscalCommandUseCase,
     private val storage: StoragePort,
-    private val clock: ClockPort
+    private val clock: ClockPort,
+    deliverReceipt: DeliverReceiptUseCase
 ) {
+    private val document = QueuedDocumentOutcome(storage, clock, deliverReceipt)
+
     /**
      * Выполняет обработку команды из очереди.
      *
@@ -49,7 +53,7 @@ class ProcessQueueCommandUseCase(
             result.status == OfdCommandStatus.TIMEOUT || code == SERVICE_TEMPORARILY_UNAVAILABLE || code == UNKNOWN_ERROR ->
                 retry(CoreStrings.ofdTimeout(), "BFD timeout", after = true)
             code == RESULT_OK -> {
-                updateDocumentOnSuccess(command, result)
+                document.accepted(command, result, isReceipt = ofdType == OfdCommandType.TICKET)
                 QueueDispatchResult(QueueDispatchStatus.SENT)
             }
             code != null -> rejected(command, code, result.resultText)
@@ -68,7 +72,7 @@ class ProcessQueueCommandUseCase(
      * документ вставал в голове очереди, и за ним стояли все следующие.
      */
     private fun rejected(command: QueueTask, code: Int, reason: String?): QueueDispatchResult {
-        markDocumentRejected(command, code, reason)
+        document.rejected(command, code, reason)
         val error = CoreStrings.ofdDeliveryFailure("BFD returned code $code")
         return QueueDispatchResult(
             status = QueueDispatchStatus.REJECTED,
@@ -99,46 +103,6 @@ class ProcessQueueCommandUseCase(
         "CLOSE_SHIFT" -> OfdCommandType.CLOSE_SHIFT
         "INFO" -> OfdCommandType.INFO
         else -> OfdCommandType.SYSTEM
-    }
-
-    private fun updateDocumentOnSuccess(command: QueueTask, result: OfdCommandResult) {
-        // Документ есть у чека, денег, отчёта и закрытия смены; у служебных
-        // команд его нет — по ссылке ничего не найдётся.
-        val doc = storage.findFiscalDocumentById(command.payloadRef) ?: return
-        storage.updateReceiptStatus(
-            documentId = command.payloadRef,
-            fiscalSign = result.fiscalSign,
-            autonomousSign = doc.autonomousSign ?: result.autonomousSign,
-            ofdStatus = "SENT",
-            ofdErrorCode = null,
-            deliveredAt = clock.now(),
-            // Признак автономности снимать нельзя: он говорит не о том, доставлен
-            // ли документ, а о том, что он был фискализирован в разрыве связи.
-            isAutonomous = doc.isAutonomous,
-            ofdErrorText = null
-        )
-        // Досланный из очереди чек получает ссылку только теперь: без неё
-        // перепечатанный чек выходил без QR-кода проверки.
-        result.receiptUrl?.let { storage.saveReceiptUrl(command.payloadRef, it) }
-    }
-
-    /**
-     * Помечает документ отвергнутым с кодом отказа ОФД.
-     */
-    private fun markDocumentRejected(command: QueueTask, code: Int, reason: String?) {
-        val doc = storage.findFiscalDocumentById(command.payloadRef) ?: return
-        storage.updateReceiptStatus(
-            documentId = command.payloadRef,
-            fiscalSign = null,
-            autonomousSign = doc.autonomousSign,
-            ofdStatus = "FAILED",
-            ofdErrorCode = code,
-            deliveredAt = null,
-            // Признак автономности снимать нельзя: он говорит о том, что
-            // документ был оформлен в разрыве связи, а не о его доставке.
-            isAutonomous = doc.isAutonomous,
-            ofdErrorText = reason?.takeIf { it.isNotBlank() }
-        )
     }
 
     /**

@@ -30,6 +30,7 @@ class OfdQueueCommandHandlerPortAdapterTest {
         // Документ по ссылке обязан находиться: без него узел не знает,
         // чей это ответ, и статус доставки ставить некуда.
         every { storage.findFiscalDocumentById("ref1") } returns mockk(relaxed = true)
+        every { storage.findFiscalDocumentWithReceiptPayload("ref1") } returns null
         every {
             sendFiscalCommand.execute("c1", OfdCommandType.TICKET, "ref1")
         } returns OfdCommandResult(
@@ -42,7 +43,7 @@ class OfdQueueCommandHandlerPortAdapterTest {
             storage.updateReceiptStatus("ref1", "fs123", any(), "SENT", null, 10000L, any())
         } returns true
 
-        val adapter = OfdQueueCommandHandlerPortAdapter(sendFiscalCommand, storage, clock)
+        val adapter = OfdQueueCommandHandlerPortAdapter(sendFiscalCommand, storage, clock, mockk(relaxed = true))
 
         val command = QueueCommand(
             id = "1",
@@ -77,7 +78,7 @@ class OfdQueueCommandHandlerPortAdapterTest {
             errorMessage = "Server error"
         )
 
-        val adapter = OfdQueueCommandHandlerPortAdapter(sendFiscalCommand, storage, clock)
+        val adapter = OfdQueueCommandHandlerPortAdapter(sendFiscalCommand, storage, clock, mockk(relaxed = true))
 
         val command = QueueCommand(
             id = "1",

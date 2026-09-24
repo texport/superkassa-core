@@ -6,6 +6,7 @@ import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.queue.ProcessQueueCommandUseCase
+import io.github.texport.superkassa.core.domain.impl.usecase.receipt.DeliverReceiptUseCase
 import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import io.github.texport.superkassa.offlinequeue.api.model.DispatchResult
 import io.github.texport.superkassa.offlinequeue.api.model.QueueCommand
@@ -19,9 +20,10 @@ import io.github.texport.superkassa.offlinequeue.api.port.QueueCommandHandlerPor
 internal class OfdQueueCommandHandlerPortAdapter(
     sendFiscalCommand: SendFiscalCommandUseCase,
     storage: StoragePort,
-    clock: ClockPort
+    clock: ClockPort,
+    deliverReceipt: DeliverReceiptUseCase
 ) : QueueCommandHandlerPort {
-    private val processUseCase = ProcessQueueCommandUseCase(sendFiscalCommand, storage, clock)
+    private val processUseCase = ProcessQueueCommandUseCase(sendFiscalCommand, storage, clock, deliverReceipt)
 
     override fun handle(command: QueueCommand, renewLock: () -> Boolean): DispatchResult {
         val task = QueueTask(

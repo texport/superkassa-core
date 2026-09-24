@@ -30,6 +30,9 @@ import io.github.texport.superkassa.core.domain.impl.usecase.print.GetPrintPdfUs
 import io.github.texport.superkassa.core.domain.impl.usecase.print.GetReceiptHtmlUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
 import io.github.texport.superkassa.core.domain.impl.helper.KkmCommonHelper
+import io.github.texport.superkassa.core.domain.impl.helper.ReceiptDeliveryHelper
+import io.github.texport.superkassa.core.domain.impl.usecase.delivery.ReceiptDeliveryPlan
+import io.github.texport.superkassa.core.domain.impl.usecase.receipt.DeliverReceiptUseCase
 import io.github.texport.superkassa.core.domain.impl.helper.ofd.OfdCommandRequestFactory
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.GenerateRequestNumberUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.shift.RecalculateShiftCountersUseCase
@@ -126,6 +129,14 @@ class SuperkassaCoreEngine(
         return SettingsApiImpl(current, UpdateSettingsUseCase(current, settings))
     }
 
+    /** Доставка чека покупателю по настройкам [coreSettings]: её ставит и досылка очереди. */
+    private fun receiptDelivery(coreSettings: CoreSettings) = DeliverReceiptUseCase(
+        helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, pdfConverter, receiptRenderer),
+        storage = storage,
+        plan = ReceiptDeliveryPlan(coreSettings.delivery),
+        clock = clock
+    )
+
     /**
      * Настройки первого запуска с полями, которыми владеет запуск.
      *
@@ -217,7 +228,8 @@ class SuperkassaCoreEngine(
         val queueCommandHandlerAdapter = OfdQueueCommandHandlerPortAdapter(
             sendFiscalCommand = sendFiscalCommand,
             storage = storage,
-            clock = clock
+            clock = clock,
+            deliverReceipt = receiptDelivery(coreSettings)
         )
 
         val queuePort = OfflineQueueAdapter(

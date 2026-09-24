@@ -32,7 +32,7 @@ class QueueUseCasesTest {
     private val sendFiscalCommand = mockk<SendFiscalCommandUseCase>()
 
     private val listQueueItems = ListQueueItemsUseCase(storage, authorizeUserUseCase)
-    private val processQueueCommand = ProcessQueueCommandUseCase(sendFiscalCommand, storage, clock)
+    private val processQueueCommand = ProcessQueueCommandUseCase(sendFiscalCommand, storage, clock, mockk(relaxed = true))
     private val retryFailedQueueItems = RetryFailedQueueItemsUseCase(storage, authorizeUserUseCase)
 
     private val kkmActive = KkmInfo(id = "kkm-1", createdAt = 0, updatedAt = 0, mode = "ACTIVE", state = "ACTIVE")
@@ -91,6 +91,7 @@ class QueueUseCasesTest {
         )
         every { sendFiscalCommand.execute("kkm-1", any(), "payload-1") } returns ofdResult
         every { storage.findFiscalDocumentById("payload-1") } returns mockk(relaxed = true)
+        every { storage.findFiscalDocumentWithReceiptPayload("payload-1") } returns null
         every { clock.now() } returns 2000L
 
         val res = processQueueCommand.execute(mockCommand)

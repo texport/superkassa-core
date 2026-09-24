@@ -107,6 +107,22 @@ class ReceiptDeliveryTest {
         assertEquals(listOf(sale.documentId), after.sent.map { it.documentId })
     }
 
+    @Test
+    fun `автономный чек уходит покупателю, когда БФД принял его из очереди, и один раз`() {
+        val sms = RecordingSms()
+        val kassa = open(listOf(sms), background = false)
+        val sale = kassa.offlineSale()
+        assertEquals(0, kassa.deliverReceipts(), "BFD has not accepted the receipt yet")
+
+        kassa.resendQueue()
+        kassa.deliverReceipts()
+        kassa.resendQueue()
+
+        assertEquals(0, kassa.deliverReceipts())
+        assertEquals(ReceiptDeliveryState.DELIVERED, kassa.deliveries(sale).sms().state)
+        assertEquals(listOf(sale.documentId), sms.sent.map { it.documentId })
+    }
+
     /** Касса с SMS [channels]; [background] — фон доставляет сам, иначе чеки уходят только заходом проверки. */
     private fun open(channels: List<RecordingSms>, background: Boolean): ReadyKassa {
         val config = if (background) ::backgroundConfig else ::testSuperkassaConfig
