@@ -9,6 +9,8 @@ package io.github.texport.superkassa.delivery.api.model
  * @property destination Адрес назначения (email, номер телефона и др.).
  * @property payloadUrl URL-адрес для загрузки содержимого документа (опционально).
  * @property payloadBytes Двоичные данные содержимого документа (опционально).
+ * @property payloadType Формат [payloadBytes]: `PDF`, `IMAGE`, `HTML`; по нему
+ *   почта называет вложение. `null` — PDF, как было до появления поля.
  */
 data class DeliveryRequest(
     val cashboxId: String,
@@ -16,7 +18,8 @@ data class DeliveryRequest(
     val channel: DeliveryChannel,
     val destination: String? = null,
     val payloadUrl: String? = null,
-    val payloadBytes: ByteArray? = null
+    val payloadBytes: ByteArray? = null,
+    val payloadType: String? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -29,6 +32,7 @@ data class DeliveryRequest(
         if (channel != other.channel) return false
         if (destination != other.destination) return false
         if (payloadUrl != other.payloadUrl) return false
+        if (payloadType != other.payloadType) return false
         if (payloadBytes != null) {
             if (other.payloadBytes == null) return false
             if (!payloadBytes.contentEquals(other.payloadBytes)) return false
@@ -44,6 +48,7 @@ data class DeliveryRequest(
         result = 31 * result + (destination?.hashCode() ?: 0)
         result = 31 * result + (payloadUrl?.hashCode() ?: 0)
         result = 31 * result + (payloadBytes?.contentHashCode() ?: 0)
+        result = 31 * result + (payloadType?.hashCode() ?: 0)
         return result
     }
 }

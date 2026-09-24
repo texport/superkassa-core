@@ -27,6 +27,9 @@ openhtmltopdf = "1.1.40"
 pdfbox = "3.0.3"
 jsoup = "1.18.3"
 zxing = "3.5.4"
+ktor = "3.5.2"
+angusMail = "2.0.5"
+greenmail = "2.1.14"
 
 [libraries]
 # Logging
@@ -43,6 +46,14 @@ openhtmltopdf-pdfbox = { group = "io.github.openhtmltopdf", name = "openhtmltopd
 pdfbox = { group = "org.apache.pdfbox", name = "pdfbox", version.ref = "pdfbox" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+
+# Каналы доставки чека: HTTP-провайдеры и почта
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-darwin = { group = "io.ktor", name = "ktor-client-darwin", version.ref = "ktor" }
+ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
+angus-mail = { group = "org.eclipse.angus", name = "jakarta.mail", version.ref = "angusMail" }
+greenmail = { group = "com.icegreen", name = "greenmail", version.ref = "greenmail" }
 
 # Kotlin
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }

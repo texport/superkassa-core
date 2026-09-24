@@ -162,6 +162,8 @@ class DeliveryServiceApiImplTest {
         assertFalse(req1 == req1.copy(channel = DeliveryChannel.EMAIL))
         assertFalse(req1 == req1.copy(destination = "diff"))
         assertFalse(req1 == req1.copy(payloadUrl = "diff"))
+        assertFalse(req1 == req1.copy(payloadType = "PDF"))
+        assertEquals(req1.copy(payloadType = "PDF").hashCode(), req1.copy(payloadType = "PDF").hashCode())
 
         val reqNullBytes = req1.copy(payloadBytes = null)
         val reqNonNullBytes = req1.copy(payloadBytes = byteArrayOf(1))

@@ -3,6 +3,7 @@ package io.github.texport.superkassa.core.string.api
 import io.github.texport.superkassa.core.string.impl.AccessStrings
 import io.github.texport.superkassa.core.string.impl.AmountStrings
 import io.github.texport.superkassa.core.string.impl.CoreStringsImpl
+import io.github.texport.superkassa.core.string.impl.DeliveryStrings
 import io.github.texport.superkassa.core.string.impl.PrintAndSettingsStrings
 
 /**
@@ -114,6 +115,22 @@ object CoreStrings {
 
     // --- Сообщения доставки (Delivery Messages) ---
     fun noAdapterForChannel(channel: String): TrilingualMessage = CoreStringsImpl.noAdapterForChannel(channel)
+    fun deliveryRecipientRequired(channel: String): TrilingualMessage = DeliveryStrings.recipientRequired(channel)
+    fun deliveryChannelNotConfigured(channel: String): TrilingualMessage = DeliveryStrings.channelNotConfigured(channel)
+    fun deliveryProviderRejected(channel: String, status: Int, answer: String): TrilingualMessage =
+        DeliveryStrings.providerRejected(channel, status, answer)
+    fun deliveryChannelFailed(channel: String, reason: String): TrilingualMessage =
+        DeliveryStrings.channelFailed(channel, reason)
+    fun emailPayloadMissing(): TrilingualMessage = DeliveryStrings.emailPayloadMissing()
+    fun emailSendFailed(reason: String): TrilingualMessage = DeliveryStrings.emailSendFailed(reason)
+    fun emailUnsupportedOnPlatform(): TrilingualMessage = DeliveryStrings.emailUnsupportedOnPlatform()
+
+    // --- Тексты чека покупателю: сообщение мессенджера и письмо ---
+    fun receiptLinkText(url: String): TrilingualMessage = DeliveryStrings.receiptLinkText(url)
+    fun receiptReadyText(documentId: String): TrilingualMessage = DeliveryStrings.receiptReadyText(documentId)
+    fun emailSubject(documentId: String): TrilingualMessage = DeliveryStrings.emailSubject(documentId)
+    fun emailBodyLink(url: String): TrilingualMessage = DeliveryStrings.emailBodyLink(url)
+    fun emailBodyAttachment(): TrilingualMessage = DeliveryStrings.emailBodyAttachment()
 
     // --- Сообщения визуализации и рендеринга (Rendering Messages) ---
     fun ofdErrorReason(): TrilingualMessage = CoreStringsImpl.ofdErrorReason()

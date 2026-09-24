@@ -29,7 +29,12 @@ internal class DeliveryServiceApiImpl(
         if (result.ok) {
             logger.info("Delivery success. documentId={}", request.documentId)
         } else {
-            logger.warn("Delivery failed. channel={}, documentId={}", request.channel, request.documentId)
+            logger.warn(
+                "Delivery failed. channel={}, documentId={}, code={}",
+                request.channel,
+                request.documentId,
+                result.code
+            )
         }
         return result
     }
