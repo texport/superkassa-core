@@ -148,6 +148,17 @@ class ReadyKassaTest {
     }
 
     @Test
+    fun `переименованная касса отвечает так же полно, как чтение кассы - со сменой и очередью`() {
+        val kassa = bench.registerKassa(NOT_PAYER).also { it.openShift() }
+        kassa.offlineSale()
+
+        val renamed = kassa.api.updateKkmName(kassa.kkmId, CASHIER_PIN, "Касса у входа")
+
+        assertEquals(true to 1, renamed.isShiftOpen to renamed.offlineQueueCount)
+        assertEquals(kassa.info(), renamed)
+    }
+
+    @Test
     fun `кассир входит своим пином`() {
         val kassa = bench.registerKassa(NOT_PAYER)
 
