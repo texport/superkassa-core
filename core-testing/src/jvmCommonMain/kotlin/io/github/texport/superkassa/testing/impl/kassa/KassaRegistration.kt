@@ -20,7 +20,7 @@ internal class KassaRegistration(private val api: SuperkassaApi, private val fir
     fun register(setup: KassaSetup, systemId: Long): KkmResponse {
         val kkm = api.initKkmSimple(
             KkmInitSimpleRequest(
-                ofdId = PROVIDER,
+                ofdId = setup.ofdProvider,
                 ofdEnvironment = ENVIRONMENT,
                 ofdSystemId = systemId.toString(),
                 ofdToken = firstToken.toString(),
@@ -57,7 +57,6 @@ internal class KassaRegistration(private val api: SuperkassaApi, private val fir
     }
 
     private companion object {
-        const val PROVIDER = "KAZAKHTELECOM"
         const val ENVIRONMENT = "TEST"
     }
 }

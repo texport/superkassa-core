@@ -29,6 +29,8 @@ kotlin {
             api(libs.ofd.network.client)
             // Запросы кассы проверка читает разобранными — типами протокола.
             api(libs.ofd.kt.proto)
+            // Запрос кассы на CPCR 2.0.4 тестовый БФД разбирает и отвечает по 2.0.4.
+            implementation(libs.ofd.kt.proto.v204)
             implementation(project(":core-data"))
             implementation(libs.kotlinx.coroutines.core)
         }

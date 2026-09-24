@@ -17,7 +17,7 @@ import kotlin.time.Duration.Companion.hours
 
 /**
  * Настройки кассы для проверок: провайдер `KAZAKHTELECOM`, протокол 2.0.3 —
- * тот, на котором говорит [FakeBfd].
+ * один из двух, на которых говорит [FakeBfd].
  *
  * Досылка очереди, доставка чеков и автозакрытие смены в фоне заходят раз
  * при открытии и потом раз в час: проверка ведёт их сама ([ReadyKassa.resendQueue],
@@ -27,15 +27,31 @@ import kotlin.time.Duration.Companion.hours
  * @param channels каналы доставки чека вместо одноимённых из настроек — например,
  *   подменный SMS, который запоминает отправленное.
  */
-fun testSuperkassaConfig(channels: List<DeliveryPort> = emptyList()): SuperkassaConfig = SuperkassaConfig(
-    ofdProviderId = "KAZAKHTELECOM",
-    ofdProtocolVersion = "203",
+fun testSuperkassaConfig(channels: List<DeliveryPort> = emptyList()): SuperkassaConfig =
+    benchConfig(channels, PROTOCOL_203)
+
+/**
+ * Настройки кассы как у приложения: протокол 2.0.4. Кассы на нём заводятся
+ * у провайдера [KassaSetup.BFD] — так их заводит приложение. Фон — как
+ * в [testSuperkassaConfig].
+ *
+ * @param channels каналы доставки чека вместо одноимённых из настроек.
+ */
+fun appSuperkassaConfig(channels: List<DeliveryPort> = emptyList()): SuperkassaConfig =
+    benchConfig(channels, PROTOCOL_204)
+
+private fun benchConfig(channels: List<DeliveryPort>, protocol: String) = SuperkassaConfig(
+    ofdProviderId = KassaSetup.KAZAKHTELECOM,
+    ofdProtocolVersion = protocol,
     ownerId = "testing",
     queueInterval = 1.hours,
     shiftCheckInterval = 1.hours,
     deliveryInterval = 1.hours,
     channels = channels
 )
+
+private const val PROTOCOL_203 = "203"
+private const val PROTOCOL_204 = "204"
 
 /**
  * Поднимает кассу встраиваемой сборкой, как `createSuperkassa`, но на БФД [bfd]

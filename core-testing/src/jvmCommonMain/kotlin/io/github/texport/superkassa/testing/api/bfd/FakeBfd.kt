@@ -20,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * БФД внутри процесса: разбирает каждый запрос кассы по протоколу CPCR 2.0.3
- * и ведёт учёт каждой кассы по правилам прод-референса — токен, номер
+ * или 2.0.4 — по версии из заголовка, отвечает в той же версии — и ведёт учёт каждой кассы по правилам прод-референса — токен, номер
  * запроса, повтор, номер чека, наличные в ящике и смена.
  *
  * Касса, впервые пришедшая в БФД, должна предъявить токен [firstToken]:
@@ -48,9 +48,16 @@ class FakeBfd(
      * @property kassa номер кассы в БФД.
      * @property token токен из заголовка.
      * @property reqNum номер запроса из заголовка.
-     * @property request разобранное тело запроса.
+     * @property request разобранное тело запроса: общая для 2.0.3 и 2.0.4 часть.
+     * @property version версия протокола из заголовка: 203 или 204.
      */
-    data class Exchange(val kassa: Long, val token: Long, val reqNum: Int, val request: Request)
+    data class Exchange(
+        val kassa: Long,
+        val token: Long,
+        val reqNum: Int,
+        val request: Request,
+        val version: Int = V203
+    )
 
     /** Все запросы, дошедшие до БФД, в порядке прихода, включая отвергнутые и повторы. */
     val exchanges: List<Exchange> get() = received.toList()
@@ -112,7 +119,7 @@ class FakeBfd(
 
     override suspend fun sendAndReceive(endpoint: OfdEndpoint, request: ByteArray): Result<ByteArray> {
         val frame = CpcrFrame.parse(request)
-        val exchange = Exchange(frame.kassa, frame.token, frame.reqNum, frame.request)
+        val exchange = Exchange(frame.kassa, frame.token, frame.reqNum, frame.request, frame.version)
         received += exchange
         val arrived = received.size
         return when (val fault = faults.next(frame.request.command)) {
@@ -154,5 +161,8 @@ class FakeBfd(
         const val FIRST_TICKET_NUMBER = BfdLedger.FIRST_TICKET_NUMBER
 
         private const val POLL_MILLIS = 10L
+
+        /** CPCR 2.0.3 — версия запроса по умолчанию. */
+        private const val V203 = 203
     }
 }
