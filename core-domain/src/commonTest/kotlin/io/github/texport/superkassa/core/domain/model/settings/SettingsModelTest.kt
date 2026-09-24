@@ -113,6 +113,9 @@ class SettingsModelTest {
         assertNotEquals(e1, eDiffFrom)
 
         assertTrue(e1.toString().contains("host=host1"))
+        assertTrue(e1.toString().contains("password=***"))
+        assertFalse(e1.toString().contains("pass1"))
+        assertTrue(e1.copy(password = null).toString().contains("password=null"))
     }
 
     @Test
@@ -134,6 +137,8 @@ class SettingsModelTest {
         assertNotEquals(s1, sDiffKey)
 
         assertTrue(s1.toString().contains("providerUrl=url1"))
+        assertTrue(s1.toString().contains("apiKey=***"))
+        assertFalse(s1.toString().contains("key1"))
     }
 
     @Test
@@ -152,7 +157,9 @@ class SettingsModelTest {
         assertFalse(t1.equals(null))
         assertNotEquals(t1, tDiffToken)
 
-        assertTrue(t1.toString().contains("botToken=token1"))
+        // Токен бота в описании настроек — токен в журнале: описание его не несёт.
+        assertEquals("TelegramProviderSettings(botToken=***)", t1.toString())
+        assertEquals("TelegramProviderSettings(botToken=null)", TelegramProviderSettings().toString())
     }
 
     @Test
@@ -173,7 +180,9 @@ class SettingsModelTest {
         assertNotEquals(w1, wDiffToken)
         assertNotEquals(w1, wDiffId)
 
-        assertTrue(w1.toString().contains("accessToken=token1"))
+        assertTrue(w1.toString().contains("accessToken=***"))
+        assertTrue(w1.toString().contains("phoneNumberId=id1"))
+        assertFalse(w1.toString().contains("token1"))
     }
 
     @Test

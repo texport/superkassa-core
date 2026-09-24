@@ -8,4 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TelegramProviderSettings(
     val botToken: String? = null
-)
+) {
+    /** Без токена бота: см. [hiddenSecret]. */
+    override fun toString(): String = "TelegramProviderSettings(botToken=${hiddenSecret(botToken)})"
+}

@@ -9,4 +9,7 @@ import kotlinx.serialization.Serializable
 data class SmsProviderSettings(
     val providerUrl: String? = null,
     val apiKey: String? = null
-)
+) {
+    /** Без ключа шлюза: см. [hiddenSecret]. */
+    override fun toString(): String = "SmsProviderSettings(providerUrl=$providerUrl, apiKey=${hiddenSecret(apiKey)})"
+}

@@ -12,4 +12,8 @@ data class EmailProviderSettings(
     val user: String? = null,
     val password: String? = null,
     val from: String = "noreply@local"
-)
+) {
+    /** Без пароля почты: см. [hiddenSecret]. */
+    override fun toString(): String =
+        "EmailProviderSettings(host=$host, port=$port, user=$user, password=${hiddenSecret(password)}, from=$from)"
+}

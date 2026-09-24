@@ -9,4 +9,8 @@ import kotlinx.serialization.Serializable
 data class WhatsAppProviderSettings(
     val accessToken: String? = null,
     val phoneNumberId: String? = null
-)
+) {
+    /** Без ключа доступа: см. [hiddenSecret]. */
+    override fun toString(): String =
+        "WhatsAppProviderSettings(accessToken=${hiddenSecret(accessToken)}, phoneNumberId=$phoneNumberId)"
+}
