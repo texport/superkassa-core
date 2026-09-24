@@ -39,7 +39,8 @@ internal class DeliveryServiceAdapter(
                     channel = channel,
                     destination = request.destination,
                     payloadUrl = request.payloadUrl,
-                    payloadBytes = request.payloadBytes
+                    payloadBytes = request.payloadBytes,
+                    payloadType = request.payloadType
                 )
             )
             result.ok

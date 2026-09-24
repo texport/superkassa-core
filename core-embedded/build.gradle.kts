@@ -25,6 +25,8 @@ kotlin {
             implementation(project(":core-data"))
             implementation(project(":core-database"))
             api(project(":delivery"))
+            // Каналы доставки чека собираются из настроек ядра: приложению не нужно знать про каждый.
+            implementation(project(":delivery-channels"))
             implementation(project(":receipt-renderer"))
             implementation(project(":offline-queue"))
             implementation(project(":core-string"))

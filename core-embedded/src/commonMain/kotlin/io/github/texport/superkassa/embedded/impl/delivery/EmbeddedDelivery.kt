@@ -13,12 +13,15 @@ import io.github.texport.superkassa.delivery.api.port.DeliveryPort as ChannelPor
  * Доставка чека покупателю в кассе приложения.
  *
  * Успех — только когда канал действительно отправил. Незнакомый канал,
- * канал, которого приложение не дало, и принтер без адреса отвечают
- * отказом: чек, записанный доставленным, но не ушедший, покупатель
- * не получит, а кассир об этом не узнает.
+ * ненастроенный канал и принтер без адреса отвечают отказом: чек,
+ * записанный доставленным, но не ушедший, покупатель не получит,
+ * а кассир об этом не узнает.
  *
- * @param channels каналы, которые умеет приложение.
- * @param settings текущие настройки ядра: из них берётся сетевой принтер.
+ * Каналы собираются из настроек на каждую доставку: владелец меняет
+ * настройки доставки без перезапуска кассы.
+ *
+ * @param channels каналы приложения: заменяют одноимённые каналы из настроек.
+ * @param settings текущие настройки ядра: из них берутся каналы и сетевой принтер.
  */
 internal class EmbeddedDelivery(
     private val channels: List<ChannelPort>,
@@ -32,7 +35,11 @@ internal class EmbeddedDelivery(
         if (channel == DeliveryChannel.PRINT && request.payloadType != ESC_POS) {
             return refuse(request, "printer accepts ESC/POS only")
         }
-        val service = createDeliveryServiceApi(channels + listOfNotNull(networkPrinter()))
+        val current = settings()
+        // Одноимённый канал, названный позже, заменяет прежний:
+        // канал приложения — канал из настроек, сетевой принтер — принтер приложения.
+        val available = settingsChannels(current?.delivery) + channels + listOfNotNull(networkPrinter(current))
+        val service = createDeliveryServiceApi(available)
         return try {
             service.deliver(request.toChannelRequest(channel)).ok
         } catch (e: Exception) {
@@ -42,8 +49,8 @@ internal class EmbeddedDelivery(
     }
 
     /** Сетевой принтер из настроек; без адреса принтера нет, и печать отказывает. */
-    private fun networkPrinter(): ChannelPort? {
-        val print = settings()?.delivery?.print?.takeIf { it.enabled } ?: return null
+    private fun networkPrinter(settings: CoreSettings?): ChannelPort? {
+        val print = settings?.delivery?.print?.takeIf { it.enabled } ?: return null
         val connection = print.connection?.takeIf { it.type.equals(NETWORK, ignoreCase = true) } ?: return null
         val host = connection.host?.takeIf { it.isNotBlank() } ?: return null
         val port = connection.port ?: return null
@@ -61,7 +68,8 @@ internal class EmbeddedDelivery(
         channel = channel,
         destination = destination,
         payloadUrl = payloadUrl,
-        payloadBytes = payloadBytes
+        payloadBytes = payloadBytes,
+        payloadType = payloadType
     )
 
     private companion object {

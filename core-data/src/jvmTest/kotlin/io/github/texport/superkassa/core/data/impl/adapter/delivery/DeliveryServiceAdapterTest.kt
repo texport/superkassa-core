@@ -40,6 +40,7 @@ class DeliveryServiceAdapterTest {
                     assertEquals("doc-1", it.documentId)
                     assertEquals(DeliveryChannel.EMAIL, it.channel)
                     assertEquals("test@example.com", it.destination)
+                    assertEquals("HTML", it.payloadType)
                 }
             )
         }
