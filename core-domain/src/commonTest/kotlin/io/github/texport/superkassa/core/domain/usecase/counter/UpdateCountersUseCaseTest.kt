@@ -206,7 +206,9 @@ class UpdateCountersUseCaseTest {
         val global = storage.loadCounters("kkm-1", CounterScopes.GLOBAL, null)
 
         // General operations
-        assertEquals(1L, shift["operation.OPERATION_SELL.count"])
+        // Три позиции — три в строке операций, как у БФД; скидка на чек — одна.
+        assertEquals(3L, shift["operation.OPERATION_SELL.count"])
+        assertEquals(1L, shift["operation.OPERATION_SELL.discount_count"])
         assertEquals(466_000L, shift["operation.OPERATION_SELL.sum"])
         assertEquals(10_000L, shift["operation.OPERATION_SELL.discount_sum"])
         assertEquals(5_000L, shift["operation.OPERATION_SELL.markup_sum"])
@@ -293,6 +295,8 @@ class UpdateCountersUseCaseTest {
         expectedShift["operation.$opKey.sum"] = totalTiyn
         expectedShift["operation.$opKey.discount_sum"] = 0L
         expectedShift["operation.$opKey.markup_sum"] = 0L
+        expectedShift["operation.$opKey.discount_count"] = 0L
+        expectedShift["operation.$opKey.markup_count"] = 0L
         expectedShift["section.$sectionCode.operation.$opKey.count"] = 1L
         expectedShift["section.$sectionCode.operation.$opKey.sum"] = totalTiyn
         expectedShift["ticket.$opKey.total_count"] = 1L
@@ -569,7 +573,14 @@ private class InMemoryStoragePort : StoragePort {
     override fun enqueueQueueTask(dto: QueueTask): Boolean = true
     override fun listQueueTasksByCashbox(cashboxId: String, lane: String, limit: Int, offset: Int): List<QueueTask> = emptyList()
     override fun getQueueTasksByStatus(cashboxId: String, lane: String, statuses: Set<String>): List<QueueTask> = emptyList()
-    override fun updateQueueTaskStatus(id: String, status: String, attempt: Int, lastError: String?, nextAttemptAt: Long?): Boolean = true
+    override fun updateQueueTaskStatus(
+        id: String,
+        status: String,
+        attempt: Int,
+        lastError: String?,
+        nextAttemptAt: Long?,
+        lastErrorCode: Int?
+    ): Boolean = true
     override fun markQueueTaskInProgress(id: String, now: Long): Boolean = true
     override fun deleteQueueTasksByCashbox(cashboxId: String): Boolean = true
     override fun tryAcquireQueueLock(cashboxId: String, ownerId: String, leaseUntil: Long, acquiredAt: Long): Boolean = true

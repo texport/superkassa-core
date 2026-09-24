@@ -31,7 +31,8 @@ internal class StorageBackedQueueStorageAdapter(
                 status = command.status.name,
                 attempt = command.attempt,
                 nextAttemptAt = command.nextAttemptAt,
-                lastError = command.lastError
+                lastError = command.lastError,
+                lastErrorCode = command.lastErrorCode
             )
         )
     }
@@ -56,9 +57,10 @@ internal class StorageBackedQueueStorageAdapter(
         status: QueueStatus,
         attempt: Int,
         lastError: String?,
-        nextAttemptAt: Long?
+        nextAttemptAt: Long?,
+        lastErrorCode: Int?
     ): Boolean {
-        return storage.updateQueueTaskStatus(id, status.name, attempt, lastError, nextAttemptAt)
+        return storage.updateQueueTaskStatus(id, status.name, attempt, lastError, nextAttemptAt, lastErrorCode)
     }
 
     /**
@@ -102,6 +104,7 @@ internal class StorageBackedQueueStorageAdapter(
             status = QueueStatus.valueOf(dto.status),
             attempt = dto.attempt,
             nextAttemptAt = dto.nextAttemptAt,
-            lastError = dto.lastError
+            lastError = dto.lastError,
+            lastErrorCode = dto.lastErrorCode
         )
 }

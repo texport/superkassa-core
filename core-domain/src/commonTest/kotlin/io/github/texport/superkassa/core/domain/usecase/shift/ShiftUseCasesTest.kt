@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.shift
 
+import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -344,7 +345,7 @@ class ShiftUseCasesTest {
         val res = closeShift.execute("kkm-1", "1234")
         assertEquals("doc-1", res.documentId)
         assertEquals(DeliveryStatus.OFFLINE_QUEUED, res.deliveryStatus)
-        assertEquals("Connection timed out", res.deliveryError)
+        assertEquals(CoreStrings.bfdNoAnswer(), res.deliveryError)
     }
 
     @Test
@@ -363,7 +364,7 @@ class ShiftUseCasesTest {
         val res = closeShift.execute("kkm-1", "1234")
         assertEquals("doc-1", res.documentId)
         assertEquals(DeliveryStatus.ONLINE_ERROR, res.deliveryStatus)
-        assertEquals("Invalid request format", res.deliveryError)
+        assertEquals(CoreStrings.bfdRequestNotSent(), res.deliveryError)
         verify(exactly = 0) { storage.closeShift(any(), any(), any(), any()) }
     }
 

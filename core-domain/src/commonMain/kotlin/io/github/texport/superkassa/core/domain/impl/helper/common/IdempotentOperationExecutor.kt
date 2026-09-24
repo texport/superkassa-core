@@ -104,8 +104,7 @@ class IdempotentOperationExecutor(
                 )
                 // Повтор отвечает тем, что стало с документом, а не «доставлен» всегда.
                 val document = storage.findFiscalDocumentById(existing)
-                val repeated = OfdCommandResult(status = OfdCommandStatus.OK, errorMessage = document?.ofdErrorText)
-                return@inTransaction buildResult(existing, repeated, deliveryStatusOf(document))
+                return@inTransaction buildResult(existing, repeatedAnswer(document), deliveryStatusOf(document))
             }
 
             storage.insertIdempotency(kkmId, idempotencyKey, operationType)
@@ -163,6 +162,18 @@ class IdempotentOperationExecutor(
             buildResult(documentId, ofdResult, deliveryStatus)
         }
     }
+}
+
+/**
+ * Ответ БФД, каким он был для сохранённого документа, — для ответа на повтор.
+ *
+ * Отклонённый документ отвечает своим кодом отказа, и повтор называет
+ * причину теми же словами, что и первый ответ. Прежде повтор отдавал текст
+ * БФД как есть — на одном языке и во всех полях сразу.
+ */
+internal fun repeatedAnswer(document: FiscalDocumentSnapshot?): OfdCommandResult = when (document?.ofdStatus) {
+    "FAILED" -> OfdCommandResult(OfdCommandStatus.FAILED, resultCode = document.ofdErrorCode)
+    else -> OfdCommandResult(OfdCommandStatus.OK)
 }
 
 /** Статус доставки сохранённого документа для ответа на повтор; непринятый БФД — «в очереди». */

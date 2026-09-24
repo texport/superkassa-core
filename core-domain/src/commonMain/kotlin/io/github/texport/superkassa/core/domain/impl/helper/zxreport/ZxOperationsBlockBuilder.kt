@@ -115,6 +115,9 @@ object ZxOperationsBlockBuilder {
     /**
      * Формирует агрегированную информацию по предоставленным скидкам (discounts) за смену.
      *
+     * Число — скидок, а не операций: прежде сюда шло число операций, и чек
+     * без скидки показывал в отчёте одну скидку на ноль тенге.
+     *
      * @param counters Карта счетчиков смены.
      * @return Список объектов [OperationAggregate] с суммами скидок для каждого типа операции.
      */
@@ -122,7 +125,7 @@ object ZxOperationsBlockBuilder {
         val result = mutableListOf<OperationAggregate>()
         for (op in operationsList()) {
             val sum = counters[CounterKeyFormats.DISCOUNT_SUM.format(op)] ?: 0L
-            val count = counters[CounterKeyFormats.OPERATION_COUNT.format(op)] ?: 0L
+            val count = counters[CounterKeyFormats.DISCOUNT_COUNT.format(op)] ?: 0L
             result += OperationAggregate(operation = op, count = count, sumTiyn = sum)
         }
         return result
@@ -138,7 +141,7 @@ object ZxOperationsBlockBuilder {
         val result = mutableListOf<OperationAggregate>()
         for (op in operationsList()) {
             val sum = counters[CounterKeyFormats.MARKUP_SUM.format(op)] ?: 0L
-            val count = counters[CounterKeyFormats.OPERATION_COUNT.format(op)] ?: 0L
+            val count = counters[CounterKeyFormats.MARKUP_COUNT.format(op)] ?: 0L
             result += OperationAggregate(operation = op, count = count, sumTiyn = sum)
         }
         return result

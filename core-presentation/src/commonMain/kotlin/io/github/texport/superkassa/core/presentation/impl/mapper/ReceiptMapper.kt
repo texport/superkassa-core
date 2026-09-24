@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.impl.mapper
 
+import io.github.texport.superkassa.core.presentation.api.model.reference.TrilingualMessageResponse
 import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.presentation.api.model.receipt.ReceiptDomainRequest
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptDomainType
@@ -123,7 +124,8 @@ object ReceiptMapper {
         autonomousSign = result.autonomousSign,
         deliveryPayload = result.deliveryPayload,
         deliveryStatus = DeliveryStatus.valueOf(result.deliveryStatus.name),
-        deliveryError = result.deliveryError
+        deliveryError = result.deliveryError?.let(TrilingualMessageResponse::from),
+        bfdResultCode = result.bfdResultCode
     )
 
     fun toDomain(

@@ -31,5 +31,7 @@ data class QueueItemResponse(
     @Schema(description = "Текст ошибки на казахском языке", example = "Күту уақыты асып кетті")
     val errorKk: String?,
     @Schema(description = "Текст ошибки на английском языке", example = "Response timeout exceeded")
-    val errorEn: String?
+    val errorEn: String?,
+    @Schema(description = "Код отказа БФД при последней попытке (ResultTypeEnum CPCR)", example = "13")
+    val bfdResultCode: Int? = null
 )

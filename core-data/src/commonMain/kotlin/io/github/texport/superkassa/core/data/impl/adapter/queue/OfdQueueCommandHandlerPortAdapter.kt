@@ -36,7 +36,8 @@ internal class OfdQueueCommandHandlerPortAdapter(
             attempt = command.attempt,
             nextAttemptAt = command.nextAttemptAt,
             lastError = command.lastError,
-            createdAt = command.createdAt
+            createdAt = command.createdAt,
+            lastErrorCode = command.lastErrorCode
         )
 
         val result = processUseCase.execute(task)
@@ -57,7 +58,8 @@ internal class OfdQueueCommandHandlerPortAdapter(
                 )
             } else {
                 null
-            }
+            },
+            errorCode = result.bfdResultCode
         )
     }
 }

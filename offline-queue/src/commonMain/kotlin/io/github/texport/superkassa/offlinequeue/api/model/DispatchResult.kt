@@ -11,12 +11,14 @@ import io.github.texport.superkassa.offlinequeue.impl.QueueDispatchException
  * @property errorMessage сообщение об ошибке при сбое выполнения (или null).
  * @property retryAt абсолютное системное время повторной попытки в миллисекундах (или null для авторасчета по backoff).
  * @property error локализованное сообщение об ошибке на трех языках (русский, казахский, английский).
+ * @property errorCode код отказа получателя (или null): хранится в команде рядом с текстом.
  */
 data class DispatchResult(
     val status: QueueStatus,
     val errorMessage: String? = null,
     val retryAt: Long? = null,
-    val error: TrilingualMessage? = errorMessage?.let { TrilingualMessage.mono(it) }
+    val error: TrilingualMessage? = errorMessage?.let { TrilingualMessage.mono(it) },
+    val errorCode: Int? = null
 ) {
     init {
         if (status == QueueStatus.PENDING || status == QueueStatus.IN_PROGRESS) {
@@ -31,12 +33,14 @@ data class DispatchResult(
      * @param errorMessage сообщение об ошибке.
      * @param retryAt время повторной попытки выполнения.
      * @param error локализованное сообщение об ошибке.
+     * @param errorCode код отказа получателя.
      */
     constructor(
         status: DispatchStatus,
         errorMessage: String? = null,
         retryAt: Long? = null,
-        error: TrilingualMessage? = errorMessage?.let { TrilingualMessage.mono(it) }
+        error: TrilingualMessage? = errorMessage?.let { TrilingualMessage.mono(it) },
+        errorCode: Int? = null
     ) : this(
         status = when (status) {
             DispatchStatus.SENT -> QueueStatus.SENT
@@ -45,7 +49,8 @@ data class DispatchResult(
         },
         errorMessage = errorMessage,
         retryAt = retryAt,
-        error = error
+        error = error,
+        errorCode = errorCode
     )
 
     /**

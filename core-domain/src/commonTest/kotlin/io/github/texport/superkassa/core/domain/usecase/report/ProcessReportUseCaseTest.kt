@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.impl.usecase.report
 
+import io.github.texport.superkassa.core.string.api.CoreStrings
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -80,7 +81,7 @@ class ProcessReportUseCaseTest {
         val result = useCase.execute("kkm-1", "1234")
         assertEquals("doc-123", result.documentId)
         assertEquals(DeliveryStatus.OFFLINE_QUEUED, result.deliveryStatus)
-        assertEquals("Timeout error", result.deliveryError)
+        assertEquals(CoreStrings.bfdNoAnswer(), result.deliveryError)
         // «В очереди» — значит в очереди: без ответа БФД отчёт досылается.
         verify { queue.enqueueOffline(OfflineQueueCommandRequest("kkm-1", OfdCommandType.REPORT.value, "doc-123")) }
         verify { storage.updateReceiptStatus("doc-123", null, null, "PENDING", null, null, true, null) }
@@ -97,7 +98,7 @@ class ProcessReportUseCaseTest {
         val result = useCase.execute("kkm-1", "1234")
         assertEquals("doc-123", result.documentId)
         assertEquals(DeliveryStatus.ONLINE_ERROR, result.deliveryStatus)
-        assertEquals("Server error", result.deliveryError)
+        assertEquals(CoreStrings.bfdRequestNotSent(), result.deliveryError)
     }
 
     @Test

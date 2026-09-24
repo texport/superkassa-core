@@ -89,7 +89,7 @@ class OfdManagerAdapterLogTest {
     private fun lines(): List<String> = journal.list.map { it.formattedMessage }
 
     private fun assertNothingSecret() {
-        val secrets = listOf(ITEM, CUSTOMER, TOKEN.toString(), ISSUED_TOKEN.toString(), FISCAL_SIGN, REFUSAL)
+        val secrets = listOf(ITEM, CUSTOMER, PHONE, EMAIL, TOKEN.toString(), ISSUED_TOKEN.toString(), FISCAL_SIGN, REFUSAL)
         val leaked = lines().filter { line -> secrets.any { it in line } }
         assertEquals(emptyList(), leaked, "journal lines with packet data")
     }
@@ -110,12 +110,15 @@ class OfdManagerAdapterLogTest {
         const val ISSUED_TOKEN = 3_900_000_124L
         const val ITEM = "Қымыз сүті"
         const val CUSTOMER = "870412300415"
+        const val PHONE = "+77017654321"
+        const val EMAIL = "buyer@mail.kz"
         const val FISCAL_SIGN = "778899001"
         const val REFUSAL = "Отказ по чеку покупателя"
         val PACKET = Json.parseToJsonElement(
             """{"header": {"token": $TOKEN, "reqNum": 10},
                 "payload": {"ticket": {"items": [{"commodity": {"name": "$ITEM"}}],
-                            "extensionOptions": {"customerIinOrBin": "$CUSTOMER"}}}}"""
+                            "extensionOptions": {"customerIinOrBin": "$CUSTOMER",
+                                "customerPhone": "$PHONE", "customerEmail": "$EMAIL"}}}}"""
         ) as JsonObject
     }
 }

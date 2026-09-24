@@ -36,6 +36,9 @@ internal class BfdLedger(initialToken: Long, private val registration: ServiceRe
     /** Ящик и смена кассы, как их видит БФД. */
     val drawer = BfdDrawer()
 
+    /** Итоги смены, как их считает БФД. */
+    val counters = BfdShiftCounters()
+
     /** Ответ БФД, токен в его заголовке и учтён ли документ этим запросом. */
     class Answer(val token: Long, val response: Response, val counted: Boolean = false)
 
@@ -61,6 +64,7 @@ internal class BfdLedger(initialToken: Long, private val registration: ServiceRe
     private fun count(token: Long, reqNum: Int, request: Request): Answer {
         val answer = accepted(request)
         drawer.apply(request)
+        counters.apply(request)
         lastToken = token
         lastReqNum = reqNum
         lastCommand = request.command

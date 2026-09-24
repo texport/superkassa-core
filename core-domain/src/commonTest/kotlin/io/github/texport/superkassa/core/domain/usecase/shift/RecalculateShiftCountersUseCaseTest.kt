@@ -170,6 +170,10 @@ class RecalculateShiftCountersUseCaseTest {
                 CounterKeyFormats.OPERATION_SUM.format("OPERATION_BUY_RETURN"),
                 CounterKeyFormats.DISCOUNT_SUM.format("OPERATION_SELL"),
                 CounterKeyFormats.DISCOUNT_SUM.format("OPERATION_BUY"),
+                CounterKeyFormats.DISCOUNT_COUNT.format("OPERATION_SELL"),
+                CounterKeyFormats.DISCOUNT_COUNT.format("OPERATION_BUY"),
+                CounterKeyFormats.MARKUP_COUNT.format("OPERATION_SELL"),
+                CounterKeyFormats.MARKUP_COUNT.format("OPERATION_BUY_RETURN"),
                 CounterKeyFormats.MARKUP_SUM.format("OPERATION_SELL"),
                 CounterKeyFormats.MARKUP_SUM.format("OPERATION_BUY_RETURN"),
                 CounterKeyFormats.TICKET_OFFLINE_COUNT.format("OPERATION_SELL_RETURN"),
@@ -189,7 +193,11 @@ class RecalculateShiftCountersUseCaseTest {
             assertEquals(live[key] ?: 0L, rebuilt[key] ?: 0L, "Mismatch for key=$key")
         }
 
-        assertEquals(1L, rebuilt[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL")])
+        // Строка операций считает позиции, как БФД: две позиции чека — два, а не один чек.
+        assertEquals(2L, rebuilt[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL")])
+        // Скидка на чек и скидка на позицию — по штуке, как `OperationCalculator.updateDiscounts`.
+        assertEquals(1L to 1L, rebuilt[CounterKeyFormats.DISCOUNT_COUNT.format("OPERATION_SELL")] to
+            rebuilt[CounterKeyFormats.DISCOUNT_COUNT.format("OPERATION_BUY")])
         // Операции — сумма позиций до скидки и наценки на чек (2210), а не сумма чека (2160).
         assertEquals(221_000L, rebuilt[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
         assertEquals(10_000L, rebuilt[CounterKeyFormats.DISCOUNT_SUM.format("OPERATION_SELL")])

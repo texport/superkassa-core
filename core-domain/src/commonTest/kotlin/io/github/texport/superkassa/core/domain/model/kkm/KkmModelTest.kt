@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.domain.api.model.kkm
 
+import io.github.texport.superkassa.core.string.api.TrilingualMessage
 import io.github.texport.superkassa.core.domain.api.model.common.Decimal
 import io.github.texport.superkassa.core.domain.api.model.common.TaxRegime
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
@@ -45,7 +46,7 @@ class KkmModelTest {
         val resSame = CashOperationResult("doc-1", DeliveryStatus.ONLINE_OK, null)
         val resDiffDoc = res1.copy(documentId = "doc-2")
         val resDiffStatus = res1.copy(deliveryStatus = DeliveryStatus.NOT_SENT)
-        val resDiffError = res1.copy(deliveryError = "error")
+        val resDiffError = res1.copy(deliveryError = TrilingualMessage.mono("error"))
 
         assertEquals(res1, res1)
         assertEquals(res1, res1Copy)

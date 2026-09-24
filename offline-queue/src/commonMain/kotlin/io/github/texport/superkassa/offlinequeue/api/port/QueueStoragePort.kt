@@ -38,6 +38,7 @@ interface QueueStoragePort {
      * @param attempt общее количество выполненных попыток.
      * @param lastError текст последней ошибки (или null).
      * @param nextAttemptAt время следующего запуска в миллисекундах (или null для успешных/окончательно проваленных).
+     * @param lastErrorCode код отказа получателя при последней попытке (или null).
      * @return true, если статус успешно обновлен, иначе false.
      */
     fun updateStatus(
@@ -45,7 +46,8 @@ interface QueueStoragePort {
         status: QueueStatus,
         attempt: Int,
         lastError: String?,
-        nextAttemptAt: Long?
+        nextAttemptAt: Long?,
+        lastErrorCode: Int? = null
     ): Boolean
 
     /**

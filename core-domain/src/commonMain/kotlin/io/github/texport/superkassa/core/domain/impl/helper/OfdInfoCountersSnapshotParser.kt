@@ -5,7 +5,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.int
-import kotlinx.serialization.json.long
 import kotlinx.serialization.json.boolean
 import io.github.texport.superkassa.core.domain.api.model.common.CounterKeyFormats
 import io.github.texport.superkassa.core.domain.api.model.common.format
@@ -72,40 +71,10 @@ object OfdInfoCountersSnapshotParser {
         val globalCounters = mutableMapOf<String, Long>()
         val shiftCounters = mutableMapOf<String, Long>()
 
-        // 1. Парсинг блока operations (счетчики операций за смену)
-        zxReport["operations"]?.jsonArray?.forEach { element ->
-            val obj = element.jsonObject
-            val operation = obj["operation"]?.jsonPrimitive?.content ?: return@forEach
-            val count = obj["count"]?.jsonPrimitive?.long ?: 0L
-            val sum = moneyTiyn(obj, "sum")
-
-            shiftCounters[CounterKeyFormats.OPERATION_COUNT.format(operation)] = count
-            shiftCounters[CounterKeyFormats.OPERATION_SUM.format(operation)] = sum
-        }
-
-        // 2. Парсинг блока ticketOperations (чековые операции и виды оплат)
-        zxReport["ticketOperations"]?.jsonArray?.forEach { element ->
-            val obj = element.jsonObject
-            val operation = obj["operation"]?.jsonPrimitive?.content ?: return@forEach
-
-            shiftCounters[CounterKeyFormats.TICKET_TOTAL_COUNT.format(operation)] = obj["ticketsTotalCount"]?.jsonPrimitive?.long ?: 0L
-            shiftCounters[CounterKeyFormats.TICKET_COUNT.format(operation)] = obj["ticketsCount"]?.jsonPrimitive?.long ?: 0L
-            shiftCounters[CounterKeyFormats.TICKET_SUM.format(operation)] = moneyTiyn(obj, "ticketsSum")
-            shiftCounters[CounterKeyFormats.TICKET_OFFLINE_COUNT.format(operation)] = obj["offlineCount"]?.jsonPrimitive?.long ?: 0L
-            shiftCounters[CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operation)] = moneyTiyn(obj, "discountSum")
-            shiftCounters[CounterKeyFormats.TICKET_MARKUP_SUM.format(operation)] = moneyTiyn(obj, "markupSum")
-            shiftCounters[CounterKeyFormats.TICKET_CHANGE_SUM.format(operation)] = moneyTiyn(obj, "changeSum")
-
-            obj["payments"]?.jsonArray?.forEach { pe ->
-                val pObj = pe.jsonObject
-                val payment = pObj["payment"]?.jsonPrimitive?.content ?: return@forEach
-                val pSum = moneyTiyn(pObj, "sum")
-                val pCount = pObj["count"]?.jsonPrimitive?.long ?: 0L
-
-                shiftCounters[CounterKeyFormats.PAYMENT_SUM.format(operation, payment)] = pSum
-                shiftCounters[CounterKeyFormats.PAYMENT_COUNT.format(operation, payment)] = pCount
-            }
-        }
+        // 1–2. Строки операций, отделов, скидок, наценок, чеков и операций с деньгами
+        OfdReportCountersParser.operations(zxReport, shiftCounters)
+        OfdReportCountersParser.tickets(zxReport, shiftCounters)
+        OfdReportCountersParser.placements(zxReport, shiftCounters)
 
         // 3. Парсинг общей суммы наличных в кассе (cashSum)
         // Остаток ящика хранится в тиынах, поэтому берём и дробную часть.
@@ -170,20 +139,6 @@ object OfdInfoCountersSnapshotParser {
         }
     }
 
-    /**
-     * Сумма из ответа ОФД целиком, в тиынах.
-     *
-     * ОФД присылает деньги парой «тенге и тиыны». Брать одни тенге значит
-     * терять дробную часть — для остатка денежного ящика это расхождение
-     * с настоящими деньгами.
-     */
-    private fun moneyTiyn(obj: JsonObject, key: String): Long {
-        val money = obj[key]?.jsonObject ?: return 0L
-        val bills = money["bills"]?.jsonPrimitive?.long ?: 0L
-        val coins = money["coins"]?.jsonPrimitive?.long ?: 0L
-        return bills * TIYN_IN_TENGE + coins
-    }
-
-    /** Тиынов в тенге. */
-    private const val TIYN_IN_TENGE = 100L
+    /** Сумма из ответа БФД целиком, в тиынах: одни тенге теряли бы дробную часть. */
+    private fun moneyTiyn(obj: JsonObject, key: String): Long = OfdReportCountersParser.money(obj, key)
 }

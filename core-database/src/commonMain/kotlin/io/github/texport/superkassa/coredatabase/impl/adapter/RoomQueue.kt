@@ -27,8 +27,8 @@ internal class RoomQueue(private val dao: QueueCommandDao) {
         dao.getByStatus(cashboxId, lane.name, statuses.map { it.name }).map { it.toDomain() }
     }
 
-    fun updateStatus(id: String, status: QueueStatus, attempt: Int, lastError: String?, nextAttemptAt: Long?): Boolean =
-        runBlocking { dao.updateStatus(id, status.name, attempt, lastError, nextAttemptAt) == 1 }
+    fun updateStatus(id: String, status: QueueStatus, attempt: Int, error: QueueError, nextAttemptAt: Long?): Boolean =
+        runBlocking { dao.updateStatus(id, status.name, attempt, error.text, error.code, nextAttemptAt) == 1 }
 
     fun markInProgress(id: String, now: Long): Boolean = runBlocking { dao.markInProgress(id, now) == 1 }
 

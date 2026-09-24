@@ -14,6 +14,8 @@ package io.github.texport.superkassa.offlinequeue.api.model
  * @property attempt количество выполненных попыток обработки.
  * @property nextAttemptAt время следующей попытки отправки в миллисекундах (или null).
  * @property lastError текст ошибки последней попытки выполнения (или null).
+ * @property lastErrorCode код отказа получателя при последней попытке (или null): по нему
+ *   журнал называет причину, а повтор решает, есть ли смысл слать снова.
  */
 data class QueueCommand(
     val id: String,
@@ -25,5 +27,6 @@ data class QueueCommand(
     val status: QueueStatus,
     val attempt: Int,
     val nextAttemptAt: Long? = null,
-    val lastError: String? = null
+    val lastError: String? = null,
+    val lastErrorCode: Int? = null
 )

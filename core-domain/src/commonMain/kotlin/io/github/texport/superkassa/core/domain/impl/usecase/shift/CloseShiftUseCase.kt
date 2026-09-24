@@ -19,6 +19,7 @@ import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPor
 import io.github.texport.superkassa.core.domain.api.port.internal.OfflineQueuePort
 import io.github.texport.superkassa.core.domain.impl.helper.common.assignPrintedDocumentNumber
 import io.github.texport.superkassa.core.domain.impl.logging.getLogger
+import io.github.texport.superkassa.core.domain.impl.helper.ofd.BfdDeliveryFailure
 import io.github.texport.superkassa.core.domain.impl.usecase.auth.AuthorizeUserUseCase
 import io.github.texport.superkassa.core.domain.impl.usecase.ofd.SendFiscalCommandUseCase
 import io.github.texport.superkassa.core.string.api.CoreStrings
@@ -118,7 +119,13 @@ class CloseShiftUseCase(
             ofdErrorText = result.resultText?.takeIf { !accepted && !timeout && it.isNotBlank() }
         )
         if (timeout) enqueue(kkmId, documentId)
-        return ReportResult(documentId, deliveryOf(result.status), result.errorMessage) to timeout
+        val answer = ReportResult(
+            documentId = documentId,
+            deliveryStatus = deliveryOf(result.status),
+            deliveryError = BfdDeliveryFailure.reason(result),
+            bfdResultCode = BfdDeliveryFailure.code(result)
+        )
+        return answer to timeout
     }
 
     private fun enqueue(kkmId: String, documentId: String) {

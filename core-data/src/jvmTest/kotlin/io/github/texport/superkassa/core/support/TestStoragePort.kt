@@ -107,7 +107,8 @@ class TestStoragePort : StoragePort {
         status: String,
         attempt: Int,
         lastError: String?,
-        nextAttemptAt: Long?
+        nextAttemptAt: Long?,
+        lastErrorCode: Int?
     ): Boolean {
         val index = queueTasks.indexOfFirst { it.id == id }
         if (index == -1) return false
@@ -116,7 +117,8 @@ class TestStoragePort : StoragePort {
             status = status,
             attempt = attempt,
             lastError = lastError,
-            nextAttemptAt = nextAttemptAt
+            nextAttemptAt = nextAttemptAt,
+            lastErrorCode = lastErrorCode
         )
         return true
     }

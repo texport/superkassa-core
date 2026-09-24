@@ -22,7 +22,8 @@ internal fun QueueCommand.toTask(): QueueTask = QueueTask(
     status = status.name,
     attempt = attempt,
     nextAttemptAt = nextAttemptAt,
-    lastError = lastError
+    lastError = lastError,
+    lastErrorCode = lastErrorCode
 )
 
 /** Обратное преобразование: задача порта хранилища — команда очереди. */
@@ -36,8 +37,17 @@ internal fun QueueTask.toCommand(): QueueCommand = QueueCommand(
     status = QueueStatus.valueOf(status),
     attempt = attempt,
     nextAttemptAt = nextAttemptAt,
-    lastError = lastError
+    lastError = lastError,
+    lastErrorCode = lastErrorCode
 )
+
+/**
+ * Ошибка последней попытки: текст причины и код отказа получателя.
+ *
+ * @property text трёхъязычный текст причины строкой.
+ * @property code код отказа БФД, если он был.
+ */
+internal data class QueueError(val text: String?, val code: Int?)
 
 /** Статусы задачи строками порта — статусы очереди. */
 internal fun Set<String>.toQueueStatuses(): Set<QueueStatus> = mapTo(mutableSetOf()) { QueueStatus.valueOf(it) }

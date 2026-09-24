@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.core.presentation.impl.mapper
 
+import io.github.texport.superkassa.core.presentation.api.model.reference.TrilingualMessageResponse
 import io.github.texport.superkassa.core.domain.api.model.receipt.TicketAd as DomainTicketAd
 import io.github.texport.superkassa.core.domain.api.model.common.CounterSnapshot
 import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationRequest as DomainCashOperationRequest
@@ -91,7 +92,8 @@ object KkmMapper {
     fun toResponse(res: CashOperationResult): CashOperationResponse = CashOperationResponse(
         documentId = res.documentId,
         deliveryStatus = DeliveryStatus.valueOf(res.deliveryStatus.name),
-        deliveryError = res.deliveryError
+        deliveryError = res.deliveryError?.let(TrilingualMessageResponse::from),
+        bfdResultCode = res.bfdResultCode
     )
 
     fun toDomain(dto: CashOperationRequest, pin: String): DomainCashOperationRequest = DomainCashOperationRequest(

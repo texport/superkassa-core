@@ -115,6 +115,9 @@ class ZxOperationsBlockBuilderTest {
             put(CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL"), 2_000L)
             put(CounterKeyFormats.DISCOUNT_SUM.format("OPERATION_SELL"), 100L)
             put(CounterKeyFormats.MARKUP_SUM.format("OPERATION_SELL"), 50L)
+            // Скидки и наценки считаются поштучно, а не числом операций.
+            put(CounterKeyFormats.DISCOUNT_COUNT.format("OPERATION_SELL"), 1L)
+            put(CounterKeyFormats.MARKUP_COUNT.format("OPERATION_SELL"), 3L)
         }
 
         val operations = ZxOperationsBlockBuilder.resolveOperations(counters)
@@ -137,11 +140,11 @@ class ZxOperationsBlockBuilderTest {
             assertEquals(2_000L, sumTiyn)
         }
         with(findOp(discounts, "OPERATION_SELL")) {
-            assertEquals(2L, count)
+            assertEquals(1L, count)
             assertEquals(100L, sumTiyn)
         }
         with(findOp(markups, "OPERATION_SELL")) {
-            assertEquals(2L, count)
+            assertEquals(3L, count)
             assertEquals(50L, sumTiyn)
         }
         with(findOp(totalResult, "OPERATION_SELL")) {

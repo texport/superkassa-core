@@ -159,6 +159,7 @@ interface StoragePort : DeliveryTaskStore {
      * @param attempt текущий номер попытки выполнения.
      * @param lastError текст последней ошибки (если есть).
      * @param nextAttemptAt время следующей попытки выполнения в миллисекундах.
+     * @param lastErrorCode код отказа БФД при последней попытке (если был).
      * @return `true`, если статус успешно обновлен; `false` в противном случае.
      */
     fun updateQueueTaskStatus(
@@ -166,7 +167,8 @@ interface StoragePort : DeliveryTaskStore {
         status: String,
         attempt: Int,
         lastError: String?,
-        nextAttemptAt: Long?
+        nextAttemptAt: Long?,
+        lastErrorCode: Int? = null
     ): Boolean
 
     /**

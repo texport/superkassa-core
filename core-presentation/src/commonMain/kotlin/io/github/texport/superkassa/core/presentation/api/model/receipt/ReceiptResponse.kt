@@ -2,6 +2,7 @@ package io.github.texport.superkassa.core.presentation.api.model.receipt
 
 import io.github.texport.superkassa.core.presentation.api.annotations.Schema
 import io.github.texport.superkassa.core.presentation.api.model.ofd.DeliveryStatus
+import io.github.texport.superkassa.core.presentation.api.model.reference.TrilingualMessageResponse
 import kotlinx.serialization.Serializable
 
 /**
@@ -31,9 +32,12 @@ data class ReceiptResponse(
         example = "ONLINE_OK"
     ) val deliveryStatus: DeliveryStatus = DeliveryStatus.NOT_SENT,
     @Schema(
-        description = "Текст возникшей ошибки при попытке отправки/печати чека",
-        example = "Timeout"
-    ) val deliveryError: String? = null
+        description = "Почему БФД не принял чек и что делать — на каждом языке свой текст"
+    ) val deliveryError: TrilingualMessageResponse? = null,
+    @Schema(
+        description = "Код отказа БФД (ResultTypeEnum CPCR); пусто, если БФД не ответил или принял",
+        example = "13"
+    ) val bfdResultCode: Int? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -48,6 +52,7 @@ data class ReceiptResponse(
         } else if (other.deliveryPayload != null) return false
         if (deliveryStatus != other.deliveryStatus) return false
         if (deliveryError != other.deliveryError) return false
+        if (bfdResultCode != other.bfdResultCode) return false
 
         return true
     }
@@ -59,6 +64,7 @@ data class ReceiptResponse(
         result = 31 * result + (deliveryPayload?.contentHashCode() ?: 0)
         result = 31 * result + deliveryStatus.hashCode()
         result = 31 * result + (deliveryError?.hashCode() ?: 0)
+        result = 31 * result + (bfdResultCode ?: 0)
         return result
     }
 }

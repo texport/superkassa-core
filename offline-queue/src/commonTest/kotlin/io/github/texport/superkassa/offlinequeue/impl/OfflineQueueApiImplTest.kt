@@ -40,7 +40,8 @@ class OfflineQueueApiImplTest {
             val status: QueueStatus,
             val attempt: Int,
             val lastError: String?,
-            val nextAttemptAt: Long?
+            val nextAttemptAt: Long?,
+            val lastErrorCode: Int? = null
         )
 
         data class NextPendingParams(val cashboxId: String, val lane: QueueLane)
@@ -61,9 +62,10 @@ class OfflineQueueApiImplTest {
             status: QueueStatus,
             attempt: Int,
             lastError: String?,
-            nextAttemptAt: Long?
+            nextAttemptAt: Long?,
+            lastErrorCode: Int?
         ): Boolean {
-            lastStatusUpdate = StatusUpdate(id, status, attempt, lastError, nextAttemptAt)
+            lastStatusUpdate = StatusUpdate(id, status, attempt, lastError, nextAttemptAt, lastErrorCode)
             return updateStatusResult
         }
 
@@ -631,7 +633,7 @@ class OfflineQueueApiImplTest {
         val service = service(
             storage = storage,
             handler = QueueCommandHandlerPort { _, _ ->
-                DispatchResult(DispatchStatus.REJECTED, "document is not valid")
+                DispatchResult(DispatchStatus.REJECTED, "document is not valid", errorCode = 13)
             },
             backoffPolicy = BackoffPolicy { _, _ -> error("Backoff should not be called") }
         )
@@ -643,10 +645,25 @@ class OfflineQueueApiImplTest {
                 QueueStatus.REJECTED,
                 1,
                 trilingual("document is not valid"),
-                null
+                null,
+                lastErrorCode = 13
             ),
             storage.lastStatusUpdate
         )
+    }
+
+    @Test
+    fun testFailedDispatchKeepsRecipientCodeBesideText() {
+        val storage = StubStorage().apply { nextPendingResponse = command() }
+        val service = service(
+            storage = storage,
+            handler = QueueCommandHandlerPort { _, _ ->
+                DispatchResult(DispatchStatus.FAILED, "busy", retryAt = 500L, errorCode = 254)
+            }
+        )
+
+        assertTrue(service.processNext("c1", QueueLane.OFFLINE))
+        assertEquals(254, storage.lastStatusUpdate?.lastErrorCode)
     }
 
     @Test

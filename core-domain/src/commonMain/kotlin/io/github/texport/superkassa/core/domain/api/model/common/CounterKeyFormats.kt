@@ -5,7 +5,12 @@ package io.github.texport.superkassa.core.domain.api.model.common
  * Используются для хранения и обновления агрегированных показателей продаж, оплат, налогов и т.д.
  */
 object CounterKeyFormats {
-    /** Количество операций определенного типа. */
+    /**
+     * Число позиций в чеках операции определенного типа, без сторно.
+     *
+     * Позиций, а не чеков: так строку операций считает БФД
+     * (`OperationCalculator.getTotal`). Число чеков — [TICKET_COUNT].
+     */
     const val OPERATION_COUNT = "operation.%s.count"
 
     /** Сумма операций определенного типа. */
@@ -14,11 +19,25 @@ object CounterKeyFormats {
     /** Сумма скидок для операций определенного типа. */
     const val DISCOUNT_SUM = "operation.%s.discount_sum"
 
+    /** Число скидок операции: на чек и на каждую позицию по штуке, сторно не считается. */
+    const val DISCOUNT_COUNT = "operation.%s.discount_count"
+
     /** Сумма наценок для операций определенного типа. */
     const val MARKUP_SUM = "operation.%s.markup_sum"
 
+    /** Число наценок операции: на чек и на каждую позицию по штуке, сторно не считается. */
+    const val MARKUP_COUNT = "operation.%s.markup_count"
+
     /** Общее количество сформированных чеков определенного типа. */
     const val TICKET_TOTAL_COUNT = "ticket.%s.total_count"
+
+    /**
+     * Число чеков вида операции «за всё время» на начало смены.
+     *
+     * БФД переносит его из смены в смену (`OperationCalculator.openShift`):
+     * [TICKET_TOTAL_COUNT] смены — это оно плюс чеки самой смены.
+     */
+    const val START_SHIFT_TICKET_TOTAL_COUNT = "start_shift_ticket.%s.total_count"
 
     /** Количество успешно проведенных чеков определенного типа. */
     const val TICKET_COUNT = "ticket.%s.count"
@@ -55,6 +74,9 @@ object CounterKeyFormats {
 
     /** Общее количество операций внесения/изъятия денег. */
     const val MONEY_PLACEMENT_TOTAL_COUNT = "money_placement.%s.total_count"
+
+    /** Число внесений или изъятий «за всё время» на начало смены — как [START_SHIFT_TICKET_TOTAL_COUNT]. */
+    const val START_SHIFT_MONEY_PLACEMENT_TOTAL_COUNT = "start_shift_money_placement.%s.total_count"
 
     /** Сумма внесенных/изъятых денег. */
     const val MONEY_PLACEMENT_SUM = "money_placement.%s.sum"

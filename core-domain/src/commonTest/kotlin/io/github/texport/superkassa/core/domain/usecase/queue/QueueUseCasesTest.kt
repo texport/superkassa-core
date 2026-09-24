@@ -183,6 +183,7 @@ class QueueUseCasesTest {
         assertEquals(16, recordedCode)
         assertEquals("BFD returned code 16", res.errorMessage)
         assertEquals(CoreStrings.bfdRefusal(16).ru, res.errorRu)
+        assertEquals(16, res.bfdResultCode)
     }
 
     @Test
@@ -203,6 +204,8 @@ class QueueUseCasesTest {
 
         assertEquals(QueueDispatchStatus.FAILED, res.status)
         verify(exactly = 0) { storage.updateKkm(any()) }
+        // Занятость БФД названа словами таблицы, а не «нет связи», и код остаётся задаче.
+        assertEquals(CoreStrings.bfdRefusal(254).en to 254, res.errorEn to res.bfdResultCode)
     }
 
     @Test

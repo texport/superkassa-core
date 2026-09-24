@@ -253,17 +253,8 @@ object OfdTicketRequestBuilder {
                                 }
                             )
 
-                            // БИН/ИИН покупателя: касса его спрашивает, печатает
-                            // на чеке и до сих пор не отправляла — фискальный
-                            // документ уходил без покупателя, хотя на бумаге он
-                            // стоял. Реквизит живёт в расширениях чека с версии
-                            // 2.0.1, то есть во всех обслуживаемых версиях.
-                            request.customerBin?.takeIf { it.isNotBlank() }?.let { bin ->
-                                put(
-                                    "extensionOptions",
-                                    buildJsonObject { put("customerIinOrBin", JsonPrimitive(bin)) }
-                                )
-                            }
+                            // Покупатель: почта, телефон и БИН/ИИН — см. OfdTicketExtensionJson.
+                            OfdTicketExtensionJson.of(request)?.let { put("extensionOptions", it) }
 
                             val parent = request.parentTicket
                             if (parent != null &&

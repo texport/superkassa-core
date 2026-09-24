@@ -433,6 +433,8 @@ class PrintUseCasesTest {
         every { storage.findFiscalDocumentById("doc-x") } returns xReportDoc
         every { storage.findShiftById("shift-1") } returns shift
         every { storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1") } returns emptyMap()
+        // Смена без счёта на начало — открыта прежней версией: счёт берётся из прошлых смен, их нет.
+        every { storage.listShifts("kkm-1", any(), any()) } returns emptyList()
         every { storage.listFiscalDocumentsByShift("kkm-1", "shift-1", any(), any()) } returns emptyList()
         every { receiptRenderPort.renderXReportHtml(any<ZxReportInput>(), kkm, null, "77", null) } returns "<html>xreport 77</html>"
 
@@ -456,6 +458,8 @@ class PrintUseCasesTest {
         every { storage.findFiscalDocumentById("doc-x") } returns snapshot.copy(id = "doc-x", docType = "REPORT_X", createdAt = 1_000L)
         every { storage.findShiftById("shift-1") } returns shift
         every { storage.loadCounters("kkm-1", CounterScopes.SHIFT, "shift-1") } returns emptyMap()
+        // Смена без счёта на начало — открыта прежней версией: счёт берётся из прошлых смен, их нет.
+        every { storage.listShifts("kkm-1", any(), any()) } returns emptyList()
         every { storage.listFiscalDocumentsByShift("kkm-1", "shift-1", any(), 0) } returns listOf(before, after)
         every { storage.listFiscalDocumentsByShift("kkm-1", "shift-1", any(), neq(0)) } returns emptyList()
         val report = slot<ZxReportInput>()

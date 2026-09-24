@@ -14,6 +14,7 @@ package io.github.texport.superkassa.core.domain.api.model.queue
  * @property attempt Номер текущей попытки выполнения.
  * @property nextAttemptAt Время следующей запланированной попытки (в миллисекундах, null если не запланирована).
  * @property lastError Сообщение о последней возникшей ошибке (null если ошибок не было).
+ * @property lastErrorCode Код отказа БФД при последней попытке (null, если БФД не ответил или принял).
  */
 data class QueueTask(
     val id: String,
@@ -25,5 +26,6 @@ data class QueueTask(
     val status: String,
     val attempt: Int,
     val nextAttemptAt: Long?,
-    val lastError: String?
+    val lastError: String?,
+    val lastErrorCode: Int? = null
 )

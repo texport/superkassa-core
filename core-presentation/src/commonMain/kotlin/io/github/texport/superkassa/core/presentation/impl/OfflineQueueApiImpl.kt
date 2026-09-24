@@ -57,7 +57,8 @@ internal class OfflineQueueApiImpl(
                 lastError = it.lastError,
                 errorRu = it.errorRu,
                 errorKk = it.errorKk,
-                errorEn = it.errorEn
+                errorEn = it.errorEn,
+                bfdResultCode = it.bfdResultCode
             )
         }
     }

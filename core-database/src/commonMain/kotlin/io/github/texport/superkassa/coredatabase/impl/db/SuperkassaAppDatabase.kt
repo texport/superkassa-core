@@ -38,7 +38,7 @@ import io.github.texport.superkassa.coredatabase.impl.entity.ShiftEntity
         PinAttemptEntity::class,
         DeliveryTaskEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = false
 )
 @ConstructedBy(SuperkassaAppDatabaseConstructor::class)

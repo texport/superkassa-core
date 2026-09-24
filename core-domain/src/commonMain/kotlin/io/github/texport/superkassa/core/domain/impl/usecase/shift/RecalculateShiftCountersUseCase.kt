@@ -26,6 +26,8 @@ import io.github.texport.superkassa.core.domain.impl.usecase.counter.ReceiptRepo
 class RecalculateShiftCountersUseCase(
     private val storage: StoragePort
 ) {
+    private val totals = ShiftTotals(storage)
+
     /**
      * Запускает процедуру пересчета счетчиков смены и сохраняет их в хранилище.
      *
@@ -82,6 +84,8 @@ class RecalculateShiftCountersUseCase(
         existing.filterKeys { it.startsWith("start_shift_") }.forEach { (k, v) ->
             result[k] = v
         }
+        // Счёт чеков и операций с деньгами «за всё время» на начало смены
+        result += totals.atStart(kkmId, shift, existing)
 
         val operations = listOf(
             "OPERATION_SELL",
@@ -120,6 +124,8 @@ class RecalculateShiftCountersUseCase(
             offset += limit
         }
 
+        carryTotals(result)
+
         // Вычисляем суммарные не обнуляемые итоги на конец смены: они копят
         // сумму чеков, а не операции без скидок (`updateNonNullableSum`).
         operations.forEach { op ->
@@ -137,6 +143,23 @@ class RecalculateShiftCountersUseCase(
         }
 
         return result
+    }
+
+    /**
+     * Счёт «за всё время» — счёт на начало смены плюс то, что провела смена,
+     * как у БФД (`OperationCalculator.openShift` переносит его из смены в смену).
+     */
+    private fun carryTotals(result: MutableMap<String, Long>) {
+        ShiftTotals.OPERATIONS.forEach { op ->
+            val start = result[CounterKeyFormats.START_SHIFT_TICKET_TOTAL_COUNT.format(op)] ?: 0L
+            val total = start + (result[CounterKeyFormats.TICKET_COUNT.format(op)] ?: 0L)
+            if (total != 0L) result[CounterKeyFormats.TICKET_TOTAL_COUNT.format(op)] = total
+        }
+        ShiftTotals.PLACEMENTS.forEach { op ->
+            val start = result[CounterKeyFormats.START_SHIFT_MONEY_PLACEMENT_TOTAL_COUNT.format(op)] ?: 0L
+            val total = start + (result[CounterKeyFormats.MONEY_PLACEMENT_COUNT.format(op)] ?: 0L)
+            if (total != 0L) result[CounterKeyFormats.MONEY_PLACEMENT_TOTAL_COUNT.format(op)] = total
+        }
     }
 
     /**
@@ -161,8 +184,10 @@ class RecalculateShiftCountersUseCase(
         val markupTiyn = sums.markups
         val changeTiyn = request.change?.tiyn() ?: 0L
 
-        // Увеличиваем счетчики количества и сумм операций
-        increment(counters, CounterKeyFormats.OPERATION_COUNT.format(operationKey), 1L)
+        // Счётчики операций: позиции, а не чеки, и скидки с наценками поштучно — как у БФД
+        increment(counters, CounterKeyFormats.OPERATION_COUNT.format(operationKey), sums.goods)
+        increment(counters, CounterKeyFormats.DISCOUNT_COUNT.format(operationKey), sums.discountCount)
+        increment(counters, CounterKeyFormats.MARKUP_COUNT.format(operationKey), sums.markupCount)
         increment(counters, CounterKeyFormats.OPERATION_SUM.format(operationKey), sums.operations)
         increment(counters, CounterKeyFormats.DISCOUNT_SUM.format(operationKey), discountTiyn)
         increment(counters, CounterKeyFormats.MARKUP_SUM.format(operationKey), markupTiyn)
@@ -190,8 +215,7 @@ class RecalculateShiftCountersUseCase(
             )
         }
 
-        // Обновляем счетчики билетов/чеков
-        increment(counters, CounterKeyFormats.TICKET_TOTAL_COUNT.format(operationKey), 1L)
+        // Обновляем счетчики чеков; «за всё время» складывает carryTotals
         increment(counters, CounterKeyFormats.TICKET_COUNT.format(operationKey), 1L)
         increment(counters, CounterKeyFormats.TICKET_SUM.format(operationKey), sumValue)
         increment(counters, CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey), sums.ticketDiscount)
@@ -290,7 +314,6 @@ class RecalculateShiftCountersUseCase(
         increment(counters, CounterKeyFormats.CASH_SUM, delta)
 
         // Обновляем счетчики операций внесения/изъятия
-        increment(counters, CounterKeyFormats.MONEY_PLACEMENT_TOTAL_COUNT.format(opKey), 1L)
         increment(counters, CounterKeyFormats.MONEY_PLACEMENT_COUNT.format(opKey), 1L)
         increment(counters, CounterKeyFormats.MONEY_PLACEMENT_SUM.format(opKey), amount)
         if (doc.isAutonomous || doc.ofdStatus == "TIMEOUT") {
