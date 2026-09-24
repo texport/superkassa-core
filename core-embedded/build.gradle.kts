@@ -38,9 +38,16 @@ kotlin {
             api(libs.ofd.network.client)
         }
         // Файлы, сокет и потоки на JVM и Android одни и те же: один исходник
-        // собирается в обе цели, вместо двух копий.
-        jvmMain { kotlin.srcDir("src/jvmCommonMain/kotlin") }
-        androidMain { kotlin.srcDir("src/jvmCommonMain/kotlin") }
+        // собирается в обе цели, вместо двух копий. Шрифты печатных форм —
+        // тоже общие: обе цели рисуют чек одним и тем же Noto Sans.
+        jvmMain {
+            kotlin.srcDir("src/jvmCommonMain/kotlin")
+            resources.srcDir("src/jvmCommonMain/resources")
+        }
+        androidMain {
+            kotlin.srcDir("src/jvmCommonMain/kotlin")
+            resources.srcDir("src/jvmCommonMain/resources")
+        }
         jvmMain.dependencies {
             // Типы запросов фасада несут аннотации проверки: без них у приложения
             // не выводится тип списка позиций чека.
