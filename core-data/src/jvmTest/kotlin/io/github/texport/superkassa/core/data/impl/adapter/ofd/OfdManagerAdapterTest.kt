@@ -842,18 +842,28 @@ class OfdManagerAdapterTest {
         every { builder.build(request, config) } returns responseJson
         every { codec.encode(any()) } returns requestBytes
 
-        // Manually populate the private map with a timestamp from 70 seconds ago
-        val field = OfdManagerAdapter::class.java.getDeclaredField("lastNoConnectionMillis")
-        field.isAccessible = true
-        val map = field.get(adapter) as java.util.concurrent.ConcurrentHashMap<String, Long>
-        val throttleKey = "${request.kkmId}:${request.ofdProviderId}:${request.ofdEnvironmentId}"
-        map[throttleKey] = System.currentTimeMillis() - 70000L
+        var clockMillis = 1_000_000L
+        val clockedAdapter = OfdManagerAdapter(
+            config = config,
+            codec = codec,
+            networkClient = networkClient,
+            requestBuilders = listOf(builder),
+            timeoutSeconds = 1L,
+            reconnectIntervalSeconds = 1L,
+            now = { clockMillis }
+        )
 
-        // The request should bypass throttle and try sending again
+        // No connection: the throttle starts counting from this moment
+        coEvery { networkClient.sendAndReceive(any(), requestBytes) } returns
+            Result.failure(RuntimeException("Connection refused"))
+        assertEquals(OfdCommandStatus.TIMEOUT, clockedAdapter.send(request).status)
+
+        // 70 seconds later the request should bypass throttle and try sending again
+        clockMillis += 70_000L
         coEvery { networkClient.sendAndReceive(any(), requestBytes) } returns Result.success(responseBytes)
         every { codec.decode(responseBytes) } returns responseJson
 
-        val result = adapter.send(request)
+        val result = clockedAdapter.send(request)
         assertEquals(OfdCommandStatus.FAILED, result.status)
         assertEquals(124L, result.responseToken)
     }

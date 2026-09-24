@@ -37,7 +37,7 @@ class MoneyPlacementRequestBuilderStrategy(
      */
     override fun build(command: OfdCommandRequest, config: OfdConfig): JsonObject? {
         val serviceBlock = buildServiceBlock(command) ?: return null
-        val doc = storage?.findFiscalDocumentById(command.payloadRef) ?: return null
+        val doc = storage.findFiscalDocumentById(command.payloadRef) ?: return null
         // Смена — та, в которой операция оформлена, а не та, что открыта при досылке.
         val shiftNo = shiftNumberOf(storage, doc, command.kkmId)
         if (doc.docType != "CASH_IN" && doc.docType != "CASH_OUT") return null

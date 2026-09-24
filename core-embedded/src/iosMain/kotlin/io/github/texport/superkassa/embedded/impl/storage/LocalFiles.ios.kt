@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.embedded.impl.storage
 
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSString
@@ -16,7 +17,7 @@ import platform.posix.close
 import platform.posix.flock
 import platform.posix.open
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 internal actual object LocalFiles {
     private const val OWNER_READ_WRITE = 420 // 0644
 

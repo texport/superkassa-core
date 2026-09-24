@@ -33,7 +33,7 @@ class ReportRequestBuilderStrategy(
      */
     private fun shiftOf(document: FiscalDocumentSnapshot?, kkmId: String): ShiftInfo? {
         val own = document?.shiftId?.takeIf { it.isNotBlank() && it != NO_SHIFT }
-        return own?.let { storage?.findShiftById(it) } ?: storage?.findOpenShift(kkmId)
+        return own?.let { storage.findShiftById(it) } ?: storage.findOpenShift(kkmId)
     }
 
     /**

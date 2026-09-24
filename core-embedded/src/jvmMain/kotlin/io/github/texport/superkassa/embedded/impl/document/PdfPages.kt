@@ -39,7 +39,6 @@ internal object PdfPages {
         val document = W3CDom().fromJsoup(Jsoup.parse(page))
         val out = ByteArrayOutputStream()
         PdfRendererBuilder().apply {
-            useFastMode()
             withW3cDocument(document, null)
             FAMILIES.forEach { family ->
                 font(REGULAR_FILE, family, REGULAR)

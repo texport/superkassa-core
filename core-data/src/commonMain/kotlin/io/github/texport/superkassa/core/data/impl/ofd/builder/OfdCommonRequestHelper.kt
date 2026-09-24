@@ -3,10 +3,12 @@ package io.github.texport.superkassa.core.data.impl.ofd.builder
 import io.github.texport.superkassa.core.domain.api.model.common.Money
 import io.github.texport.superkassa.core.domain.api.model.common.VatGroup
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlin.time.Instant
 
 /**
  * Вспомогательный класс для формирования общих объектов и структур данных
@@ -22,7 +24,7 @@ object OfdCommonRequestHelper {
      * @return [JsonObject], содержащий объекты "date" и "time".
      */
     fun toDateTime(epochMillis: Long): JsonObject {
-        val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(epochMillis)
+        val instant = Instant.fromEpochMilliseconds(epochMillis)
         val tz = TimeZone.of("Asia/Almaty")
         val ldt = instant.toLocalDateTime(tz)
         return buildJsonObject {
@@ -30,8 +32,8 @@ object OfdCommonRequestHelper {
                 "date",
                 buildJsonObject {
                     put("year", JsonPrimitive(ldt.year))
-                    put("month", JsonPrimitive(ldt.monthNumber))
-                    put("day", JsonPrimitive(ldt.dayOfMonth))
+                    put("month", JsonPrimitive(ldt.month.number))
+                    put("day", JsonPrimitive(ldt.day))
                 }
             )
             put(

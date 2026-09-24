@@ -3,6 +3,7 @@ package io.github.texport.superkassa.core.data.impl.adapter.generator
 import io.github.texport.superkassa.core.domain.api.port.internal.IdGeneratorPort
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 /**
  * Адаптер IdGeneratorPort на базе генератора UUID и случайных чисел.
@@ -25,7 +26,7 @@ internal object UuidGeneratorAdapter : IdGeneratorPort {
      */
     override fun generateFactoryNumber(prefix: String): String {
         val nowMillis = kotlin.time.Clock.System.now().toEpochMilliseconds()
-        val instant = kotlinx.datetime.Instant.fromEpochMilliseconds(nowMillis)
+        val instant = Instant.fromEpochMilliseconds(nowMillis)
         val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
         val year = localDateTime.year % 100
         val bytes = ByteArray(5)
