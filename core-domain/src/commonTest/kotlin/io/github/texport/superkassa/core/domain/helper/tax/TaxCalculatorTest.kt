@@ -92,6 +92,25 @@ class TaxCalculatorTest {
     }
 
     @Test
+    fun `скидка позиции - налог строки полной суммой, у скидки разница, итог после скидки`() {
+        val discounted = item(90_000).copy(price = Money.fromTiyn(100_000), discount = Money.fromTiyn(10_000))
+
+        val result = calculator.calculate(receipt(TaxRegime.VAT_PAYER, discounted, item(50_000)))
+
+        assertEquals(listOf(13_793L, 6_897L), result.itemTaxes.map { it?.taxSum?.tiyn() })
+        assertEquals(1_379L to 8_621L, result.itemModifierTaxes[0]?.let { it.taxSum.tiyn() to it.taxBase.tiyn() })
+        assertNull(result.itemModifierTaxes[1])
+        assertEquals(listOf(12_414L + 6_897L), result.ticketTaxes.map { it.taxSum.tiyn() })
+    }
+
+    @Test
+    fun `наценка позиции без НДС налога не несёт`() {
+        val marked = item(105_000, VatGroup.NO_VAT).copy(markup = Money.fromTiyn(5_000))
+
+        assertEquals(listOf(null), calculator.calculate(receipt(TaxRegime.VAT_PAYER, marked)).itemModifierTaxes)
+    }
+
+    @Test
     fun `доля считается без переполнения и половина идёт к чётному`() {
         assertEquals(2L, proportionalShare(5, 1, 2))
         assertEquals(4L, proportionalShare(7, 1, 2))

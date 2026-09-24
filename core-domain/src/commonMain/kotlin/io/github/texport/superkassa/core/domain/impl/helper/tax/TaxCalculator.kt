@@ -18,7 +18,8 @@ import kotlin.math.sign
  * был свой, и налог на чеке, в X/Z и у БФД расходился.
  *
  * - Налог позиции: сумма × ставка / (100 + ставка), к ближайшему тиыну.
- *   Сторно вычитает налог своей строки.
+ *   Сторно вычитает налог своей строки. Скидка или наценка позиции уходит
+ *   в БФД отдельным элементом с разницей налога строки до и после неё.
  * - Налог чека по ставке — сумма налогов позиций: так его складывает БФД
  *   (`OperationCalculator.updateTaxes`), а налог с суммы группы расходился
  *   бы с ним на тиын.
@@ -41,16 +42,32 @@ class TaxCalculator {
      */
     fun calculate(request: ReceiptRequest): TicketTaxResult {
         if (request.vatGroup != null) return wholeReceipt(request)
-        val itemTaxes = request.items.map { item ->
-            taxOf(vatGroupOf(item, request.taxRegime, request.defaultVatGroup), item.sum.tiyn())
-        }
+        val groupOf = { item: ReceiptItem -> vatGroupOf(item, request.taxRegime, request.defaultVatGroup) }
+        val itemTaxes = request.items.map { taxOf(groupOf(it), it.sum.tiyn()) }
+        val lineTaxes = request.items.map { taxOf(groupOf(it), it.sumBeforeModifiers.tiyn()) }
         val modifier = Modifier.of(request)
         val groups = groupTotals(request.items, itemTaxes).map { it.modifiedBy(modifier) }
         return TicketTaxResult(
             ticketTaxes = groups.filter { it.turnover > 0 }.map { it.line() },
-            itemTaxes = itemTaxes,
+            itemTaxes = lineTaxes,
+            itemModifierTaxes = lineTaxes.zip(itemTaxes, ::difference),
             modifierTaxes = groups.mapNotNull { it.modifierTax }.filter { it.taxSum.tiyn() > 0 }
         )
+    }
+
+    /**
+     * Налог скидки или наценки позиции: насколько она меняет налог строки.
+     *
+     * Разница, а не налог с суммы скидки: так налог позиции у БФД —
+     * налог строки минус налог скидки — сходится с налогом суммы после
+     * скидки до тиына.
+     */
+    private fun difference(line: TaxLine?, net: TaxLine?): TaxLine? {
+        if (line == null || net == null) return null
+        val tax = abs(line.taxSum.tiyn() - net.taxSum.tiyn())
+        val turnover = abs(line.taxBase.tiyn() + line.taxSum.tiyn() - net.taxBase.tiyn() - net.taxSum.tiyn())
+        if (turnover == 0L) return null
+        return TaxLine(line.vatGroup, line.percent, Money.fromTiyn(turnover - tax), Money.fromTiyn(tax))
     }
 
     /** Налог на весь чек: одна ставка на итог, позиции налогов не несут. */
@@ -61,6 +78,7 @@ class TaxCalculator {
         return TicketTaxResult(
             ticketTaxes = listOfNotNull(line),
             itemTaxes = request.items.map { null },
+            itemModifierTaxes = request.items.map { null },
             receiptTaxes = listOfNotNull(line)
         )
     }

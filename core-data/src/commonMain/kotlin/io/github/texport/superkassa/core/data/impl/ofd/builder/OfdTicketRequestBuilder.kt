@@ -166,75 +166,7 @@ object OfdTicketRequestBuilder {
 
                             put(
                                 "items",
-                                buildJsonArray {
-                                    request.items.forEachIndexed { index, item ->
-                                        val (itemType, itemField) = if (item.isStorno) {
-                                            "ITEM_TYPE_STORNO_COMMODITY" to "stornoCommodity"
-                                        } else {
-                                            "ITEM_TYPE_COMMODITY" to "commodity"
-                                        }
-                                        add(
-                                            buildJsonObject {
-                                                put("type", JsonPrimitive(itemType))
-                                                put(
-                                                    itemField,
-                                                    buildJsonObject {
-                                                        put("name", JsonPrimitive(item.name))
-                                                        put("sectionCode", JsonPrimitive(item.sectionCode))
-                                                        put("quantity", JsonPrimitive(item.quantity))
-                                                        put(
-                                                            "price",
-                                                            OfdCommonRequestHelper.moneyObject(
-                                                                item.price.bills,
-                                                                item.price.coins
-                                                            )
-                                                        )
-                                                        put(
-                                                            "sum",
-                                                            OfdCommonRequestHelper.moneyObject(
-                                                                item.sum.bills,
-                                                                item.sum.coins
-                                                            )
-                                                        )
-                                                        put(
-                                                            "measureUnitCode",
-                                                            JsonPrimitive(
-                                                                item.measureUnitCode ?: UnitOfMeasurement.DEFAULT.code
-                                                            )
-                                                        )
-                                                        item.barcode?.takeIf { it.isNotBlank() }?.let { barcode ->
-                                                            put("barcode", JsonPrimitive(barcode))
-                                                        }
-                                                        item.listExciseStamp?.takeIf { it.isNotEmpty() }?.let { stamps ->
-                                                            put(
-                                                                "listExciseStamp",
-                                                                buildJsonArray {
-                                                                    stamps.forEach {
-                                                                        add(
-                                                                            JsonPrimitive(it)
-                                                                        )
-                                                                    }
-                                                                }
-                                                            )
-                                                        }
-                                                        item.ntin?.takeIf { it.isNotBlank() }?.let { ntin ->
-                                                            put("ntin", JsonPrimitive(ntin))
-                                                            if (commodityTypeExpected(protocolVersion)) {
-                                                                put("commodityType", JsonPrimitive(PRODUCT))
-                                                            }
-                                                        }
-
-                                                        // Налог позиции; у сторно — свой, иначе БФД
-                                                        // не вычтет его из налога чека.
-                                                        taxes.itemTaxes[index]?.let { line ->
-                                                            put("taxes", OfdTaxJson.taxes(listOf(line)))
-                                                        }
-                                                    }
-                                                )
-                                            }
-                                        )
-                                    }
-                                }
+                                OfdTicketItemsJson.items(request.items, taxes, commodityTypeExpected(protocolVersion))
                             )
                             put(
                                 "payments",
@@ -302,7 +234,7 @@ object OfdTicketRequestBuilder {
                                         put(
                                             "discount",
                                             buildJsonObject {
-                                                put("name", JsonPrimitive("Скидка"))
+                                                put("name", JsonPrimitive(OfdTicketItemsJson.DISCOUNT_NAME))
                                                 put("sum", OfdCommonRequestHelper.moneyObject(m.bills, m.coins))
                                                 OfdTaxJson.modifierTaxes(taxes)?.let { put("taxes", it) }
                                             }
@@ -312,7 +244,7 @@ object OfdTicketRequestBuilder {
                                         put(
                                             "markup",
                                             buildJsonObject {
-                                                put("name", JsonPrimitive("Наценка"))
+                                                put("name", JsonPrimitive(OfdTicketItemsJson.MARKUP_NAME))
                                                 put("sum", OfdCommonRequestHelper.moneyObject(m.bills, m.coins))
                                                 OfdTaxJson.modifierTaxes(taxes)?.let { put("taxes", it) }
                                             }
@@ -387,13 +319,4 @@ object OfdTicketRequestBuilder {
 
     /** Версия протокола, с которой тип предмета потребления обязателен. */
     private const val COMMODITY_TYPE_SINCE = 204
-
-    /**
-     * Тип предмета потребления у позиции с НТИН.
-     *
-     * НТИН выдаёт национальный каталог товаров: работ и услуг в нём нет,
-     * поэтому позиция, пришедшая с НТИН, — всегда товар, и спрашивать
-     * тип у кассира незачем.
-     */
-    private const val PRODUCT = "COMMODITY_TYPE_PRODUCT"
 }

@@ -12,15 +12,18 @@ import kz.kazakhtelecom.proto.v203.Money as BfdMoney
  * Повторяет эталон `OperationCalculator.updateTaxes` и
  * `mergeTaxReportIntoReport`: налог на весь чек (`taxes` чека) берётся
  * как есть, и тогда налоги позиций не читаются. Иначе налоги позиций
- * прибавляются, налоги сторно вычитаются, налог скидки на чек вычитается,
- * наценки — прибавляется. Позиция или скидка без `taxes` налог чека не меняет.
+ * прибавляются, налоги сторно вычитаются, налог скидки — на чек и на
+ * позицию — вычитается, наценки — прибавляется; у сторно скидки и
+ * наценки — наоборот. Позиция или скидка без `taxes` налог чека не меняет.
  *
  * @return ставка в тысячных процента → налог в тиынах.
  */
 internal fun bfdTicketTax(ticket: TicketRequest): Map<Int, Long> {
     if (ticket.taxes.isNotEmpty()) return ticket.taxes.associate { it.percent to it.sum.tiyn() }
     val signed = ticket.items.flatMap { item ->
-        item.commodity?.taxes.orEmpty().map { it to 1L } + item.storno_commodity?.taxes.orEmpty().map { it to -1L }
+        item.commodity?.taxes.orEmpty().map { it to 1L } + item.storno_commodity?.taxes.orEmpty().map { it to -1L } +
+            item.discount?.taxes.orEmpty().map { it to -1L } + item.markup?.taxes.orEmpty().map { it to 1L } +
+            item.storno_discount?.taxes.orEmpty().map { it to 1L } + item.storno_markup?.taxes.orEmpty().map { it to -1L }
     } + ticket.amounts.discount?.taxes.orEmpty().map { it to -1L } +
         ticket.amounts.markup?.taxes.orEmpty().map { it to 1L }
     return signed.groupBy({ (tax, _) -> tax.percent }) { (tax, sign) -> sign * tax.sum.tiyn() }

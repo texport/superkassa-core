@@ -12,6 +12,7 @@ import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptOperati
 import io.github.texport.superkassa.core.domain.api.model.shift.ShiftInfo
 import io.github.texport.superkassa.core.domain.api.port.integration.StoragePort
 import io.github.texport.superkassa.core.domain.impl.helper.tax.taxCounterDeltas
+import io.github.texport.superkassa.core.domain.impl.usecase.counter.ReceiptReportSums
 
 /**
  * Сценарий (Use Case) пересчета/пересобирания счетчиков смены на основе фактических фискальных документов.
@@ -119,9 +120,10 @@ class RecalculateShiftCountersUseCase(
             offset += limit
         }
 
-        // Вычисляем суммарные не обнуляемые итоги на конец смены
+        // Вычисляем суммарные не обнуляемые итоги на конец смены: они копят
+        // сумму чеков, а не операции без скидок (`updateNonNullableSum`).
         operations.forEach { op ->
-            val opSum = result[CounterKeyFormats.OPERATION_SUM.format(op)] ?: 0L
+            val opSum = result[CounterKeyFormats.TICKET_SUM.format(op)] ?: 0L
             val startVal = result[CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format(op)] ?: 0L
             result[CounterKeyFormats.NON_NULLABLE_SUM.format(op)] = startVal + opSum
         }
@@ -153,17 +155,15 @@ class RecalculateShiftCountersUseCase(
             ReceiptOperationType.BUY -> "OPERATION_BUY"
             ReceiptOperationType.BUY_RETURN -> "OPERATION_BUY_RETURN"
         }
-        val sumValue = request.total.tiyn()
-
-        val totalItemDiscountTiyn = request.items.mapNotNull { it.discount?.tiyn() }.sum()
-        val totalItemMarkupTiyn = request.items.mapNotNull { it.markup?.tiyn() }.sum()
-        val discountTiyn = request.discount?.tiyn() ?: totalItemDiscountTiyn
-        val markupTiyn = request.markup?.tiyn() ?: totalItemMarkupTiyn
+        val sums = ReceiptReportSums(request)
+        val sumValue = sums.total
+        val discountTiyn = sums.discounts
+        val markupTiyn = sums.markups
         val changeTiyn = request.change?.tiyn() ?: 0L
 
         // Увеличиваем счетчики количества и сумм операций
         increment(counters, CounterKeyFormats.OPERATION_COUNT.format(operationKey), 1L)
-        increment(counters, CounterKeyFormats.OPERATION_SUM.format(operationKey), sumValue)
+        increment(counters, CounterKeyFormats.OPERATION_SUM.format(operationKey), sums.operations)
         increment(counters, CounterKeyFormats.DISCOUNT_SUM.format(operationKey), discountTiyn)
         increment(counters, CounterKeyFormats.MARKUP_SUM.format(operationKey), markupTiyn)
 
@@ -177,7 +177,7 @@ class RecalculateShiftCountersUseCase(
             // продали, уходил в отчёт по отделу нулём — отдел показывал
             // шесть чеков там, где смена знала семь.
             val countDelta = if (item.isStorno) 0L else 1L
-            val sumDelta = if (item.isStorno) -item.sum.tiyn() else item.sum.tiyn()
+            val sumDelta = sums.section(item)
             increment(
                 counters,
                 CounterKeyFormats.SECTION_OPERATION_COUNT.format(sectionCode, operationKey),
@@ -194,8 +194,8 @@ class RecalculateShiftCountersUseCase(
         increment(counters, CounterKeyFormats.TICKET_TOTAL_COUNT.format(operationKey), 1L)
         increment(counters, CounterKeyFormats.TICKET_COUNT.format(operationKey), 1L)
         increment(counters, CounterKeyFormats.TICKET_SUM.format(operationKey), sumValue)
-        increment(counters, CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey), discountTiyn)
-        increment(counters, CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey), markupTiyn)
+        increment(counters, CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey), sums.ticketDiscount)
+        increment(counters, CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey), sums.ticketMarkup)
         increment(counters, CounterKeyFormats.TICKET_CHANGE_SUM.format(operationKey), changeTiyn)
         if (doc.isAutonomous || doc.ofdStatus == "TIMEOUT") {
             increment(counters, CounterKeyFormats.TICKET_OFFLINE_COUNT.format(operationKey), 1L)

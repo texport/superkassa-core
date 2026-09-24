@@ -45,4 +45,13 @@ data class ReceiptItem(
      * в Казахстане двуязычный, и наименование товара не исключение.
      */
     val nameKk: String? = null
-)
+) {
+    /**
+     * Сумма строки до скидки и наценки позиции.
+     *
+     * Ею позиция уходит в БФД, а скидка и наценка — отдельными элементами
+     * за ней: так CPCR строит X/Z, где отделы и операции идут без скидок.
+     */
+    val sumBeforeModifiers: Money
+        get() = Money.fromTiyn(sum.tiyn() + (discount?.tiyn() ?: 0L) - (markup?.tiyn() ?: 0L))
+}

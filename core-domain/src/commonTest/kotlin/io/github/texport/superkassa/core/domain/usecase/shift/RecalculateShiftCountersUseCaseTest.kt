@@ -190,7 +190,8 @@ class RecalculateShiftCountersUseCaseTest {
         }
 
         assertEquals(1L, rebuilt[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL")])
-        assertEquals(216_000L, rebuilt[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
+        // Операции — сумма позиций до скидки и наценки на чек (2210), а не сумма чека (2160).
+        assertEquals(221_000L, rebuilt[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL")])
         assertEquals(10_000L, rebuilt[CounterKeyFormats.DISCOUNT_SUM.format("OPERATION_SELL")])
         assertEquals(5_000L, rebuilt[CounterKeyFormats.MARKUP_SUM.format("OPERATION_SELL")])
         assertEquals(1L, rebuilt[CounterKeyFormats.TICKET_OFFLINE_COUNT.format("OPERATION_SELL_RETURN")])
@@ -299,7 +300,8 @@ class RecalculateShiftCountersUseCaseTest {
             updater.execute(kkmId, shift.id, request, isOffline = isOffline)
 
             opCounts[operationKey] = (opCounts[operationKey] ?: 0L) + 1L
-            opSums[operationKey] = (opSums[operationKey] ?: 0L) + total * 100L
+            // Операции — без скидки и наценки на чек: сумма позиций, как у БФД.
+            opSums[operationKey] = (opSums[operationKey] ?: 0L) + base * 100L
             // Знак выручки тот же, что у денежного ящика: покупка деньги
             // выдаёт, возврат покупки возвращает (эталон
             // OperationCalculator). Прежде ожидание считалось обратным

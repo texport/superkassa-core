@@ -35,18 +35,24 @@ class UpdateCountersUseCase(
      */
     fun execute(kkmId: String, shiftId: String, request: ReceiptRequest, isOffline: Boolean) {
         val operationKey = operationKey(request.operation)
-        val sumValue = request.total.tiyn()
-
-        // Суммы скидок/наценок/сдачи в тенге (только bills для счетчиков).
-        val totalItemDiscountTiyn = request.items.mapNotNull { it.discount?.tiyn() }.sum()
-        val totalItemMarkupTiyn = request.items.mapNotNull { it.markup?.tiyn() }.sum()
-        val discountTiyn = request.discount?.tiyn() ?: totalItemDiscountTiyn
-        val markupTiyn = request.markup?.tiyn() ?: totalItemMarkupTiyn
+        val sums = ReceiptReportSums(request)
+        val sumValue = sums.total
+        val discountTiyn = sums.discounts
+        val markupTiyn = sums.markups
+        val operationsTiyn = sums.operations
+        val ticketDiscountTiyn = sums.ticketDiscount
+        val ticketMarkupTiyn = sums.ticketMarkup
         val changeTiyn = request.change?.tiyn() ?: 0L
 
         // Обновление операционных счетчиков.
         increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.OPERATION_COUNT.format(operationKey), 1)
-        increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.OPERATION_SUM.format(operationKey), sumValue)
+        increment(
+            kkmId,
+            CounterScopes.SHIFT,
+            shiftId,
+            CounterKeyFormats.OPERATION_SUM.format(operationKey),
+            operationsTiyn
+        )
         increment(
             kkmId,
             CounterScopes.SHIFT,
@@ -66,7 +72,7 @@ class UpdateCountersUseCase(
             // продали, уходил в отчёт по отделу нулём — отдел показывал
             // шесть чеков там, где смена знала семь.
             val countDelta = if (item.isStorno) 0L else 1L
-            val sumDelta = if (item.isStorno) -item.sum.tiyn() else item.sum.tiyn()
+            val sumDelta = sums.section(item)
             increment(
                 kkmId,
                 CounterScopes.SHIFT,
@@ -91,14 +97,14 @@ class UpdateCountersUseCase(
             CounterScopes.SHIFT,
             shiftId,
             CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey),
-            discountTiyn
+            ticketDiscountTiyn
         )
         increment(
             kkmId,
             CounterScopes.SHIFT,
             shiftId,
             CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey),
-            markupTiyn
+            ticketMarkupTiyn
         )
         increment(
             kkmId,
@@ -188,7 +194,13 @@ class UpdateCountersUseCase(
 
         // Глобальные счетчики.
         increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.OPERATION_COUNT.format(operationKey), 1)
-        increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.OPERATION_SUM.format(operationKey), sumValue)
+        increment(
+            kkmId,
+            CounterScopes.GLOBAL,
+            null,
+            CounterKeyFormats.OPERATION_SUM.format(operationKey),
+            operationsTiyn
+        )
         increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.DISCOUNT_SUM.format(operationKey), discountTiyn)
         increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.MARKUP_SUM.format(operationKey), markupTiyn)
 
@@ -202,7 +214,7 @@ class UpdateCountersUseCase(
             // продали, уходил в отчёт по отделу нулём — отдел показывал
             // шесть чеков там, где смена знала семь.
             val countDelta = if (item.isStorno) 0L else 1L
-            val sumDelta = if (item.isStorno) -item.sum.tiyn() else item.sum.tiyn()
+            val sumDelta = sums.section(item)
             increment(
                 kkmId,
                 CounterScopes.GLOBAL,
@@ -227,14 +239,14 @@ class UpdateCountersUseCase(
             CounterScopes.GLOBAL,
             null,
             CounterKeyFormats.TICKET_DISCOUNT_SUM.format(operationKey),
-            discountTiyn
+            ticketDiscountTiyn
         )
         increment(
             kkmId,
             CounterScopes.GLOBAL,
             null,
             CounterKeyFormats.TICKET_MARKUP_SUM.format(operationKey),
-            markupTiyn
+            ticketMarkupTiyn
         )
         increment(
             kkmId,

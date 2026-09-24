@@ -468,7 +468,8 @@ class ShiftUseCasesTest {
 
         // Check SELL_RETURN count and sum
         assertEquals(1L, result[CounterKeyFormats.OPERATION_COUNT.format("OPERATION_SELL_RETURN")])
-        assertEquals(300_000L, result[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL_RETURN")])
+        // Операции — сумма позиции до её скидки и наценки: 3000 + 500 - 200.
+        assertEquals(330_000L, result[CounterKeyFormats.OPERATION_SUM.format("OPERATION_SELL_RETURN")])
 
         // Check start and end shift values
         assertEquals(1_000_000L, result[CounterKeyFormats.START_SHIFT_NON_NULLABLE_SUM.format("OPERATION_SELL")])
