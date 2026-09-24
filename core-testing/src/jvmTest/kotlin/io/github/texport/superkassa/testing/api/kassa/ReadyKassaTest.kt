@@ -8,6 +8,7 @@ import io.github.texport.superkassa.testing.api.kassa.BenchDirectory.Companion.A
 import io.github.texport.superkassa.testing.api.kassa.BenchDirectory.Companion.CASHIER_PIN
 import io.github.texport.superkassa.testing.api.kassa.BenchDirectory.Companion.NOT_PAYER
 import io.github.texport.superkassa.testing.impl.kassa.Receipts
+import kz.kazakhtelecom.proto.v203.OperationTypeEnum
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -104,6 +105,21 @@ class ReadyKassaTest {
 
         assertEquals(first.documentId, again.documentId)
         assertEquals(1, bench.bfd.countedTickets().size)
+    }
+
+    @Test
+    fun `повтор полного возврата после потерянного ответа получает свой документ, и возврат в БФД один`() {
+        val kassa = bench.registerKassa(NOT_PAYER).also { it.openShift() }
+        val sale = kassa.sell()
+        val refund = Receipts.refund(kassa.api.getDocumentDetails(kassa.kkmId, sale.documentId, ADMIN_PIN))
+        bench.bfd.loseNextAnswer()
+
+        val first = kassa.api.createSellReturnReceipt(kassa.kkmId, CASHIER_PIN, refund)
+        val again = kassa.api.createSellReturnReceipt(kassa.kkmId, CASHIER_PIN, refund)
+        kassa.resendQueue()
+
+        assertEquals(first.documentId, again.documentId)
+        assertEquals(1, bench.bfd.countedTickets().count { it.operation == OperationTypeEnum.OPERATION_SELL_RETURN })
     }
 
     @Test

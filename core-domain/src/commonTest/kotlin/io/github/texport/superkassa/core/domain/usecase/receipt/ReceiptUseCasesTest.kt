@@ -692,6 +692,10 @@ class ReceiptUseCasesTest {
     fun `возврат больше остатка по чеку-основанию отвергается`() {
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns kkm
         every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
+        // Остаток проверяется у нового возврата, в открытой смене.
+        every { storage.findIdempotencyResponse("kkm-1", any()) } returns null
+        every { storage.findOpenShift("kkm-1") } returns
+            ShiftInfo(id = "shift-1", kkmId = "kkm-1", shiftNo = 1L, status = ShiftStatus.OPEN, openedAt = 100L)
         val basisMoment = 1_700_000_000_000L
         val refunded = FiscalDocumentSnapshot(
             id = "doc-refund",
@@ -752,6 +756,10 @@ class ReceiptUseCasesTest {
     fun `исчерпанный чек-основание объясняется словами`() {
         every { authorizeUserUseCase.requireKkm("kkm-1") } returns kkm
         every { authorizeUserUseCase.requireRole("kkm-1", "1234", any()) } returns mockk()
+        // Остаток проверяется у нового возврата, в открытой смене.
+        every { storage.findIdempotencyResponse("kkm-1", any()) } returns null
+        every { storage.findOpenShift("kkm-1") } returns
+            ShiftInfo(id = "shift-1", kkmId = "kkm-1", shiftNo = 1L, status = ShiftStatus.OPEN, openedAt = 100L)
         val basisMoment = 1_700_000_000_000L
         val refunded = FiscalDocumentSnapshot(
             id = "doc-full",

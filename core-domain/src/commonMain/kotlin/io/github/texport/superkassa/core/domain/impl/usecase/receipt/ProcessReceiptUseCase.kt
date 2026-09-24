@@ -142,9 +142,6 @@ class ProcessReceiptUseCase(
         requireVatAllowedByRegime(kkm, receiptItems, receiptVat)
         val vat = withRefundBasisVat(command, kkm, VatScope(receiptItems, receiptVat))
 
-        // 5a. Возврат не может превысить остаток по чеку-основанию.
-        requireRefundFitsBasis(command, totalMoney)
-
         // 6. Подготовка доменного ReceiptRequest
         val request = ReceiptRequest(
             kkmId = command.kkmId,
@@ -187,6 +184,11 @@ class ProcessReceiptUseCase(
                 val shift = storage.findOpenShift(requestWithTaxes.kkmId)
                     ?: throw ConflictException(CoreStrings.shiftNotOpen(), "SHIFT_NOT_OPEN")
                 requireCashForBuy(requestWithTaxes, shift)
+                // Остаток по основанию проверяется только у нового возврата:
+                // повтор с тем же ключом находит свой документ раньше. Прежде
+                // проверка шла до поиска по ключу, и повтор полного возврата
+                // после потерянного ответа получал «возвращено всё».
+                requireRefundFitsBasis(command, totalMoney)
                 shift.id
             },
             saveOperation = { documentId, now, shiftId ->
