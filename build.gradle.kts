@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import java.security.MessageDigest
 import java.io.FileInputStream
 import java.util.zip.ZipOutputStream
@@ -194,6 +195,11 @@ allprojects {
         }
     }
 
+    // Ни одного предупреждения компилятора: новое роняет сборку, как в кассе и узле.
+    tasks.withType<KotlinCompilationTask<*>>().configureEach {
+        compilerOptions.allWarningsAsErrors.set(true)
+    }
+
     tasks.withType<Test>().configureEach {
         systemProperty("junit.platform.discovery.issue.severity.critical", "WARNING")
     }
@@ -214,6 +220,11 @@ repositories {
     mavenCentral()
 }
 
+// Модули, чьи классы видны Swift из SuperkassaCore. Зависимость на модуль
+// берётся у обработчика зависимостей: сам объект Project как нотация
+// зависимости Gradle 10 уже не примет.
+val frameworkExports = listOf(":core-domain", ":core-presentation", ":core-data", ":core-string")
+    .map { dependencies.project(it) }
 
 kotlin {
     jvm()
@@ -235,10 +246,7 @@ kotlin {
         target.binaries.framework {
             baseName = "SuperkassaCore"
             xcf.add(this)
-            export(project(":core-domain"))
-            export(project(":core-presentation"))
-            export(project(":core-data"))
-            export(project(":core-string"))
+            frameworkExports.forEach { export(it) }
         }
     }
 
@@ -384,14 +392,6 @@ tasks.register("generateSpmManifest") {
 
 nmcpAggregation {
     centralPortal {
-        username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
-        password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
-        publishingType.set("AUTOMATIC")
-    }
-}
-
-nmcp {
-    publishAllPublicationsToCentralPortal {
         username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
         password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
         publishingType.set("AUTOMATIC")
