@@ -4,6 +4,8 @@ import java.security.MessageDigest
 import java.io.FileInputStream
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipEntry
+import org.gradle.api.services.BuildService
+import org.gradle.api.services.BuildServiceParameters
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
@@ -38,6 +40,21 @@ dependencies {
 /** Имя артефакта модуля ядра: core-embedded-jvm → superkassa-core-embedded-jvm. */
 fun superkassaArtifactId(artifactId: String, projectName: String): String =
     if (artifactId.startsWith("superkassa-")) artifactId else artifactId.replace(projectName, "superkassa-$projectName")
+
+/**
+ * Очередь задач покрытия: отчёты и проверки Kover всех модулей идут по одной.
+ *
+ * Движок покрытия обходит каталоги классов общим на процесс Gradle обходчиком
+ * и перед обходом ставит ему фильтр своего модуля. Задачи разных модулей,
+ * идущие параллельно, подменяют фильтр друг другу: модуль считается с чужими
+ * исключениями, и порог падает или проходит в зависимости от того, какая
+ * задача успела раньше.
+ */
+abstract class KoverReportQueue : BuildService<BuildServiceParameters.None>
+
+val koverReportQueue = gradle.sharedServices.registerIfAbsent("koverReportQueue", KoverReportQueue::class) {
+    maxParallelUsages.set(1)
+}
 
 allprojects {
     group = rootProject.group
@@ -202,6 +219,17 @@ allprojects {
 
     tasks.withType<Test>().configureEach {
         systemProperty("junit.platform.discovery.issue.severity.critical", "WARNING")
+    }
+
+    // Классы задач отчётов Kover закрыты плагином; общий пакет — единственный
+    // признак задачи, которая запускает движок покрытия. Свойство очереди входит
+    // в ключ кэша сборки: результат, посчитанный без очереди, мог взять чужой
+    // фильтр, и из кэша он больше не достаётся.
+    tasks.withType<DefaultTask>().configureEach {
+        if (javaClass.name.startsWith("kotlinx.kover.gradle.plugin.tasks.reports.")) {
+            usesService(koverReportQueue)
+            inputs.property("koverReportQueue", KoverReportQueue::class.java.simpleName)
+        }
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
