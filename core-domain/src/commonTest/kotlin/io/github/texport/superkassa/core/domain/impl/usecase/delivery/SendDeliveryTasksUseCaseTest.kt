@@ -36,7 +36,7 @@ class SendDeliveryTasksUseCaseTest {
     private val render = mockk<ReceiptRenderPort> { every { renderHtml(any(), any(), any()) } returns "<p>чек</p>" }
     private val policy = DeliveryRetryPolicy(attempts = 2, firstPause = 10.seconds, lease = 60.seconds)
     private fun sender(print: PrintDeliverySettings? = null) =
-        SendDeliveryTasksUseCase(storage, channel, DeliveryRequests(storage, print, convert, render), clock, policy)
+        SendDeliveryTasksUseCase(storage, channel, DeliveryRequests(storage, { print }, convert, render), clock, policy)
 
     init {
         every { storage.findFiscalDocumentWithReceiptPayload("doc-1") } returns (document("https://bfd.kz/r/1") to mockk<ReceiptRequest>())

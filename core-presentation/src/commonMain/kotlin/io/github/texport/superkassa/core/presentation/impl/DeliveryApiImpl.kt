@@ -1,7 +1,7 @@
 package io.github.texport.superkassa.core.presentation.impl
 
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryRetryPolicy
-import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
+import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryPort
 import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
@@ -23,6 +23,8 @@ import io.github.texport.superkassa.core.presentation.impl.mapper.toResponse
 /**
  * Внутренняя реализация API доставки чека покупателю.
  *
+ * @param settings текущие настройки доставки: читаются при каждой постановке
+ *   и отправке, и правка каналов действует без перезапуска.
  * @param clock часы кассы: по ним наступает срок задач.
  * @param policy повторы доставки после отказа канала.
  */
@@ -30,7 +32,7 @@ class DeliveryApiImpl(
     storage: StoragePort,
     pinHasher: PinHasherPort,
     delivery: DeliveryPort,
-    coreSettings: CoreSettings,
+    settings: () -> DeliverySettings?,
     documentConvertPort: DocumentConvertPort,
     receiptRenderPort: ReceiptRenderPort,
     /** Счёт неверных пинов; сборка ядра даёт тот же, что у фасада. */
@@ -44,7 +46,7 @@ class DeliveryApiImpl(
     private val sender = SendDeliveryTasksUseCase(
         storage = storage,
         delivery = delivery,
-        requests = DeliveryRequests(storage, coreSettings.delivery?.print, documentConvertPort, receiptRenderPort),
+        requests = DeliveryRequests(storage, { settings()?.print }, documentConvertPort, receiptRenderPort),
         clock = clock,
         policy = policy
     )
@@ -52,8 +54,8 @@ class DeliveryApiImpl(
     private val retry = RetryReceiptDeliveryUseCase(
         storage = storage,
         authorizeUserUseCase = authorization,
-        helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort),
-        plan = ReceiptDeliveryPlan(coreSettings.delivery),
+        helper = ReceiptDeliveryHelper(storage, delivery, settings, documentConvertPort, receiptRenderPort),
+        plan = ReceiptDeliveryPlan(settings),
         sender = sender,
         clock = clock
     )

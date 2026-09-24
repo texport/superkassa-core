@@ -13,6 +13,7 @@ import io.github.texport.superkassa.core.domain.api.model.settings.CoreMode
 import io.github.texport.superkassa.core.domain.api.model.kkm.CashOperationType
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
 import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
+import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
 import io.github.texport.superkassa.core.domain.api.port.integration.ClockPort
 import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryPort
 import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
@@ -111,7 +112,12 @@ class SuperkassaApiImpl(
     internal val timeValidator: TimeValidatorPort,
     private val printApi: PrintApi,
     /** Счёт неверных пинов; сборка ядра даёт один на все входы по пину. */
-    pinGuard: PinGuard
+    pinGuard: PinGuard,
+    /**
+     * Текущие настройки доставки. Читаются при каждой постановке доставки:
+     * снимок настроек запуска держал включённый канал выключенным до перезапуска.
+     */
+    deliverySettings: () -> DeliverySettings? = { coreSettings.delivery }
 ) : SuperkassaApi, PrintApi by printApi {
 
     internal val logger = getLogger(SuperkassaApiImpl::class)
@@ -163,7 +169,7 @@ class SuperkassaApiImpl(
     internal val receiptDeliveryHelper = ReceiptDeliveryHelper(
         storage = storage,
         delivery = delivery,
-        coreSettings = coreSettings,
+        settings = deliverySettings,
         documentConvertPort = documentConvertPort,
         receiptRenderPort = receiptRenderPort
     )
@@ -260,7 +266,7 @@ class SuperkassaApiImpl(
     internal val deliverReceiptUseCase = DeliverReceiptUseCase(
         helper = receiptDeliveryHelper,
         storage = storage,
-        plan = ReceiptDeliveryPlan(coreSettings.delivery),
+        plan = ReceiptDeliveryPlan(deliverySettings),
         clock = clock
     )
     internal val processOfdDocumentResultUseCase = ProcessOfdDocumentResultUseCase(

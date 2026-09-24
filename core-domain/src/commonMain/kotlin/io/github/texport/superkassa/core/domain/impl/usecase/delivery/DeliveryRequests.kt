@@ -18,11 +18,11 @@ import io.github.texport.superkassa.core.string.api.TrilingualMessage
  * Что уходит в канал по задаче доставки: чек рисуется и переводится
  * в нужный вид в момент отправки, в фоне, а не при пробитии.
  *
- * @param print настройки печати: из них берётся ширина ленты.
+ * @param print текущие настройки печати: из них берётся ширина ленты.
  */
 class DeliveryRequests(
     private val storage: StoragePort,
-    private val print: PrintDeliverySettings?,
+    private val print: () -> PrintDeliverySettings?,
     private val convert: DocumentConvertPort,
     private val render: ReceiptRenderPort
 ) {
@@ -61,7 +61,7 @@ class DeliveryRequests(
     }
 
     /** Лента 48 и 80 мм — как задана; всё прочее печатается на 58 мм. */
-    private fun paperWidth(): Int = when (val width = print?.paperWidthMm) {
+    private fun paperWidth(): Int = when (val width = print()?.paperWidthMm) {
         NARROW_PAPER, WIDE_PAPER -> width
         else -> DEFAULT_PAPER
     }

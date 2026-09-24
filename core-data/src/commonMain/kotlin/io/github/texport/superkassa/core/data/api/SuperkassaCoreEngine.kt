@@ -17,6 +17,7 @@ import io.github.texport.superkassa.core.data.impl.ofd.OfdConfig as ImplOfdConfi
 import io.github.texport.superkassa.core.data.impl.ofd.OfdProtocolCodec
 import io.github.texport.superkassa.core.data.impl.ofd.strategy.*
 import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
+import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
 import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryRetryPolicy
 import io.github.texport.superkassa.core.domain.api.model.settings.CoreMode
 import io.github.texport.superkassa.core.domain.api.model.settings.StorageSettings
@@ -103,11 +104,16 @@ class SuperkassaCoreEngine(
      * @param policy повторы доставки после отказа канала.
      * @throws IllegalStateException если настройки ядра ещё не заведены: сначала [buildApi].
      */
-    fun buildDeliveryApi(policy: DeliveryRetryPolicy = DeliveryRetryPolicy()): DeliveryApi = DeliveryApiImpl(
+    fun buildDeliveryApi(policy: DeliveryRetryPolicy = DeliveryRetryPolicy()): DeliveryApi {
+        checkNotNull(settings.load()) { "Core settings are not created: build the API first" }
+        return deliveryApi(policy)
+    }
+
+    private fun deliveryApi(policy: DeliveryRetryPolicy) = DeliveryApiImpl(
         storage = storage,
         pinHasher = Sha256PinHasherAdapter(),
         delivery = delivery,
-        coreSettings = checkNotNull(settings.load()) { "Core settings are not created: build the API first" },
+        settings = ::currentDelivery,
         documentConvertPort = pdfConverter,
         receiptRenderPort = receiptRenderer,
         pinGuard = pinGuard,
@@ -129,13 +135,21 @@ class SuperkassaCoreEngine(
         return SettingsApiImpl(current, UpdateSettingsUseCase(current, settings))
     }
 
-    /** Доставка чека покупателю по настройкам [coreSettings]: её ставит и досылка очереди. */
-    private fun receiptDelivery(coreSettings: CoreSettings) = DeliverReceiptUseCase(
-        helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, pdfConverter, receiptRenderer),
+    /** Доставка чека покупателю по текущим настройкам: её ставит и досылка очереди. */
+    private fun receiptDelivery() = DeliverReceiptUseCase(
+        helper = ReceiptDeliveryHelper(storage, delivery, ::currentDelivery, pdfConverter, receiptRenderer),
         storage = storage,
-        plan = ReceiptDeliveryPlan(coreSettings.delivery),
+        plan = ReceiptDeliveryPlan(::currentDelivery),
         clock = clock
     )
+
+    /**
+     * Настройки доставки, как они записаны сейчас.
+     *
+     * Доставка читает их при каждой постановке и отправке: снимок настроек
+     * запуска держал включённый канал и нового получателя до перезапуска.
+     */
+    private fun currentDelivery(): DeliverySettings? = settings.load()?.delivery
 
     /**
      * Настройки первого запуска с полями, которыми владеет запуск.
@@ -229,7 +243,7 @@ class SuperkassaCoreEngine(
             sendFiscalCommand = sendFiscalCommand,
             storage = storage,
             clock = clock,
-            deliverReceipt = receiptDelivery(coreSettings)
+            deliverReceipt = receiptDelivery()
         )
 
         val queuePort = OfflineQueueAdapter(
@@ -274,7 +288,8 @@ class SuperkassaCoreEngine(
             documentConvertPort = pdfConverter,
             timeValidator = timeValidator,
             printApi = printApi,
-            pinGuard = pinGuard
+            pinGuard = pinGuard,
+            deliverySettings = ::currentDelivery
         )
     }
 

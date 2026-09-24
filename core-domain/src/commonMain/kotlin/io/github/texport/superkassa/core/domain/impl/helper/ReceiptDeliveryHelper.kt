@@ -4,7 +4,7 @@ import io.github.texport.superkassa.core.domain.api.model.delivery.DeliveryReque
 import io.github.texport.superkassa.core.domain.api.model.kkm.FiscalDocumentSnapshot
 import io.github.texport.superkassa.core.domain.api.model.kkm.KkmInfo
 import io.github.texport.superkassa.core.domain.api.model.receipt.ReceiptRequest
-import io.github.texport.superkassa.core.domain.api.model.settings.CoreSettings
+import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
 import io.github.texport.superkassa.core.domain.api.model.settings.DeliveryChannelSettings
 import io.github.texport.superkassa.core.domain.api.port.integration.DeliveryPort
 import io.github.texport.superkassa.core.domain.api.port.integration.DocumentConvertPort
@@ -18,14 +18,15 @@ import io.github.texport.superkassa.core.domain.impl.logging.getLogger
  *
  * @property storage Порт для доступа к хранилищу данных ККМ.
  * @property delivery Порт для физической отправки документов получателю.
- * @property coreSettings Объект настроек системы (включая параметры каналов доставки).
+ * @property settings Текущие настройки доставки: читаются при каждой доставке, и правка
+ *   каналов действует без перезапуска.
  * @property documentConvertPort Порт для конвертации документов в различные форматы (PDF, ESC/POS, изображения).
  * @property receiptRenderPort Порт визуализации чека (генерация HTML-представления чека).
  */
 class ReceiptDeliveryHelper(
     private val storage: StoragePort,
     private val delivery: DeliveryPort,
-    private val coreSettings: CoreSettings,
+    private val settings: () -> DeliverySettings?,
     private val documentConvertPort: DocumentConvertPort,
     private val receiptRenderPort: ReceiptRenderPort
 ) {
@@ -86,7 +87,7 @@ class ReceiptDeliveryHelper(
             state = "ACTIVE"
         )
         val html = receiptRenderPort.renderHtml(receipt, docSnapshot, kkm)
-        val del = coreSettings.delivery
+        val del = settings()
 
         if (del == null) {
             if (responseBin != null) {
@@ -234,7 +235,7 @@ class ReceiptDeliveryHelper(
             state = "ACTIVE"
         )
         val html = receiptRenderPort.renderHtml(receipt, docSnapshot, kkm)
-        val del = coreSettings.delivery ?: return emptyList()
+        val del = settings() ?: return emptyList()
         val results = mutableListOf<Pair<String, Boolean>>()
 
         val printSetting = del.print

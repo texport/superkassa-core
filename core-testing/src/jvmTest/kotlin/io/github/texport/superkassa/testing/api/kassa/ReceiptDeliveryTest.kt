@@ -1,5 +1,6 @@
 package io.github.texport.superkassa.testing.api.kassa
 
+import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySettings
 import io.github.texport.superkassa.core.presentation.api.model.delivery.ReceiptDeliveryState
 import io.github.texport.superkassa.core.presentation.api.model.ofd.DeliveryStatus
 import io.github.texport.superkassa.testing.impl.kassa.Receipts
@@ -119,6 +120,19 @@ class ReceiptDeliveryTest {
         kassa.resendQueue()
 
         assertEquals(0, kassa.deliverReceipts())
+        assertEquals(ReceiptDeliveryState.DELIVERED, kassa.deliveries(sale).sms().state)
+        assertEquals(listOf(sale.documentId), sms.sent.map { it.documentId })
+    }
+
+    @Test
+    fun `канал, включённый в настройках, доставляет чек без перезапуска кассы`() {
+        val sms = RecordingSms()
+        val kassa = DeliveryStand(directory, DeliverySettings(), listOf(sms)).also { stand = it }.kassa
+
+        checkNotNull(stand).bench.superkassa.settings.run { updateSettings(getSettings().copy(delivery = smsReceipt())) }
+        val sale = kassa.sell()
+        kassa.deliverReceipts()
+
         assertEquals(ReceiptDeliveryState.DELIVERED, kassa.deliveries(sale).sms().state)
         assertEquals(listOf(sale.documentId), sms.sent.map { it.documentId })
     }

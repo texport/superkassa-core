@@ -63,7 +63,7 @@ class ReceiptUseCasesTest {
     private val deliverReceipt = DeliverReceiptUseCase(
         receiptDeliveryHelper,
         storage,
-        ReceiptDeliveryPlan(null),
+        ReceiptDeliveryPlan { null },
         clock
     )
     private val processOfdDocumentResult = ProcessOfdDocumentResultUseCase(
@@ -93,7 +93,7 @@ class ReceiptUseCasesTest {
         storage,
         authorizeUserUseCase,
         receiptDeliveryHelper,
-        ReceiptDeliveryPlan(null),
+        ReceiptDeliveryPlan { null },
         mockk<SendDeliveryTasksUseCase>(),
         clock
     )

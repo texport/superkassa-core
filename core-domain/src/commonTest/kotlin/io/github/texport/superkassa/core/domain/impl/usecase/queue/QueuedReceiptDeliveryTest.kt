@@ -25,9 +25,9 @@ class QueuedReceiptDeliveryTest {
     private val storage = tasks.storage()
     private val clock = mockk<ClockPort> { every { now() } returns 50L }
     private val send = mockk<SendFiscalCommandUseCase>()
-    private val plan = ReceiptDeliveryPlan(
+    private val plan = ReceiptDeliveryPlan {
         DeliverySettings(channels = listOf(DeliveryChannelSettings("SMS", payloadType = "BOTH", destination = "+7701")))
-    )
+    }
     private val deliver = DeliverReceiptUseCase(mockk<ReceiptDeliveryHelper>(), storage, plan, clock)
     private val process = ProcessQueueCommandUseCase(send, storage, clock, deliver)
     private val document = FiscalDocumentSnapshot(

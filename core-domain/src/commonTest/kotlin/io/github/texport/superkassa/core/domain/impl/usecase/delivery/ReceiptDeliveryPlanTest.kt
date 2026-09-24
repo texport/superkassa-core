@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 /** Какие задачи доставки ставит чек по настройкам. */
 class ReceiptDeliveryPlanTest {
     private fun routes(settings: DeliverySettings?, hasLink: Boolean = true) =
-        ReceiptDeliveryPlan(settings).tasksFor("kkm-1", "doc-1", hasLink, now = 5L)
+        ReceiptDeliveryPlan { settings }.tasksFor("kkm-1", "doc-1", hasLink, now = 5L)
             .map { Triple(it.channel, it.destination, it.payloadType) }
 
     @Test
@@ -53,7 +53,7 @@ class ReceiptDeliveryPlanTest {
 
     @Test
     fun `задача ждёт с момента постановки`() {
-        val task = ReceiptDeliveryPlan(DeliverySettings(channels = listOf(DeliveryChannelSettings("SMS", destination = "+7"))))
+        val task = ReceiptDeliveryPlan { DeliverySettings(channels = listOf(DeliveryChannelSettings("SMS", destination = "+7"))) }
             .tasksFor("kkm-1", "doc-1", hasLink = false, now = 5L).single()
 
         assertEquals(listOf("doc-1/SMS/PDF", "kkm-1", "doc-1"), listOf(task.id, task.kkmId, task.documentId))

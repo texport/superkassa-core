@@ -33,7 +33,7 @@ class ReceiptDeliveryTasksTest {
         every { sendDocument(any()) } answers { tasks.rows.filter { it.documentId == firstArg<String>() } }
     }
     private val auth = mockk<AuthorizeUserUseCase>(relaxed = true)
-    private val plan = ReceiptDeliveryPlan(DeliverySettings(channels = listOf(DeliveryChannelSettings("SMS", destination = "+7701"))))
+    private val plan = ReceiptDeliveryPlan { DeliverySettings(channels = listOf(DeliveryChannelSettings("SMS", destination = "+7701"))) }
     private val document = FiscalDocumentSnapshot(
         id = "doc-1", cashboxId = "kkm-1", shiftId = "shift-1", docType = "CHECK", docNo = 1L, shiftNo = 1L,
         createdAt = 1L, totalAmount = 100L, currency = "KZT", fiscalSign = "fs", autonomousSign = null,
@@ -77,7 +77,7 @@ class ReceiptDeliveryTasksTest {
 
     @Test
     fun `повтор без каналов - отказ «не настроено»`() {
-        val retry = RetryReceiptDeliveryUseCase(storage, auth, helper, ReceiptDeliveryPlan(null), sender, clock)
+        val retry = RetryReceiptDeliveryUseCase(storage, auth, helper, ReceiptDeliveryPlan { null }, sender, clock)
 
         val error = assertFailsWith<ConflictException> { retry.resend("kkm-1", "doc-1", "1234") }
 

@@ -33,7 +33,7 @@ class DeliveryApiImplTest {
         storage = storage,
         pinHasher = pinHasher,
         delivery = delivery,
-        coreSettings = coreSettings,
+        settings = { coreSettings.delivery },
         documentConvertPort = documentConvertPort,
         receiptRenderPort = receiptRenderPort,
         pinGuard = PinGuard(MemoryPinAttempts()),

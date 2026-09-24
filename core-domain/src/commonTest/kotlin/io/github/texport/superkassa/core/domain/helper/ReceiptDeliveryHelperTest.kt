@@ -28,7 +28,7 @@ class ReceiptDeliveryHelperTest {
     @Test
     fun testDeliverReceiptNoSettings() {
         val coreSettings = CoreSettings(mode = mockMode, storage = mockStorage, delivery = null)
-        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+        val helper = ReceiptDeliveryHelper(storage, delivery, { coreSettings.delivery }, documentConvertPort, receiptRenderPort)
 
         every { storage.findKkm("kkm-1") } returns KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
@@ -63,7 +63,7 @@ class ReceiptDeliveryHelperTest {
                 )
             )
         )
-        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+        val helper = ReceiptDeliveryHelper(storage, delivery, { coreSettings.delivery }, documentConvertPort, receiptRenderPort)
 
         every { storage.findKkm("kkm-1") } returns KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
@@ -109,7 +109,7 @@ class ReceiptDeliveryHelperTest {
                 )
             )
         )
-        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+        val helper = ReceiptDeliveryHelper(storage, delivery, { coreSettings.delivery }, documentConvertPort, receiptRenderPort)
 
         every { storage.findKkm("kkm-1") } returns KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
@@ -147,7 +147,7 @@ class ReceiptDeliveryHelperTest {
                 )
             )
         )
-        val helper48 = ReceiptDeliveryHelper(storage, delivery, coreSettings48, documentConvertPort, receiptRenderPort)
+        val helper48 = ReceiptDeliveryHelper(storage, delivery, { coreSettings48.delivery }, documentConvertPort, receiptRenderPort)
 
         every { storage.findKkm("kkm-1") } returns KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
@@ -173,7 +173,7 @@ class ReceiptDeliveryHelperTest {
                 )
             )
         )
-        val helperDefault = ReceiptDeliveryHelper(storage, delivery, coreSettingsDefault, documentConvertPort, receiptRenderPort)
+        val helperDefault = ReceiptDeliveryHelper(storage, delivery, { coreSettingsDefault.delivery }, documentConvertPort, receiptRenderPort)
         every { documentConvertPort.htmlToEscPos("<html></html>", 58) } returns byteArrayOf(5, 8)
 
         helperDefault.deliverReceipt("kkm-1", "doc-1", receipt, snapshot, null, null)
@@ -208,7 +208,7 @@ class ReceiptDeliveryHelperTest {
                 )
             )
         )
-        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+        val helper = ReceiptDeliveryHelper(storage, delivery, { coreSettings.delivery }, documentConvertPort, receiptRenderPort)
 
         every { storage.findKkm("kkm-1") } returns KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
@@ -261,7 +261,7 @@ class ReceiptDeliveryHelperTest {
                 )
             )
         )
-        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+        val helper = ReceiptDeliveryHelper(storage, delivery, { coreSettings.delivery }, documentConvertPort, receiptRenderPort)
 
         every { storage.findKkm("kkm-1") } returns KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
@@ -286,7 +286,7 @@ class ReceiptDeliveryHelperTest {
     @Test
     fun testRetryDeliveryNoSettings() {
         val coreSettings = CoreSettings(mode = mockMode, storage = mockStorage, delivery = null)
-        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+        val helper = ReceiptDeliveryHelper(storage, delivery, { coreSettings.delivery }, documentConvertPort, receiptRenderPort)
 
         every { storage.findKkm("kkm-1") } returns KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
@@ -301,7 +301,7 @@ class ReceiptDeliveryHelperTest {
     @Test
     fun testDeliverReceiptFindKkmFallback() {
         val coreSettings = CoreSettings(mode = mockMode, storage = mockStorage, delivery = null)
-        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+        val helper = ReceiptDeliveryHelper(storage, delivery, { coreSettings.delivery }, documentConvertPort, receiptRenderPort)
 
         every { storage.findKkm("kkm-missing") } returns null
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
@@ -335,7 +335,7 @@ class ReceiptDeliveryHelperTest {
                 )
             )
         )
-        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+        val helper = ReceiptDeliveryHelper(storage, delivery, { coreSettings.delivery }, documentConvertPort, receiptRenderPort)
 
         every { storage.findKkm("kkm-1") } returns KkmInfo(id = "kkm-1", createdAt = 0L, updatedAt = 0L, mode = "ACTIVE", state = "ACTIVE")
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"
@@ -361,7 +361,7 @@ class ReceiptDeliveryHelperTest {
                 )
             )
         )
-        val helper = ReceiptDeliveryHelper(storage, delivery, coreSettings, documentConvertPort, receiptRenderPort)
+        val helper = ReceiptDeliveryHelper(storage, delivery, { coreSettings.delivery }, documentConvertPort, receiptRenderPort)
 
         every { storage.findKkm("kkm-missing") } returns null
         every { receiptRenderPort.renderHtml(any(), any(), any()) } returns "<html></html>"

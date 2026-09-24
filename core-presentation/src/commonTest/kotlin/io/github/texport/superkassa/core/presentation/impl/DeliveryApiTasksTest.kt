@@ -31,7 +31,7 @@ class DeliveryApiTasksTest {
     private val delivery = mockk<DeliveryPort>()
     private val clock = mockk<ClockPort> { every { now() } returns 100L }
     private val settings = CoreSettings(mode = CoreMode.DESKTOP, storage = StorageSettings(engine = "SQLITE", jdbcUrl = "jdbc:sqlite:k.db"))
-    private val api = DeliveryApiImpl(storage, pinHasher, delivery, settings, mockk(), mockk(), PinGuard(MemoryPinAttempts()), clock)
+    private val api = DeliveryApiImpl(storage, pinHasher, delivery, { settings.delivery }, mockk(), mockk(), PinGuard(MemoryPinAttempts()), clock)
     private val failure = DeliveryFailure("DELIVERY_SMS_NOT_CONFIGURED", TrilingualMessage("не настроен", "бапталмаған", "not configured"))
     private val waiting = DeliveryTask("doc-1/SMS/LINK", "kkm-1", "doc-1", "SMS", "+7701", "LINK", nextAttemptAt = 900L, createdAt = 1L)
     private val document = FiscalDocumentSnapshot(

@@ -14,9 +14,10 @@ import io.github.texport.superkassa.core.domain.api.model.settings.DeliverySetti
  * видит её в журнале, а не гадает, почему покупателю ничего не пришло.
  * Ссылка ставится только тогда, когда БФД её дал.
  *
- * @param settings настройки доставки; `null` — доставлять некуда.
+ * @param settings текущие настройки доставки; `null` — доставлять некуда. Читаются
+ * при каждой постановке: включённый канал действует без перезапуска кассы.
  */
-class ReceiptDeliveryPlan(private val settings: DeliverySettings?) {
+class ReceiptDeliveryPlan(private val settings: () -> DeliverySettings?) {
 
     /**
      * Задачи документа [documentId] кассы [kkmId], поставленные в [now].
@@ -24,7 +25,7 @@ class ReceiptDeliveryPlan(private val settings: DeliverySettings?) {
      * @param hasLink дал ли БФД ссылку на чек.
      */
     fun tasksFor(kkmId: String, documentId: String, hasLink: Boolean, now: Long): List<DeliveryTask> {
-        val delivery = settings ?: return emptyList()
+        val delivery = settings() ?: return emptyList()
         val routes = printRoutes(delivery) + delivery.channels.filter { it.enabled }.flatMap { routes(it, hasLink) }
         return routes.map { route ->
             DeliveryTask(
