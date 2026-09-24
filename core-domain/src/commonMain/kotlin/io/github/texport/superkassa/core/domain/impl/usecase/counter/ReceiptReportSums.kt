@@ -36,9 +36,36 @@ class ReceiptReportSums(private val request: ReceiptRequest) {
     /** Наценка на сам чек — для строки чеков. */
     val ticketMarkup: Long = request.markup?.tiyn() ?: 0L
 
+    /**
+     * Число позиций для строк операций, отделов и итога: сторно не считается.
+     *
+     * БФД считает в этих строках позиции, а не чеки (`OperationCalculator.getTotal`,
+     * `extractSections`: +1 за товар, сторно — +0). Прежде касса ставила
+     * сюда единицу за чек, и чек на три товара расходился с БФД на два.
+     */
+    val goods: Long = request.items.count { !it.isStorno }.toLong()
+
+    /**
+     * Число скидок: на чек и на каждую позицию отдельно, сторно не считается —
+     * как `OperationCalculator.updateDiscounts`. Прежде касса брала сюда
+     * число операций, и чек без скидки показывал в отчёте одну скидку.
+     */
+    val discountCount: Long = request.modifiers(request.discount, ReceiptItem::discount)
+
+    /** Число наценок — по тем же правилам, что и скидок (`updateMarkups`). */
+    val markupCount: Long = request.modifiers(request.markup, ReceiptItem::markup)
+
     /** Вклад позиции [item] в отдел: сумма до её скидки и наценки, сторно — с минусом. */
     fun section(item: ReceiptItem): Long = item.signed(item.sumBeforeModifiers)
 }
+
+/** Модификатор на чек и на каждую несторнированную позицию — по штуке. */
+private fun ReceiptRequest.modifiers(onReceipt: Money?, onItem: (ReceiptItem) -> Money?): Long {
+    val receipt = if (onReceipt.isPositive()) 1L else 0L
+    return receipt + items.count { !it.isStorno && onItem(it).isPositive() }
+}
+
+private fun Money?.isPositive(): Boolean = this != null && tiyn() > 0L
 
 /** Сумма [value] позиции со знаком: сторно её вычитает. */
 private fun ReceiptItem.signed(value: Money?): Long {

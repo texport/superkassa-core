@@ -45,6 +45,7 @@ class OpenShiftUseCase(
     private val authorizeUser: AuthorizeUserUseCase
 ) {
     private val logger = getLogger(OpenShiftUseCase::class)
+    private val totals = ShiftTotals(storage)
 
     /**
      * Выполняет процедуру открытия смены.
@@ -80,9 +81,8 @@ class OpenShiftUseCase(
             }
 
             // Запрашиваем последнюю локально сохраненную смену для вычисления номера новой смены
-            val lastLocalShiftNo = storage.listShifts(kkmId, limit = 1, offset = 0)
-                .firstOrNull()
-                ?.shiftNo
+            val previous = storage.listShifts(kkmId, limit = 1, offset = 0).firstOrNull()
+            val lastLocalShiftNo = previous?.shiftNo
 
             // Вычисляем номер новой смены: инкрементируем последний номер смены
             val shiftNo = if (lastLocalShiftNo == null) {
@@ -136,12 +136,30 @@ class OpenShiftUseCase(
                 }
             }
 
+            // Счёт чеков и операций с деньгами «за всё время» переходит в новую смену, как у БФД
+            carryTotals(kkmId, shiftId, totals.after(kkmId, previous))
+
             // Переносим текущее состояние наличных (cash.sum) в новую смену
             val globalCashSum = globalCounters[CounterKeyFormats.CASH_SUM] ?: 0L
             storage.upsertCounter(kkmId, CounterScopes.SHIFT, shiftId, "start_shift_cash.sum", globalCashSum)
             storage.upsertCounter(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.CASH_SUM, globalCashSum)
 
             shift
+        }
+    }
+
+    /** Записывает счёт на начало смены, и с него же смена начинает свой счёт «за всё время». */
+    private fun carryTotals(kkmId: String, shiftId: String, start: Map<String, Long>) {
+        start.forEach { (key, value) -> storage.upsertCounter(kkmId, CounterScopes.SHIFT, shiftId, key, value) }
+        ShiftTotals.OPERATIONS.forEach { op ->
+            val carried = start[CounterKeyFormats.START_SHIFT_TICKET_TOTAL_COUNT.format(op)] ?: 0L
+            val key = CounterKeyFormats.TICKET_TOTAL_COUNT.format(op)
+            storage.upsertCounter(kkmId, CounterScopes.SHIFT, shiftId, key, carried)
+        }
+        ShiftTotals.PLACEMENTS.forEach { op ->
+            val carried = start[CounterKeyFormats.START_SHIFT_MONEY_PLACEMENT_TOTAL_COUNT.format(op)] ?: 0L
+            val key = CounterKeyFormats.MONEY_PLACEMENT_TOTAL_COUNT.format(op)
+            storage.upsertCounter(kkmId, CounterScopes.SHIFT, shiftId, key, carried)
         }
     }
 

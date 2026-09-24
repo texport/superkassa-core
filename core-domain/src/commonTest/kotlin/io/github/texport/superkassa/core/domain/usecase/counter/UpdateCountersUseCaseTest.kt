@@ -206,7 +206,9 @@ class UpdateCountersUseCaseTest {
         val global = storage.loadCounters("kkm-1", CounterScopes.GLOBAL, null)
 
         // General operations
-        assertEquals(1L, shift["operation.OPERATION_SELL.count"])
+        // Три позиции — три в строке операций, как у БФД; скидка на чек — одна.
+        assertEquals(3L, shift["operation.OPERATION_SELL.count"])
+        assertEquals(1L, shift["operation.OPERATION_SELL.discount_count"])
         assertEquals(466_000L, shift["operation.OPERATION_SELL.sum"])
         assertEquals(10_000L, shift["operation.OPERATION_SELL.discount_sum"])
         assertEquals(5_000L, shift["operation.OPERATION_SELL.markup_sum"])
@@ -293,6 +295,8 @@ class UpdateCountersUseCaseTest {
         expectedShift["operation.$opKey.sum"] = totalTiyn
         expectedShift["operation.$opKey.discount_sum"] = 0L
         expectedShift["operation.$opKey.markup_sum"] = 0L
+        expectedShift["operation.$opKey.discount_count"] = 0L
+        expectedShift["operation.$opKey.markup_count"] = 0L
         expectedShift["section.$sectionCode.operation.$opKey.count"] = 1L
         expectedShift["section.$sectionCode.operation.$opKey.sum"] = totalTiyn
         expectedShift["ticket.$opKey.total_count"] = 1L

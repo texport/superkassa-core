@@ -86,6 +86,12 @@ class FakeBfd(
     /** Изъятия кассы [kassa] по сменам БФД, в тиынах: номер смены БФД — сумма. */
     fun withdrawnByShift(kassa: Long): Map<Int, Long> = ledger(kassa).drawer.withdrawnByShift()
 
+    /** Итоги текущей смены кассы [kassa], как их посчитал БФД по принятым документам. */
+    fun shiftReport(kassa: Long): BfdReport = ledger(kassa).counters.current()
+
+    /** Итоги закрытых смен кассы [kassa] по порядку, как их посчитал БФД. */
+    fun closedShiftReports(kassa: Long): List<BfdReport> = ledger(kassa).counters.closedShifts()
+
     /** Регистрационный номер КГД, который БФД сообщает кассе [kassa]. */
     fun kgdNumber(kassa: Long): String = BfdRegistration.kgdNumber(kassa)
 

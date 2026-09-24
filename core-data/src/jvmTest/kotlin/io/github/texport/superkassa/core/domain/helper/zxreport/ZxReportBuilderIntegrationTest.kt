@@ -68,6 +68,8 @@ class ZxReportBuilderIntegrationTest {
             // Скидки/наценки.
             put(CounterKeyFormats.DISCOUNT_SUM.format("OPERATION_SELL"), 10_000L)
             put(CounterKeyFormats.MARKUP_SUM.format("OPERATION_SELL"), 5_000L)
+            put(CounterKeyFormats.DISCOUNT_COUNT.format("OPERATION_SELL"), 1L)
+            put(CounterKeyFormats.MARKUP_COUNT.format("OPERATION_SELL"), 1L)
 
             // Сводка по билетам (чекам) SELL.
             put(CounterKeyFormats.TICKET_TOTAL_COUNT.format("OPERATION_SELL"), 2L)
@@ -136,11 +138,12 @@ class ZxReportBuilderIntegrationTest {
         assertEquals(2_000L, opSell["sum"]!!.jsonObject["bills"]!!.jsonPrimitive.long)
 
         val discountSell = findOp(discountsJson, "OPERATION_SELL")
-        assertEquals(2L, discountSell["count"]!!.jsonPrimitive.long)
+        // Скидок столько, сколько их было, а не столько, сколько операций.
+        assertEquals(1L, discountSell["count"]!!.jsonPrimitive.long)
         assertEquals(100L, discountSell["sum"]!!.jsonObject["bills"]!!.jsonPrimitive.long)
 
         val markupSell = findOp(markupsJson, "OPERATION_SELL")
-        assertEquals(2L, markupSell["count"]!!.jsonPrimitive.long)
+        assertEquals(1L, markupSell["count"]!!.jsonPrimitive.long)
         assertEquals(50L, markupSell["sum"]!!.jsonObject["bills"]!!.jsonPrimitive.long)
 
         val totalResultSell = findOp(totalResultJson, "OPERATION_SELL")

@@ -44,8 +44,8 @@ class UpdateCountersUseCase(
         val ticketMarkupTiyn = sums.ticketMarkup
         val changeTiyn = request.change?.tiyn() ?: 0L
 
-        // Обновление операционных счетчиков.
-        increment(kkmId, CounterScopes.SHIFT, shiftId, CounterKeyFormats.OPERATION_COUNT.format(operationKey), 1)
+        // Обновление операционных счетчиков: позиции, а не чеки, и скидки с наценками поштучно.
+        countOperation(kkmId, CounterScopes.SHIFT, shiftId, operationKey, sums)
         increment(
             kkmId,
             CounterScopes.SHIFT,
@@ -193,7 +193,7 @@ class UpdateCountersUseCase(
         }
 
         // Глобальные счетчики.
-        increment(kkmId, CounterScopes.GLOBAL, null, CounterKeyFormats.OPERATION_COUNT.format(operationKey), 1)
+        countOperation(kkmId, CounterScopes.GLOBAL, null, operationKey, sums)
         increment(
             kkmId,
             CounterScopes.GLOBAL,
@@ -292,6 +292,19 @@ class UpdateCountersUseCase(
                 if (newRevenue < 0) 1 else 0
             )
         }
+    }
+
+    /** Позиции чека и его скидки с наценками поштучно — в строки операции [operationKey]. */
+    private fun countOperation(
+        kkmId: String,
+        scope: String,
+        shiftId: String?,
+        operationKey: String,
+        sums: ReceiptReportSums
+    ) {
+        increment(kkmId, scope, shiftId, CounterKeyFormats.OPERATION_COUNT.format(operationKey), sums.goods)
+        increment(kkmId, scope, shiftId, CounterKeyFormats.DISCOUNT_COUNT.format(operationKey), sums.discountCount)
+        increment(kkmId, scope, shiftId, CounterKeyFormats.MARKUP_COUNT.format(operationKey), sums.markupCount)
     }
 
     /**
