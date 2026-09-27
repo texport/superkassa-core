@@ -31,3 +31,8 @@ local.properties
 
 # Log files
 *.log
+
+# Личное состояние Xcode и Swift Package Manager на машине разработчика:
+# схемы, открытые окна, выбранные цели — у каждого свои.
+.swiftpm/
+xcuserdata/
