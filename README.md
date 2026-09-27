@@ -23,7 +23,7 @@
 6. **`delivery`**: Transportation network delivery layer for sending documents to remote servers.
 7. **`receipt-renderer`**: Print layout engine for building and formatting receipts in HTML and raw configurations, supporting multiple layouts, sizes (58mm, 80mm, Fullscreen), color themes, and multi-language translations (Russian, Kazakh, English).
 
-The core is not published to Maven Central. Every [GitHub release](https://github.com/texport/superkassa-core/releases) carries the compiled library as `superkassa-core-maven-<version>.zip`: a Maven-layout repository with every module for all targets (JVM, Android, iOS), Gradle module metadata, and the exact `ofd-kt-proto` and `ofd-proto-codec` builds the core was compiled against.
+The core is not published to Maven Central. Every [GitHub release](https://github.com/texport/superkassa-core/releases) carries the compiled library as `superkassa-core-maven-<version>.zip`: a Maven-layout repository with every module for all targets (JVM, Android, iOS), Gradle module metadata, and the exact builds of `ofd-proto-codec`, the protocol libraries (`ofd-kt-proto`, `ofd-kt-proto-v204`) and `ofd-network-client` the core was compiled against, none of which is in Maven Central; the remaining dependencies resolve from Maven Central and Google. The core's own build takes those libraries the same way — as compiled builds from their GitHub releases, never from sources.
 
 1. Download `superkassa-core-maven-<version>.zip` from the release and unzip it into a folder, for example `libs/superkassa-core`.
 2. Add the folder as a repository and depend on the modules you need:
@@ -69,7 +69,7 @@ dependencies: [
 6. **`delivery`**: Транспортный сетевой уровень для доставки фискальных документов на удаленные серверы.
 7. **`receipt-renderer`**: Движок генерации печатных форм чеков в формате HTML, поддерживающий различные макеты, размеры ленты (58мм, 80мм, Fullscreen), цветовые схемы и многоязыковую локализацию (русский, казахский, английский).
 
-Ядро не публикуется в Maven Central. Каждый [выпуск на GitHub](https://github.com/texport/superkassa-core/releases) несёт собранную библиотеку файлом `superkassa-core-maven-<версия>.zip`: хранилище в раскладке Maven, в котором каждый модуль со всеми целями (JVM, Android, iOS), метаданные модулей Gradle и ровно те сборки `ofd-kt-proto` и `ofd-proto-codec`, с которыми собрано ядро.
+Ядро не публикуется в Maven Central. Каждый [выпуск на GitHub](https://github.com/texport/superkassa-core/releases) несёт собранную библиотеку файлом `superkassa-core-maven-<версия>.zip`: хранилище в раскладке Maven, в котором каждый модуль со всеми целями (JVM, Android, iOS), метаданные модулей Gradle и ровно те сборки кодека `ofd-proto-codec`, библиотек протокола (`ofd-kt-proto`, `ofd-kt-proto-v204`) и клиента сети `ofd-network-client`, с которыми собрано ядро, — в Maven Central их нет; остальные зависимости берутся из Maven Central и Google. Сборка самого ядра берёт эти библиотеки так же — готовыми сборками из их выпусков на GitHub, а не из исходников.
 
 1. Скачайте `superkassa-core-maven-<версия>.zip` из выпуска и распакуйте в папку, например `libs/superkassa-core`.
 2. Добавьте папку как хранилище и подключите нужные модули:
