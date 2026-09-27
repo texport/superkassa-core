@@ -9,14 +9,11 @@ import org.gradle.api.services.BuildServiceParameters
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
-import org.gradle.plugins.signing.SigningExtension
 
 plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
-    alias(libs.plugins.nmcp.aggregation)
-    alias(libs.plugins.nmcp)
     `maven-publish`
     alias(libs.plugins.kover)
     alias(libs.plugins.ksp) apply false
@@ -31,10 +28,6 @@ version = providers.gradleProperty("releaseVersion").orNull ?: "$versionLine.0-S
 
 dependencies {
     add("detektPlugins", libs.detekt.formatting)
-    // В Central уходят корень ядра и каждый его модуль отдельным артефактом:
-    // Android- и iOS-потребитель получает код модулей только так.
-    add("nmcpAggregation", project(":"))
-    subprojects.forEach { add("nmcpAggregation", project(it.path)) }
 }
 
 /** Имя артефакта модуля ядра: core-embedded-jvm → superkassa-core-embedded-jvm. */
@@ -119,44 +112,11 @@ allprojects {
                 if (project != rootProject) {
                     artifactId = superkassaArtifactId(artifactId, project.name)
                 }
-                val javadocJarTask = tasks.register<Jar>("${name}JavadocJar") {
-                    description = "Generates Javadoc jar for publication ${this@configureEach.name}"
-                    archiveClassifier.set("javadoc")
-                    archiveAppendix.set(this@configureEach.name)
-                }
-                artifact(javadocJarTask)
-                pom {
-                    name.set(project.name)
-                    description.set("Kotlin Multiplatform core module for Superkassa: ${project.name}")
-                    url.set("https://github.com/texport/superkassa-core")
-                    
-                    licenses {
-                        license {
-                            name.set("The Apache License, Version 2.0")
-                            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                        }
-                    }
-                    
-                    developers {
-                        developer {
-                            id.set("sergeyivanov")
-                            name.set("Sergey Ivanov")
-                            email.set("ivanov.sergey.ekb@gmail.com")
-                        }
-                    }
-                    
-                    scm {
-                        connection.set("scm:git:git://github.com/texport/superkassa-core.git")
-                        developerConnection.set("scm:git:ssh://github.com/texport/superkassa-core.git")
-                        url.set("https://github.com/texport/superkassa-core")
-                    }
-                }
-                
                 // Jar ядра для JVM собран вместе с классами своих модулей (см. jvmJar):
                 // так его берёт узел. Зависимость на те же модули в его POM дала
                 // бы каждый класс дважды, поэтому из POM этой публикации они
                 // убираются. Остальные публикации ссылаются на модули как есть:
-                // модули выгружаются в Central сами.
+                // модули лежат в хранилище выпуска рядом с ним.
                 if (project == rootProject && name == "jvm") {
                     pom.withXml {
                         val depsNode = asNode().children()
@@ -176,24 +136,6 @@ allprojects {
                     }
                 }
             }
-        }
-        
-        // Отдаёт публикации модуля корневой агрегации для Maven Central.
-        if (project != rootProject) plugins.apply("com.gradleup.nmcp")
-        plugins.apply("signing")
-        configure<SigningExtension> {
-            val signingKey = System.getenv("SIGNING_KEY")
-            val signingPassword = System.getenv("SIGNING_PASSWORD")
-            val signingKeyId = System.getenv("SIGNING_KEY_ID")
-            if (!signingKey.isNullOrEmpty() && !signingPassword.isNullOrEmpty()) {
-                if (signingKeyId.isNullOrEmpty()) {
-                    useInMemoryPgpKeys(signingKey, signingPassword)
-                } else {
-                    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
-                }
-            }
-            isRequired = false
-            sign(extensions.getByType<PublishingExtension>().publications)
         }
     }
 
@@ -415,14 +357,6 @@ tasks.register("generateSpmManifest") {
             """.trimIndent() + "\n"
         )
         println("SPM manifest generation complete for version $versionStr!")
-    }
-}
-
-nmcpAggregation {
-    centralPortal {
-        username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
-        password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
-        publishingType.set("AUTOMATIC")
     }
 }
 

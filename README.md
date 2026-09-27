@@ -1,6 +1,5 @@
 # superkassa-core
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.texport/superkassa-core.svg?label=Maven%20Central)](https://central.sonatype.com/search?q=g:io.github.texport)
 [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/texport/superkassa-core/releases)
 [![Coverage](https://img.shields.io/badge/coverage-98%25-green.svg)](https://github.com/texport/superkassa-core/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -24,15 +23,25 @@
 6. **`delivery`**: Transportation network delivery layer for sending documents to remote servers.
 7. **`receipt-renderer`**: Print layout engine for building and formatting receipts in HTML and raw configurations, supporting multiple layouts, sizes (58mm, 80mm, Fullscreen), color themes, and multi-language translations (Russian, Kazakh, English).
 
-To use the unified core KMP module in your Multiplatform or JVM Gradle build:
+The core is not published to Maven Central. Every [GitHub release](https://github.com/texport/superkassa-core/releases) carries the compiled library as `superkassa-core-maven-<version>.zip`: a Maven-layout repository with every module for all targets (JVM, Android, iOS), Gradle module metadata, and the exact `ofd-kt-proto` and `ofd-proto-codec` builds the core was compiled against.
+
+1. Download `superkassa-core-maven-<version>.zip` from the release and unzip it into a folder, for example `libs/superkassa-core`.
+2. Add the folder as a repository and depend on the modules you need:
 
 ```kotlin
+repositories {
+    maven(uri("libs/superkassa-core"))
+    // Third-party dependencies of the core (kotlinx, Ktor, Room, …)
+    mavenCentral()
+    google()
+}
+
 dependencies {
-    // For Multiplatform targets
-    implementation("io.github.texport:superkassa-core:1.1.4")
+    // Embedded core for Android, iOS and desktop applications
+    implementation("io.github.texport:superkassa-core-embedded:<version>")
     
-    // Or for JVM-only targets (like server)
-    implementation("io.github.texport:superkassa-core-jvm:1.1.4")
+    // Or a single layer, e.g. the API facade
+    implementation("io.github.texport:superkassa-core-presentation:<version>")
 }
 ```
 
@@ -60,15 +69,25 @@ dependencies: [
 6. **`delivery`**: Транспортный сетевой уровень для доставки фискальных документов на удаленные серверы.
 7. **`receipt-renderer`**: Движок генерации печатных форм чеков в формате HTML, поддерживающий различные макеты, размеры ленты (58мм, 80мм, Fullscreen), цветовые схемы и многоязыковую локализацию (русский, казахский, английский).
 
-Подключите единый KMP модуль в зависимости вашего Gradle-проекта:
+Ядро не публикуется в Maven Central. Каждый [выпуск на GitHub](https://github.com/texport/superkassa-core/releases) несёт собранную библиотеку файлом `superkassa-core-maven-<версия>.zip`: хранилище в раскладке Maven, в котором каждый модуль со всеми целями (JVM, Android, iOS), метаданные модулей Gradle и ровно те сборки `ofd-kt-proto` и `ofd-proto-codec`, с которыми собрано ядро.
+
+1. Скачайте `superkassa-core-maven-<версия>.zip` из выпуска и распакуйте в папку, например `libs/superkassa-core`.
+2. Добавьте папку как хранилище и подключите нужные модули:
 
 ```kotlin
+repositories {
+    maven(uri("libs/superkassa-core"))
+    // Сторонние зависимости ядра (kotlinx, Ktor, Room, …)
+    mavenCentral()
+    google()
+}
+
 dependencies {
-    // Для мультиплатформенных (KMP) проектов
-    implementation("io.github.texport:superkassa-core:1.1.4")
+    // Встраиваемое ядро для приложений Android, iOS и компьютеров
+    implementation("io.github.texport:superkassa-core-embedded:<версия>")
     
-    // Для классических JVM-проектов (например, сервер)
-    implementation("io.github.texport:superkassa-core-jvm:1.1.4")
+    // Или отдельный слой, например фасад API
+    implementation("io.github.texport:superkassa-core-presentation:<версия>")
 }
 ```
 

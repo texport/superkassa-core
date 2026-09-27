@@ -1,4 +1,4 @@
-# Выпуск ядра на GitHub и в Maven Central.
+# Выпуск ядра на GitHub.
 #
 # Сам: после зелёного CI на main каждый ещё не выпущенный коммит выпускается
 # под следующим номером своей линии (val versionLine в build.gradle.kts):
@@ -8,14 +8,15 @@
 #
 # Руками: метка v<линия>.<номер> выпускает помеченный коммит.
 #
-# Порядок: файлы → выпуск на GitHub → Maven Central. Упала ступень —
-# следующие не запускаются. Без секретов Central выгрузка пропускается
-# с уведомлением в сводке запуска.
+# Порядок: файлы → выпуск на GitHub. Упали файлы — выпуск не создаётся.
 #
 # Файлы выпуска: jar для JVM (в него собраны все модули ядра, как его берёт
-# узел) и SuperkassaCore.xcframework.zip для iOS; строка binaryTarget с его
-# суммой — в заметках. Android берёт ядро из Maven Central: там каждый модуль
-# ядра лежит своим артефактом.
+# узел), SuperkassaCore.xcframework.zip для iOS (строка binaryTarget с его
+# суммой — в заметках) и superkassa-core-maven-<версия>.zip — собранное ядро
+# в раскладке хранилища Maven. Ядро больше нигде не публикуется: Android
+# и любой другой потребитель берут его из этого zip. В нём каждый модуль
+# со всеми целями (JVM, Android, iOS) и метаданными модулей Gradle, а рядом
+# ровно те сборки протокола и кодека, с которыми собрано ядро.
 name: Release
 
 on:
@@ -106,6 +107,16 @@ jobs:
           shasum -a 256 "$zip" | cut -d' ' -f1 > dist/SuperkassaCore.xcframework.zip.sha256
           ls -l dist
 
+      # Ядро ложится в локальное хранилище раннера, где шаг соседей уже
+      # оставил протокол и кодек; упаковывается вся группа io.github.texport.
+      # Протокол и кодек собраны из веток соседей и больше нигде не лежат:
+      # без них в zip потребителю пришлось бы собирать их самому.
+      - name: Собранное ядро для Gradle
+        run: |
+          ./gradlew publishToMavenLocal -PreleaseVersion="$VERSION"
+          (cd ~/.m2/repository && zip -qr "$GITHUB_WORKSPACE/dist/superkassa-core-maven-$VERSION.zip" io/github/texport)
+          ls -l dist
+
       - uses: actions/upload-artifact@v7
         with:
           name: release-files
@@ -165,57 +176,3 @@ jobs:
               --title "superkassa-core $TAG" --notes-file notes.md dist/*
           fi
           echo "- Выпуск на GitHub: $TAG" >> "$GITHUB_STEP_SUMMARY"
-
-  # В Central — только после выпуска на GitHub. Без секретов выгрузка
-  # пропускается с уведомлением, запуск остаётся зелёным; когда секреты
-  # заведены, выгрузка идёт сама со следующим выпуском.
-  maven-central:
-    needs: [ plan, github-release ]
-    if: ${{ !cancelled() && needs.github-release.result == 'success' }}
-    runs-on: macos-latest
-    env:
-      VERSION: ${{ needs.plan.outputs.version }}
-      OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-      OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-      SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-      SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
-    steps:
-      - name: Секреты на месте
-        id: secrets
-        run: |
-          missing=""
-          for name in OSSRH_USERNAME OSSRH_PASSWORD SIGNING_KEY SIGNING_PASSWORD; do
-            [ -n "${!name}" ] || missing="$missing $name"
-          done
-          if [ -n "$missing" ]; then
-            message="Maven Central пропущен: не заведены секреты репозитория$missing. Выпуск на GitHub создан."
-            echo "::notice title=Maven Central::$message"
-            echo "- $message" >> "$GITHUB_STEP_SUMMARY"
-            echo "present=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - if: steps.secrets.outputs.present == 'true'
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.plan.outputs.sha }}
-
-      - if: steps.secrets.outputs.present == 'true'
-        uses: actions/setup-java@v6
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - if: steps.secrets.outputs.present == 'true'
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-provider: enhanced
-
-      - if: steps.secrets.outputs.present == 'true'
-        uses: ./.github/actions/siblings
-
-      - name: Выгрузить в Maven Central
-        if: steps.secrets.outputs.present == 'true'
-        run: ./gradlew publishAggregationToCentralPortal -PreleaseVersion="$VERSION"
